@@ -1,13 +1,24 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import SportsManagment from "./pages/admin/SportsManagment";
+
+function Home() {
+  return (
+    <div>
+      <h1>Home</h1>
+      <p>Welcome to the Home page!</p>
+    </div>
+  );
+}
 
 
 function App() {
   return (
-    <>
-      <h1>Welcome to our App</h1>
-      <p>alb</p>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/sports" element={<SportsManagment />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

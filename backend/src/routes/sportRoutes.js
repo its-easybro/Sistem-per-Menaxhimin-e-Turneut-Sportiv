@@ -31,7 +31,7 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req,res) => {
   const { id } = req.params;
-  const { emertimi, pershkrimi, numri_lojatareve, lloji } = req.body;
+  const { emertimi, pershkrimi, numri_lojtareve, lloji } = req.body;
 
   try{
     const result = await pool.query(
@@ -39,7 +39,7 @@ router.put('/:id', async (req,res) => {
        SET emertimi = $1, pershkrimi = $2, numri_lojtareve = $3, lloji = $4
        WHERE id = $5
        RETURNING *`,
-       [emertimi, pershkrimi, numri_lojatareve, lloji, id]
+       [emertimi, pershkrimi, numri_lojtareve, lloji, id]
     );
     if(result.rows.length === 0){
       res.status(404).json({ error: 'Sporti nuk u gjet' });
