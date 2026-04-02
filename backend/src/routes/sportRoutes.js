@@ -1,3 +1,4 @@
+import { requireAuth, requireAdmin } from '../middleware/authMiddleware.js';
 import express from 'express';
 import pool from '../config/db.js';
 const router = express.Router();

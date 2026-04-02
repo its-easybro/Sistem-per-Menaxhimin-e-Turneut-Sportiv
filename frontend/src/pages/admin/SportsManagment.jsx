@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export default function AboutUs() {
+export default function SportsManagment() {
   const [sports, setSports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
