@@ -12,7 +12,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /sports/:id - Merr sportin me ID specifike
+// GET /sports/:id
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
