@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SportsManagment from "./pages/admin/SportsManagment";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function Home() {
   return (
@@ -16,6 +18,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/SportsManagment" element={<SportsManagment />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </BrowserRouter>
   );
