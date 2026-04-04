@@ -1,4 +1,4 @@
-import { requireAuth, requireAdmin } from "../middleware/auth.js";
+import { protect, requireAdmin } from "../middleware/auth.js";
 import express from "express";
 import pool from "../config/db.js";
 const router = express.Router();
@@ -26,7 +26,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", protect, requireAdmin, async (req, res) => {
   const { emertimi, pershkrimi, numri_lojtareve, lloji } = req.body;
   try {
     const result = await pool.query(
@@ -41,7 +41,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { emertimi, pershkrimi, numri_lojtareve, lloji } = req.body;
 
@@ -54,7 +54,7 @@ router.put("/:id", async (req, res) => {
       [emertimi, pershkrimi, numri_lojtareve, lloji, id],
     );
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Sporti nuk u gjet" });
+      return res.status(404).json({ error: "Sporti nuk u gjet" });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -62,7 +62,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -73,7 +73,7 @@ router.delete("/:id", async (req, res) => {
       [id],
     );
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Sporti nuk u gjet" });
+      return res.status(404).json({ error: "Sporti nuk u gjet" });
     }
     res.json({ message: "Sporti u fshi me sukses", deleted: result.rows[0] });
   } catch (err) {

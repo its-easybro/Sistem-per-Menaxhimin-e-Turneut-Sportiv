@@ -1,6 +1,33 @@
 import React from 'react';
+import { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AuthContext from '../context/AuthContext';
+import axios from 'axios';
 
-const Register = () => {
+const Register = ({ setUser }) => {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await axios.post('http://localhost:5000/api/auth/register', { username, email, password });
+      setUser(res.data);
+      navigate('/');
+    } catch (err) {
+      setError("Error occurred while registering");
+      console.log(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -10,15 +37,23 @@ const Register = () => {
             <p className="text-gray-600">Join the platform by filling in your details</p>
           </div>
 
-          <form className="space-y-5">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="name" className="mb-2 block text-sm font-medium text-gray-700">
-                Full Name
+              <label htmlFor="username" className="mb-2 block text-sm font-medium text-gray-700">
+                Username
               </label>
               <input
-                id="name"
+                id="username"
                 type="text"
-                placeholder="Your full name"
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Your username"
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
             </div>
@@ -30,6 +65,7 @@ const Register = () => {
               <input
                 id="email"
                 type="email"
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
@@ -42,20 +78,11 @@ const Register = () => {
               <input
                 id="password"
                 type="password"
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               />
             </div>
-
-            <label className="flex items-start gap-3 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span>
-                I agree to the <a href="#" className="font-semibold text-blue-600 hover:text-blue-700">Terms and Conditions</a>
-              </span>
-            </label>
 
             <button
               type="submit"

@@ -1,31 +1,52 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
+
 import SportsManagment from "./pages/admin/SportsManagment";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
 import AdminRoute from "./components/AdminRoute";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
 
-function Home() {
-  return (
-    <div>
-      <h1>Home</h1>
-      <p>Welcome to the Home page!</p>
-    </div>
-  );
-}
+axios.defaults.withCredentials = true;
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/auth/me");
+        setUser(res.data);
+      } catch (err) {
+        setUser(null);
+        console.log(err.message);
+      } finally{
+        setLoading(false);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  if(loading){
+    return <div>Loading...</div>
+  }
+
   return (
     <AuthProvider>
       <BrowserRouter>
+        <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route element={<AdminRoute />}>
           {/*add admin routes in this route*/}
-            <Route path="/SportsManagment" element={<SportsManagment />} />
+            <Route path="/sportsManagment" element={<SportsManagment />} />
           </Route>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login setUser={setUser} />} />
+          <Route path="/register" element={<Register setUser={setUser}/>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

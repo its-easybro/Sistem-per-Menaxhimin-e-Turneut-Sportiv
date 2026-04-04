@@ -1,8 +1,12 @@
 // Import React hooks: useEffect for side effects, useState for managing component state
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import AuthContext from '../../context/AuthContext';
 
 // This component provides a comprehensive interface for managing sports, including creating, viewing, editing, and deleting sports. It uses modals for each action to keep the UI clean and user-friendly. The component also handles loading states and errors gracefully.
 export default function SportsManagment() {
+  const { user, loading: authLoading } = useContext(AuthContext);
+
   // ===== STATE VARIABLES =====
   
   // stores the array of sports fetched from the backend API
@@ -45,15 +49,22 @@ export default function SportsManagment() {
   // It fetches all sports from the backend API and updates the state
   useEffect(() => {
     const loadSports = async () => {
+      if (!user?.is_admin) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        // Make a GET request to fetch all sports
-        const res = await fetch('http://localhost:3005/sports');
-        
-        // Check if the response is successful (status 200-299)
-        if (!res.ok) throw new Error('Failed to fetch sports');
-        
+        setLoading(true);
+        const response = await fetch(`http://localhost:5000/sports`, {
+          credentials: 'include', // Send cookies along with the request
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch sports');
+        }
+
         // Parse the response as JSON and extract the sports data array
-        const data = await res.json();
+        const data = await response.json();
         
         // Update the sports state with the fetched data
         setSports(data);
@@ -68,7 +79,7 @@ export default function SportsManagment() {
 
     // Call the async function
     loadSports();
-  }, []);
+  }, [user]);
 
   // ===== CREATE SPORT HANDLERS =====
   
@@ -89,22 +100,22 @@ export default function SportsManagment() {
 
   // Handles form submission when the user clicks the "Create" button in the modal
   const handleSubmit = async (e) => {
-    e.preventDefault();  // Prevent the default form submission behavior
+    e.preventDefault(); // Prevent the default form submission behavior
     try {
-      // Make a POST request to create a new sport
-      const res = await fetch('http://localhost:3005/sports', {
+      const response = await fetch(`http://localhost:5000/sports`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(formData)  // Send the form data as JSON
       });
       
       // Check if the request was successful
-      if (!res.ok) throw new Error('Failed to create sport');
+      if (!response.ok) throw new Error('Failed to create sport');
       
       // Parse the response to get the newly created sport with its ID
-      const newSport = await res.json();
+      const newSport = await response.json();
       
       // Add the new sport to the sports array in state
       setSports([...sports, newSport]);
@@ -197,22 +208,24 @@ export default function SportsManagment() {
   
   // Handles form submission in the Edit modal when user clicks "Save Changes"
   const handleEditSubmit = async (e) => {
-    e.preventDefault();  // Prevent default form submission
+    e.preventDefault();
+    if (!selectedSport) return;
+
     try {
-      // Make a PUT request to update the sport with its ID
-      const res = await fetch(`http://localhost:3005/sports/${selectedSport.id}`, {
+      const response = await fetch(`http://localhost:5000/sports/${selectedSport.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(formData)  // Send the updated form data
       });
       
       // Check if the update was successful
-      if (!res.ok) throw new Error('Failed to update sport');
+      if (!response.ok) throw new Error('Failed to update sport');
       
       // Parse the response to get the updated sport data
-      const updatedSport = await res.json();
+      const updatedSport = await response.json();
       
       // Update the sports array, replacing the old sport with the updated one
       setSports(sports.map(s => s.id === updatedSport.id ? updatedSport : s));
@@ -233,15 +246,18 @@ export default function SportsManagment() {
 
   // Deletes a sport when user confirms in the Delete modal
   const handleDeleteConfirm = async () => {
+    if (!selectedSport) return;
+
     try {
-      // Make a DELETE request to remove the sport by its ID
-      const res = await fetch(`http://localhost:3005/sports/${selectedSport.id}`, {
-        method: 'DELETE'
+      const response = await fetch(`http://localhost:5000/sports/${selectedSport.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
       });
-      
-      // Check if the deletion was successful
-      if (!res.ok) throw new Error('Failed to delete sport');
-      
+
+      if (!response.ok) {
+        throw new Error('Failed to delete sport');
+      }
+
       // Remove the deleted sport from the sports array using filter
       setSports(sports.filter(s => s.id !== selectedSport.id));
       
@@ -257,6 +273,16 @@ export default function SportsManagment() {
   };
 
   // ===== CONDITIONAL RENDERING FOR LOADING/ERROR STATES =====
+
+  if (authLoading) return (
+    <div className="flex justify-center items-center h-screen">
+      <p className="text-lg text-gray-600">Checking access...</p>
+    </div>
+  );
+
+  if (!user || !user.is_admin) {
+    return <Navigate to="/login" replace />;
+  }
   
   // If data is still loading, show a loading message
   if (loading) return (
@@ -402,7 +428,7 @@ export default function SportsManagment() {
                 <tr>
                   <td colSpan="6" className="px-6 py-4 text-center text-gray-600">
                     {/* Show different message depending on whether user is searching or if no sports exist */}
-                    {searchQuery ? `No sports match \"${searchQuery}\". Try a different search.` : 'No sports found. Click "Create New Sport" to add one.'}
+                    {searchQuery ? `No sports match "${searchQuery}". Try a different search.` : 'No sports found. Click "Create New Sport" to add one.'}
                   </td>
                 </tr>
               )}

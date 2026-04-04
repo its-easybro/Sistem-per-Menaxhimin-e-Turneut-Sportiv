@@ -2,7 +2,7 @@ import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 
-export default function Login() {
+const Login = () => {
   // State for form inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +16,6 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const data = await login(email, password);
 
@@ -26,7 +25,7 @@ export default function Login() {
         navigate('/');
       }
     } catch (err) {
-      setError(err.message);
+      setError("Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -111,4 +110,4 @@ export default function Login() {
 
 
 
-
+export default Login;
