@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AuthContext from '../context/AuthContext';
 
 export default function Login() {
   // State for form inputs
@@ -8,6 +9,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -16,28 +18,13 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Make login API request
-      const res = await fetch('http://localhost:3005/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
+      const data = await login(email, password);
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Login failed');
+      if (data?.userData?.is_admin || data?.user?.is_admin) {
+        navigate('/SportsManagment');
+      } else {
+        navigate('/');
       }
-
-      const data = await res.json();
-      
-      // Store token and user data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirect to dashboard
-      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -97,18 +84,6 @@ export default function Login() {
               />
             </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center">
-              <input
-                id="remember"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember" className="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-
             {/* Submit Button */}
             <button
               type="submit"
@@ -121,9 +96,6 @@ export default function Login() {
 
           {/* Footer Links */}
           <div className="mt-6 space-y-4 text-center">
-            <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              Forgot your password?
-            </a>
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
               <a href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
