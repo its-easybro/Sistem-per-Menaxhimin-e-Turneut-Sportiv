@@ -17,7 +17,7 @@ export default function Login() {
 
     try {
       // Make login API request
-      const res = await fetch('http://localhost:3005/login', {
+      const res = await fetch('http://localhost:3005/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
