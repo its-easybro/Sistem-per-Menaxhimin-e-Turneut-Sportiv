@@ -1,4 +1,5 @@
 import express from "express";
+import bcrypt from "bcrypt";
 import pool from "../config/db.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 
@@ -18,14 +19,29 @@ router.get("/", protect, requireAdmin, async (req, res) => {
 });
 
 router.post("/", protect, requireAdmin, async (req, res) => {
-  const { email, username, full_name, is_admin } = req.body;
+  const { email, username, full_name, password, is_admin } = req.body;
 
   try {
+    if (!email || !username || !password) {
+      return res.status(400).json({ error: "Email, username and password are required" });
+    }
+
+    const userExists = await pool.query(
+      "SELECT id FROM users WHERE email = $1 OR username = $2",
+      [email, username]
+    );
+
+    if (userExists.rows.length > 0) {
+      return res.status(400).json({ error: "Email or username already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const result = await pool.query(
-      `INSERT INTO users (email, username, full_name, is_admin)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO users (email, username, full_name, password, is_admin)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id, email, username, full_name, is_admin, created_at`,
-      [email, username, full_name, is_admin]
+      [email, username, full_name || null, hashedPassword, is_admin]
     );
 
     res.status(201).json(result.rows[0]);
