@@ -50,6 +50,7 @@ const Register = ({ setUser }) => {
                 Username
               </label>
               <input
+                autoComplete='on'
                 id="username"
                 type="text"
                 onChange={(e) => setUsername(e.target.value)}
@@ -63,6 +64,7 @@ const Register = ({ setUser }) => {
                 Email Address
               </label>
               <input
+                autoComplete='on'
                 id="email"
                 type="email"
                 onChange={(e) => setEmail(e.target.value)}

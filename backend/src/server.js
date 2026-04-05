@@ -6,7 +6,7 @@ import pool from "./config/db.js";
 
 import sportRoutes from "./routes/sportRoutes.js";
 import authRoutes from "./routes/auth.js";
-import usersRoutes from "./routes/users.js";
+import usersRoutes from "./routes/usersRoutes.js";
 
 dotenv.config();
 const app = express();

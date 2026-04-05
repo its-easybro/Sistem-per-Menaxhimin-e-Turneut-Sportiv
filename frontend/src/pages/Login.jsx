@@ -26,6 +26,7 @@ const Login = () => {
       }
     } catch (err) {
       setError("Invalid email or password");
+      console.log(err.message);
     } finally {
       setLoading(false);
     }
@@ -57,6 +58,7 @@ const Login = () => {
                 Email Address
               </label>
               <input
+                autoComplete='on'
                 id="email"
                 type="email"
                 value={email}

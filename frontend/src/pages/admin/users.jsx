@@ -4,18 +4,14 @@ import AuthContext from "../../context/AuthContext";
 
 export default function Users() {
   const { user, loading: authLoading } = useContext(AuthContext);
-
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const [selectedUser, setSelectedUser] = useState(null);
-
   const [formData, setFormData] = useState({
     email: "",
     username: "",

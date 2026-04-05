@@ -11,17 +11,12 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Users from "./pages/admin/users";
-
-
 axios.defaults.withCredentials = true;
+
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  <Route element={<AdminRoute />}>
-  <Route path="/sportsManagment" element={<SportsManagment />} />
-  <Route path="/users" element={<Users />} />
-</Route>
 
 
   useEffect(() => {
