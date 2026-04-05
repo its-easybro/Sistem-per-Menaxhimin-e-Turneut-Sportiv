@@ -132,8 +132,11 @@ const Navbar = () => {
             </Link>
           ) : user.is_admin ? (
             <div className="flex items-center gap-4">
-              <Link to="/SportsManagment" className="text-sm/6 font-semibold text-white">
-                Admin Panel
+              <Link to="/sportsManagment" className="text-sm/6 font-semibold text-white">
+                Sports Management
+              </Link>
+              <Link to="/users" className="text-sm/6 font-semibold text-white">
+                Users
               </Link>
               <button onClick={handleLogout} className="text-sm/6 font-semibold text-white">
                 Logout
@@ -219,11 +222,18 @@ const Navbar = () => {
                 ) : user.is_admin ? (
                   <>
                     <Link
-                      to="/SportsManagment"
+                      to="/sportsManagment"
                       className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Admin Panel
+                      Sports Management
+                    </Link>
+                    <Link
+                      to="/users"
+                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Users
                     </Link>
                     <button
                       type="button"
