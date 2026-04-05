@@ -8,6 +8,7 @@ import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
 import AdminRoute from "./components/AdminRoute";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import Home from "./pages/Home";
 
 axios.defaults.withCredentials = true;
@@ -48,6 +49,7 @@ function App() {
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/register" element={<Register setUser={setUser}/>} />
         </Routes>
+        <Footer />
       </BrowserRouter>
     </AuthProvider>
   );
