@@ -20,7 +20,7 @@ const Login = () => {
       const data = await login(email, password);
 
       if (data?.userData?.is_admin || data?.user?.is_admin) {
-        navigate('/SportsManagment');
+        navigate('/adminPanel');
       } else {
         navigate('/');
       }

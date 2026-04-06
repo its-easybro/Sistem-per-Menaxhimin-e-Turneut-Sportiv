@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { AuthProvider } from "./context/AuthContext";
 import axios from "axios";
 
 import SportsManagment from "./pages/admin/SportsManagment";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import { AuthProvider } from "./context/AuthContext";
 import AdminRoute from "./components/AdminRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Users from "./pages/admin/users";
+import AdminPanel from "./pages/admin/adminPanel";
 axios.defaults.withCredentials = true;
 
 
@@ -47,7 +48,8 @@ function App() {
           <Route element={<AdminRoute />}>
           {/*add admin routes in this route*/}
             <Route path="/sportsManagment" element={<SportsManagment />} />
-              <Route path="/users" element={<Users />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/adminPanel" element={<AdminPanel />} />
           </Route>
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/register" element={<Register setUser={setUser}/>} />
