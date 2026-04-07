@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect } from 'react';
+import { AUTH_API_URL } from '../config/api';
 
 const AuthContext = createContext();
-const API_BASE_URL = 'http://localhost:5000/api/auth';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkLoggedIn = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/me`, {
+        const response = await fetch(`${AUTH_API_URL}/me`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await fetch(`${API_BASE_URL}/login`, {
+    const response = await fetch(`${AUTH_API_URL}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await fetch(`${API_BASE_URL}/Logout`, {
+      await fetch(`${AUTH_API_URL}/Logout`, {
         method: 'POST',
         credentials: 'include',
       });

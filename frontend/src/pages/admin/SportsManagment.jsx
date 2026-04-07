@@ -2,6 +2,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
+import { API_BASE_URL } from '../../config/api';
 
 // This component provides a comprehensive interface for managing sports, including creating, viewing, editing, and deleting sports. It uses modals for each action to keep the UI clean and user-friendly. The component also handles loading states and errors gracefully.
 export default function SportsManagment() {
@@ -56,7 +57,7 @@ export default function SportsManagment() {
 
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/sports`, {
+        const response = await fetch(`${API_BASE_URL}/sports`, {
           credentials: 'include', // Send cookies along with the request
         });
         if (!response.ok) {
@@ -102,7 +103,7 @@ export default function SportsManagment() {
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent the default form submission behavior
     try {
-      const response = await fetch(`http://localhost:5000/sports`, {
+      const response = await fetch(`${API_BASE_URL}/sports`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -212,7 +213,7 @@ export default function SportsManagment() {
     if (!selectedSport) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/sports/${selectedSport.id}`, {
+      const response = await fetch(`${API_BASE_URL}/sports/${selectedSport.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -249,7 +250,7 @@ export default function SportsManagment() {
     if (!selectedSport) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/sports/${selectedSport.id}`, {
+      const response = await fetch(`${API_BASE_URL}/sports/${selectedSport.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

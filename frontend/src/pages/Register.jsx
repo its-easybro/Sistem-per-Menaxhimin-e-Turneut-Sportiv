@@ -3,22 +3,24 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
+import { AUTH_API_URL } from '../config/api';
 
-const Register = ({ setUser }) => {
+const Register = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', { username, email, password });
-      setUser(res.data);
+      await axios.post(`${AUTH_API_URL}/register`, { username, email, password }, { withCredentials: true });
+      await login(email, password);
       navigate('/');
     } catch (err) {
       setError("Error occurred while registering");

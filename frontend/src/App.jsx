@@ -1,7 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { AuthProvider } from "./context/AuthContext";
-import axios from "axios";
 
 import SportsManagment from "./pages/admin/SportsManagment";
 import Login from "./pages/Login";
@@ -12,33 +10,8 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Users from "./pages/admin/users";
 import AdminPanel from "./pages/admin/adminPanel";
-axios.defaults.withCredentials = true;
-
 
 function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/auth/me");
-        setUser(res.data);
-      } catch (err) {
-        setUser(null);
-        console.log(err.message);
-      } finally{
-        setLoading(false);
-      }
-    }
-    fetchUser();
-  }, []);
-
-  if(loading){
-    return <div>Loading...</div>
-  }
-
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -51,8 +24,8 @@ function App() {
             <Route path="/users" element={<Users />} />
             <Route path="/adminPanel" element={<AdminPanel />} />
           </Route>
-          <Route path="/login" element={<Login setUser={setUser} />} />
-          <Route path="/register" element={<Register setUser={setUser}/>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Routes>
         <Footer />
       </BrowserRouter>

@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
+import { API_BASE_URL } from "../../config/api";
 
 export default function Users() {
   const { user, loading: authLoading } = useContext(AuthContext);
@@ -29,7 +30,7 @@ export default function Users() {
 
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5000/users", {
+        const response = await fetch(`${API_BASE_URL}/users`, {
           credentials: "include",
         });
 
@@ -110,7 +111,7 @@ export default function Users() {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:5000/users", {
+      const response = await fetch(`${API_BASE_URL}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -138,7 +139,7 @@ export default function Users() {
     if (!selectedUser) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/users/${selectedUser.id}`, {
+      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +165,7 @@ export default function Users() {
     if (!selectedUser) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/users/${selectedUser.id}`, {
+      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
         method: "DELETE",
         credentials: "include",
       });
