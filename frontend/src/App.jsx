@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useContext } from "react";
+import AuthContext from "./context/AuthContext";
 
 import SportsManagment from "./pages/admin/SportsManagment";
 import Login from "./pages/Login";
@@ -12,25 +13,28 @@ import Users from "./pages/admin/users";
 import AdminPanel from "./pages/admin/adminPanel";
 
 function App() {
+  const { loading } = useContext(AuthContext);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route element={<AdminRoute />}>
-          {/*add admin routes in this route*/}
-            <Route path="/sportsManagment" element={<SportsManagment />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/adminPanel" element={<AdminPanel />} />
-          </Route>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
-        <Footer />
-      </BrowserRouter>
-    </AuthProvider>
-    
+    <BrowserRouter>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route element={<AdminRoute />}>
+        {/*add admin routes in this route*/}
+          <Route path="/sportsManagment" element={<SportsManagment />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/adminPanel" element={<AdminPanel />} />
+        </Route>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+      <Footer />
+    </BrowserRouter>
   );
 }
 
