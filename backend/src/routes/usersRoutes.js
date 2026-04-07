@@ -4,11 +4,31 @@ import pool from "../config/db.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
+const userSelect = `
+  id,
+  email,
+  emri AS username,
+  CONCAT_WS(' ', emri, mbiemri) AS full_name,
+  (roli = 'admin') AS is_admin,
+  created_at
+`;
+
+function splitName(fullName = "", fallbackUsername = "") {
+  const normalizedFullName = typeof fullName === "string" ? fullName.trim().replace(/\s+/g, " ") : "";
+  const normalizedUsername = typeof fallbackUsername === "string" ? fallbackUsername.trim() : "";
+
+  if (normalizedFullName) {
+    const [emri, ...rest] = normalizedFullName.split(" ");
+    return { emri, mbiemri: rest.join(" ") };
+  }
+
+  return { emri: normalizedUsername, mbiemri: "" };
+}
 
 router.get("/", protect, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, email, username, full_name, is_admin, created_at
+      `SELECT ${userSelect}
        FROM users
        ORDER BY id`
     );
@@ -27,21 +47,22 @@ router.post("/", protect, requireAdmin, async (req, res) => {
     }
 
     const userExists = await pool.query(
-      "SELECT id FROM users WHERE email = $1 OR username = $2",
-      [email, username]
+      "SELECT id FROM users WHERE email = $1",
+      [email]
     );
 
     if (userExists.rows.length > 0) {
-      return res.status(400).json({ error: "Email or username already exists" });
+      return res.status(400).json({ error: "Email already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const { emri, mbiemri } = splitName(full_name, username);
 
     const result = await pool.query(
-      `INSERT INTO users (email, username, full_name, password, is_admin)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, email, username, full_name, is_admin, created_at`,
-      [email, username, full_name || null, hashedPassword, is_admin]
+      `INSERT INTO users (email, emri, mbiemri, password, roli, statusi)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING ${userSelect}`,
+      [email, emri, mbiemri, hashedPassword, is_admin ? "admin" : "user", "Aktiv"]
     );
 
     res.status(201).json(result.rows[0]);
@@ -59,15 +80,17 @@ router.put("/:id", protect, async (req, res) => {
   }
 
   try {
+    const { emri, mbiemri } = splitName(full_name, username);
+
     const result = await pool.query(
       `UPDATE users
        SET email = $1,
-           username = $2,
-           full_name = $3,
-           is_admin = $4
+           emri = $2,
+           mbiemri = $3,
+           roli = $4
        WHERE id = $5
-       RETURNING id, email, username, full_name, is_admin, created_at`,
-      [email, username, full_name, is_admin, id]
+       RETURNING ${userSelect}`,
+      [email, emri, mbiemri, is_admin ? "admin" : "user", id]
     );
 
     if (result.rows.length === 0) {
@@ -87,7 +110,7 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     const result = await pool.query(
       `DELETE FROM users
        WHERE id = $1
-       RETURNING id, email, username, full_name, is_admin, created_at`,
+       RETURNING ${userSelect}`,
       [id]
     );
 
