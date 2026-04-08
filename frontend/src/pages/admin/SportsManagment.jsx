@@ -383,7 +383,7 @@ export default function SportsManagment() {
               placeholder="Search by sport name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}  // Update search state on every keystroke
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
             />
             {/* Decorative search icon (magnifying glass) */}
             <svg
@@ -403,9 +403,9 @@ export default function SportsManagment() {
         </div>
 
         {/* SPORTS TABLE SECTION */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="flex-1 bg-white rounded-lg shadow-md overflow-x-auto">
           {/* HTML table for displaying sports in a structured format */}
-          <table className="w-full">
+          <table className="w-full text-left border-collapse min-w-[500px]">
             {/* TABLE HEADER - defines column names */}
             <thead className="bg-gray-800 text-white">
               <tr>

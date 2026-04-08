@@ -204,7 +204,7 @@ export default function Users() {
   if (!user || !user.is_admin) {
     return <Navigate to="/login" replace />;
   }
-  
+  {/* Render skeleton loader while fetching data */}
   function renderSkeleton() {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
@@ -289,10 +289,10 @@ export default function Users() {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search by email, username or full name..."
+              placeholder="Search by email, username..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
             />
             <svg
               className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
@@ -310,8 +310,8 @@ export default function Users() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <table className="w-full">
+        <div className="flex-1 bg-white rounded-lg shadow-md overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[500px]">
             <thead className="bg-gray-800 text-white">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">ID</th>
@@ -566,5 +566,5 @@ export default function Users() {
         )}
       </div>
     </div>
-  );
-}
+    );
+  }
