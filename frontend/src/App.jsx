@@ -11,6 +11,7 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Users from "./pages/admin/users";
 import AdminPanel from "./pages/admin/adminPanel";
+import Players from "./pages/admin/Players";
 
 function App() {
   const { loading } = useContext(AuthContext);
@@ -26,6 +27,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route element={<AdminRoute />}>
         {/*add admin routes in this route*/}
+          <Route path="players" element={<Players />} />
           <Route path="/sportsManagment" element={<SportsManagment />} />
           <Route path="/users" element={<Users />} />
           <Route path="/adminPanel" element={<AdminPanel />} />

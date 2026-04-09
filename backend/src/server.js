@@ -6,6 +6,7 @@ import pool from "./config/db.js";
 
 import sportRoutes from "./routes/sportRoutes.js";
 import authRoutes from "./routes/auth.js";
+import playersRoutes from "./routes/playersRoutes.js";
 import usersRoutes from "./routes/usersRoutes.js";
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use("/sports", sportRoutes);
+app.use("/players", playersRoutes);
 app.use("/users", usersRoutes);
 app.use("/api/auth", authRoutes);
 
