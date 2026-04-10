@@ -3,11 +3,26 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
 
+// Format date from ISO string to readable format (DD/MM/YYYY)
+const formatDate = (isoDate) => {
+  if (!isoDate) return "N/A";
+  try {
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return "Invalid date";
+  }
+};
+
 export default function Players() {
   const { user } = useContext(AuthContext);
 
   // State Variables
   const [players, setPlayers] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -37,15 +52,27 @@ export default function Players() {
       }
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/players`, {
-          credentials: "include",
-        });
-        if (!response.ok) {
-          throw new Error("Failed to fetch sports");
-        }
-        const data = await response.json();
+        const [playersResponse, teamsResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/players`, {
+            credentials: "include",
+          }),
+          fetch(`${API_BASE_URL}/teams`, {
+            credentials: "include",
+          }),
+        ]);
 
-        setPlayers(data);
+        if (!playersResponse.ok) {
+          throw new Error("Failed to fetch players");
+        }
+        if (!teamsResponse.ok) {
+          throw new Error("Failed to fetch teams");
+        }
+
+        const playersData = await playersResponse.json();
+        const teamsData = await teamsResponse.json();
+
+        setPlayers(playersData);
+        setTeams(teamsData);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -69,6 +96,21 @@ export default function Players() {
     }));
   };
 
+  const getTeamSelectValue = (teamValue) => {
+    if (!teamValue) return "";
+
+    const matchedTeam = teams.find(
+      (team) => String(team.id) === String(teamValue) || team.emertimi === teamValue,
+    );
+
+    return matchedTeam ? String(matchedTeam.id) : "";
+  };
+
+  const buildPlayerPayload = () => ({
+    ...formData,
+    ekipi_id: formData.ekipi_id || null,
+  });
+
   // Handle form submission (Create)
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,7 +121,7 @@ export default function Players() {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(buildPlayerPayload()),
       });
       if (!response.ok) throw new Error("Failed to create player");
 
@@ -163,8 +205,8 @@ export default function Players() {
     setFormData({
       emri: player.emri,
       mbiemri: player.mbiemri,
-      data_lindjes: player.data_lindjes,
-      ekipi_id: player.ekipi_id,
+      data_lindjes: player.data_lindjes ? player.data_lindjes.split("T")[0] : "",
+      ekipi_id: getTeamSelectValue(player.ekipi_id),
       pozicioni: player.pozicioni,
       numri: player.numri,
       gjatesia: player.gjatesia,
@@ -196,7 +238,7 @@ export default function Players() {
             "Content-Type": "application/json",
           },
           credentials: "include",
-          body: JSON.stringify(formData),
+          body: JSON.stringify(buildPlayerPayload()),
         },
       );
       if (!response.ok) throw new Error("Failed to update player");
@@ -258,8 +300,8 @@ export default function Players() {
 
   function renderSkeleton() {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-6x1 mx-auto animate-pulse">
+      <div className="bg-gray-50 p-4">
+        <div className="w-full mx-auto animate-pulse">
           {/* Header and Add button */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
@@ -277,25 +319,25 @@ export default function Players() {
             <table className="w-full">
               <thead className="bg-gray-800">
                 <tr>
-                  <th className="px-6 py-4">
+                  <th className="px-4 py-3">
                     <div className="h-4 bg-gray-600 rounded w-8"></div>
                   </th>
-                  <th className="px-6 py-4">
+                  <th className="px-4 py-3">
                     <div className="h-4 bg-gray-600 rounded w-32"></div>
                   </th>
-                  <th className="px-6 py-4">
+                  <th className="px-4 py-3">
                     <div className="h-4 bg-gray-600 rounded w-24"></div>
                   </th>
-                  <th className="px-6 py-4">
+                  <th className="px-4 py-3">
                     <div className="h-4 bg-gray-600 rounded w-32"></div>
                   </th>
-                  <th className="px-6 py-4">
+                  <th className="px-4 py-3">
                     <div className="h-4 bg-gray-600 rounded w-12"></div>
                   </th>
-                  <th className="px-6 py-4">
+                  <th className="px-4 py-3">
                     <div className="h-4 bg-gray-600 rounded w-32"></div>
                   </th>
-                  <th className="px-6 py-4">
+                  <th className="px-4 py-3">
                     <div className="h-4 bg-gray-600 rounded w-20 mx-auto"></div>
                   </th>
                 </tr>
@@ -303,25 +345,25 @@ export default function Players() {
               <tbody className="divide-y divide-gray-200">
                 {[...Array(5)].map((_, index) => (
                   <tr key={index} className="bg-white">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="h-4 bg-gray-200 rounded w-10"></div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="h-4 bg-gray-200 rounded w-40"></div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="h-4 bg-gray-200 rounded w-24"></div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="h-4 bg-gray-200 rounded w-32"></div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="h-4 bg-gray-200 rounded w-8"></div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="h-4 bg-gray-200 rounded w-32"></div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex justify-center gap-2">
                         <div className="h-8 bg-gray-200 rounded w-16"></div>
                         <div className="h-8 bg-gray-200 rounded w-16"></div>
@@ -342,23 +384,23 @@ export default function Players() {
   if (error)
     return (
       <div className="flex justify-center items-center h-center">
-        <p className="text-lg test-red-600">Error: {error}</p>
+        <p className="text-lg text-red-600">Error: {error}</p>
       </div>
     );
 
   // Main components
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6x1 mx-auto">
+    <div className="bg-gray-50 p-4">
+      <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3x1 font-bold text-gray-800">
-              Player Managment
+            <h2 className="text-2xl font-bold text-gray-800">
+              Player Management
             </h2>
             <button
               onClick={handleCreate}
-              className="bg-green-500 hover:bg-green-600 tex-white font-semibold py-2 px-6 roundedd-lg shadow-md transition duration-200 ease-in-out"
+              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
             >
               + Add New Player
             </button>
@@ -391,23 +433,23 @@ export default function Players() {
           </div>
         </div>
         {/* Player table section */}
-        <div className="flex-1 bg-white rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[500px]">
+        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-6 py-4 text-left font-semibold">ID</th>
-                <th className="px-6 py-4 text-left font-semibold">Name</th>
-                <th className="px-6 py-4 text-left font-semibold">Last Name</th>
-                <th className="px-6 py-4 text-left font-semibold">Birthday</th>
-                <th className="px-6 py-4 text-left font-semibold">Team-ID</th>
-                <th className="px-6 py-4 text-left font-semibold">Pozition</th>
-                <th className="px-6 py-4 text-left font-semibold">Number</th>
-                <th className="px-6 py-4 text-left font-semibold">Hight</th>
-                <th className="px-6 py-4 text-left font-semibold">Wheight</th>
-                <th className="px-6 py-4 text-left font-semibold">
+                <th className="px-4 py-3 text-left font-semibold">ID</th>
+                <th className="px-4 py-3 text-left font-semibold">Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Last Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Birthday</th>
+                <th className="px-4 py-3 text-left font-semibold">Team</th>
+                <th className="px-4 py-3 text-left font-semibold">Pozition</th>
+                <th className="px-4 py-3 text-left font-semibold">Number</th>
+                <th className="px-4 py-3 text-left font-semibold">Hight</th>
+                <th className="px-4 py-3 text-left font-semibold">Wheight</th>
+                <th className="px-4 py-3 text-left font-semibold">
                   Nationality
                 </th>
-                <th className="px-6 py-4 text-left font-semibold">Actions</th>
+                <th className="px-4 py-3 text-left font-semibold">Actions</th>
               </tr>
             </thead>
             {/* Table Body */}
@@ -424,37 +466,37 @@ export default function Players() {
                       key={s.id}
                       className="hover:bg-gray-100 transtion-colors duration-150"
                     >
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.id}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.emri}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.mbiemri}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
-                        {s.data_lindjes}
+                      <td className="px-4 py-3 text-gray-800 font-medium">
+                        {formatDate(s.data_lindjes)}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.ekipi_id}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.pozicioni}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.numri}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.gjatesia}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.pesha}
                       </td>
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-medium">
                         {s.kombesia}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => handleView(s.id)}
@@ -496,8 +538,14 @@ export default function Players() {
 
         {/* ADD NEW PLAYER MODAL */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={handleCloseModal}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2x1 font-bold text-gray-800 mb-6">
                 Add New Player
               </h3>
@@ -554,14 +602,19 @@ export default function Players() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Team
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="ekipi_id"
                       value={formData.ekipi_id}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="Team"
-                    />
+                    >
+                      <option value="">No Team</option>
+                      {teams.map((team) => (
+                        <option key={team.id} value={team.id}>
+                          {team.emertimi}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   {/* Position input field */}
                   <div>
@@ -659,8 +712,14 @@ export default function Players() {
         )}
         {/* View player modaal*/}
         {showViewModal && selectedPlayer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={handleCloseViewModal}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2x1 font-bold text-gray-800 mb-6">
                 Player Details
               </h3>
@@ -753,8 +812,14 @@ export default function Players() {
 
         {/* Edit player modal */}
         {showEditModal && selectedPlayer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={handleCloseEditModal}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2x1 font-bold text-gray-800 mb-6">
                 Edit Player
               </h3>
@@ -811,14 +876,19 @@ export default function Players() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Team
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="ekipi_id"
                       value={formData.ekipi_id}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="Team"
-                    />
+                    >
+                      <option value="">No Team</option>
+                      {teams.map((team) => (
+                        <option key={team.id} value={team.id}>
+                          {team.emertimi}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   {/* Position input field */}
                   <div>
@@ -918,8 +988,14 @@ export default function Players() {
 
         {/* Confirm Delete Modal */}
         {showDeleteModal && selectedPlayer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={handleCloseDeleteModal}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
                 <h3 className="text-2x1 font-bold text-red-600 mb-4">Delete Player?</h3>
 
                 <p className="text-gray-700 mb-6">

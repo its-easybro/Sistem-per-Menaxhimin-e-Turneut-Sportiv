@@ -368,8 +368,12 @@ export default function Users() {
         </div>
 
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseCreateModal}
+          >
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Add New User</h3>
 
               <form onSubmit={handleCreateSubmit} className="space-y-4">
@@ -460,8 +464,12 @@ export default function Users() {
         )}
 
         {showEditModal && selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseEditModal}
+          >
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Update User</h3>
 
               <form onSubmit={handleEditSubmit} className="space-y-4">
@@ -539,8 +547,12 @@ export default function Users() {
         )}
 
         {showDeleteModal && selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseDeleteModal}
+          >
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-4">Delete User</h3>
               <p className="text-gray-600 mb-6">
                 Are you sure you want to delete <span className="font-semibold">{selectedUser.username}</span>?

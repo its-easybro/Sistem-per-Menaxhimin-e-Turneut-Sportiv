@@ -494,9 +494,13 @@ export default function SportsManagment() {
         {/* This modal is visible only when showModal is true (clicked Create button) */}
         {showModal && (
           // Dark overlay background to focus attention on the modal dialog
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseModal}
+          >
             {/* Modal dialog box - white container with rounded corners and shadow */}
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Create New Sport</h3>
               
               {/* Form to collect sport information */}
@@ -594,9 +598,13 @@ export default function SportsManagment() {
         {/* This modal is visible when showViewModal is true and a sport is selected */}
         {showViewModal && selectedSport && (
           // Dark overlay background
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseViewModal}
+          >
             {/* Modal dialog showing read-only sport details */}
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Sport Details</h3>
               
               {/* Read-only display of sport information */}
@@ -652,9 +660,13 @@ export default function SportsManagment() {
         {/* This modal is visible when showEditModal is true and a sport is selected */}
         {showEditModal && selectedSport && (
           // Dark overlay background
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseEditModal}
+          >
             {/* Modal dialog with editable form fields pre-filled with current values */}
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Sport</h3>
               
               {/* Form to edit sport information */}
@@ -752,9 +764,13 @@ export default function SportsManagment() {
         {/* This modal is visible when showDeleteModal is true and a sport is selected */}
         {showDeleteModal && selectedSport && (
           // Dark overlay background
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseDeleteModal}
+          >
             {/* Modal dialog asking user to confirm deletion */}
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+              
               {/* Warning title in red to indicate destructive action */}
               <h3 className="text-2xl font-bold text-red-600 mb-4">Delete Sport?</h3>
               
