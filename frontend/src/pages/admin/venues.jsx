@@ -383,8 +383,14 @@ export default function Venues() {
         </div>
 
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={handleCloseModal}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Add New Venue</h3>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <VenueForm formData={formData} onChange={handleInputChange} />
@@ -409,8 +415,14 @@ export default function Venues() {
         )}
 
         {showViewModal && selectedVenue && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={handleCloseViewModal}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Venue Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <VenueDetail label="Venue Name" value={selectedVenue.emertimi} />
@@ -449,8 +461,14 @@ export default function Venues() {
         )}
 
         {showEditModal && selectedVenue && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={handleCloseEditModal}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Venue</h3>
               <form onSubmit={handleEditSubmit} className="space-y-6">
                 <VenueForm formData={formData} onChange={handleInputChange} />
@@ -475,8 +493,14 @@ export default function Venues() {
         )}
 
         {showDeleteModal && selectedVenue && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={handleCloseDeleteModal}
+          >
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-2xl font-bold text-red-600 mb-4">Delete Venue?</h3>
               <p className="text-gray-700 mb-6">
                 Are you sure you want to delete <strong>{selectedVenue.emertimi}</strong>? This
