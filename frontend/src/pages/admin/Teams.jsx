@@ -382,13 +382,14 @@ export default function Teams() {
             <thead className="bg-gray-800 text-white">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">ID</th>
-                <th className="px-4 py-3 text-left font-semibold">Emertimi</th>
-                <th className="px-4 py-3 text-left font-semibold">Trajneri</th>
-                <th className="px-4 py-3 text-left font-semibold">Kontakti</th>
-                <th className="px-4 py-3 text-left font-semibold">email</th>
-                <th className="px-4 py-3 text-left font-semibold">qyteti</th>
-                <th className="px-4 py-3 text-left font-semibold">data_themelimit</th>
-                <th className="px-4 py-3 text-left font-semibold">Hight</th>
+                <th className="px-4 py-3 text-left font-semibold">Team Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Trainer</th>
+                <th className="px-4 py-3 text-left font-semibold">Contact</th>
+                <th className="px-4 py-3 text-left font-semibold">Email</th>
+                <th className="px-4 py-3 text-left font-semibold">City</th>
+                <th className="px-4 py-3 text-left font-semibold">Start Date</th>
+                <th className="px-4 py-3 text-center font-semibold">Actions</th>
+                
               
               </tr>
             </thead>
@@ -487,7 +488,7 @@ export default function Teams() {
                   {/* Name input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Emertimi*
+                     Team Name*
                     </label>
                     <input
                       type="text"
@@ -559,6 +560,20 @@ export default function Teams() {
                     />
                   </div>
                 </div>
+                <div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Founded Date
+  </label>
+  <input
+    type="date"
+    name="data_themelimit"
+    value={formData.data_themelimit}
+    onChange={handleInputChange}
+    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+    
+  />
+</div>
+
                  
                 {/* Form buttons */}
                 <div className="flex gap-4 pt-4">
