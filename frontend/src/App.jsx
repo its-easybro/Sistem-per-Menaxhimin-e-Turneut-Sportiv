@@ -13,6 +13,7 @@ import Users from "./pages/admin/users";
 import AdminPanel from "./pages/admin/adminPanel";
 import Players from "./pages/admin/Players";
 import Venues from "./pages/admin/venues";
+import Teams from "./pages/admin/Teams";
 
 function App() {
   const { loading } = useContext(AuthContext);
@@ -33,6 +34,7 @@ function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/adminPanel" element={<AdminPanel />} />
           <Route path="/venues" element={<Venues />} />
+          <Route path="/teams" element={<Teams />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
