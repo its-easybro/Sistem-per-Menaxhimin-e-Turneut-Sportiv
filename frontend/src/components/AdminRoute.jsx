@@ -47,6 +47,10 @@ const AdminRoute = () => {
               <Users size={20} />
               Players
             </Link>
+            <Link to="/venues" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+              <Users size={20} />
+              Venues
+            </Link>
           </nav>
         </div>
 
