@@ -207,8 +207,8 @@ export default function Users() {
   {/* Render skeleton loader while fetching data */}
   function renderSkeleton() {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-6xl mx-auto animate-pulse">
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="w-full mx-auto animate-pulse">
           {/* Header and Add Button Placeholder */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
@@ -272,8 +272,8 @@ export default function Users() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">Users Management</h2>

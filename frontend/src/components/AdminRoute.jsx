@@ -45,17 +45,11 @@ const AdminRoute = () => {
             </button>
           </div>
           <nav className="space-y-2">
-            <Link
-              to="/adminPanel"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
-            >
+            <Link to="/adminPanel" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
               <LayoutDashboard size={20} />
               Dashboard
             </Link>
-            <Link
-              to="/sportsManagment"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
-            >
+            <Link to="/sportsManagment" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
               <Trophy size={20} />
               Sports Management
             </Link>
@@ -80,18 +74,8 @@ const AdminRoute = () => {
               <LandPlot size={20} />
               Venues
             </Link>
-            <Link
-              to="/matches"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
-            >
-              <Swords size={20} />
-              Matches
-            </Link>
-            <Link
-              to="/teams"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
-            >
-              <ShieldHalf size={20} />
+            <Link to="/Teams" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+             <ShieldHalf size={20} />
               Teams
             </Link>
           </nav>

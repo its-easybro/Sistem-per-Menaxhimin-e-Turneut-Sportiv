@@ -2,15 +2,15 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useContext } from "react";
 import AuthContext from "./context/AuthContext";
 
-import SportsManagment from "./pages/admin/SportsManagment";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Sports from "./pages/admin/Sports";
+import Login from "./pages/Users/Login";
+import Register from "./pages/Users/Register";
 import AdminRoute from "./components/AdminRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import Home from "./pages/Home";
+import Home from "./pages/Users/Home";
 import Users from "./pages/admin/users";
-import AdminPanel from "./pages/admin/adminPanel";
+import Dashboard from "./pages/admin/Dashboard";
 import Players from "./pages/admin/Players";
 import Venues from "./pages/admin/venues";
 
@@ -31,10 +31,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route element={<AdminRoute />}>
         {/*add admin routes in this route*/}
-          <Route path="players" element={<Players />} />
-          <Route path="/sportsManagment" element={<SportsManagment />} />
+          <Route path="/players" element={<Players />} />
+          <Route path="/sports" element={<Sports />} />
           <Route path="/users" element={<Users />} />
-          <Route path="/adminPanel" element={<AdminPanel />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/venues" element={<Venues />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/teams" element={<Teams />} />

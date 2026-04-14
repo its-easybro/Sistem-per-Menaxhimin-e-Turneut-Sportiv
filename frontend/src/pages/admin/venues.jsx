@@ -276,8 +276,8 @@ export default function Venues() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">Venue Management</h2>
@@ -314,8 +314,8 @@ export default function Venues() {
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1000px]">
+        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead className="bg-gray-800 text-white">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">ID</th>
@@ -447,7 +447,7 @@ export default function Venues() {
                   }
                 />
               </div>
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-4 pt-5">
                 <button
                   type="button"
                   onClick={handleCloseViewModal}
@@ -557,8 +557,8 @@ function VenueForm({ formData, onChange }) {
         />
       </div>
 
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
         <input
           type="text"
           name="adresa"
@@ -570,7 +570,7 @@ function VenueForm({ formData, onChange }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Capacity</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Capacity *</label>
         <input
           type="number"
           name="kapaciteti"
@@ -583,7 +583,7 @@ function VenueForm({ formData, onChange }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Surface Type</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Surface Type *</label>
         <select
           name="lloji_siperfaqes"
           value={formData.lloji_siperfaqes}
@@ -615,7 +615,7 @@ function VenueForm({ formData, onChange }) {
         </select>
       </div>
 
-      <div className="flex items-center gap-3 pt-8">
+      <div className="flex items-center gap-3 pt-3">
         <input
           id="ndricimi"
           type="checkbox"

@@ -132,7 +132,7 @@ const Navbar = () => {
             </Link>
           ) : user.is_admin ? (
             <div className="flex items-center gap-4">
-              <Link to="/adminPanel" className="text-sm/6 font-semibold text-white">
+              <Link to="/dashboard" className="text-sm/6 font-semibold text-white">
                 Admin Panel
               </Link>
               <button onClick={handleLogout} className="text-sm/6 font-semibold text-white">
@@ -219,7 +219,7 @@ const Navbar = () => {
                 ) : user.is_admin ? (
                   <>
                     <Link
-                      to="/adminPanel"
+                      to="/dashboard"
                       className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
                       onClick={() => setMobileMenuOpen(false)}
                     >
