@@ -23,6 +23,8 @@ export default function Matches() {
   // State Variables
   const [matches, setMatches] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [tournaments, setTournaments] = useState([]);
+  const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -59,11 +61,16 @@ export default function Matches() {
           venuesResponse,
         ] = await Promise.all([
           fetch(`${API_BASE_URL}/matches`, { credentials: "include" }),
+          fetch(`${API_BASE_URL}/tournaments`, { credentials: "include" }),
           fetch(`${API_BASE_URL}/teams`, { credentials: "include" }),
+          fetch(`${API_BASE_URL}/venues`, { credentials: "include" }),
         ]);
 
         if (!matchesResponse.ok) {
           throw new Error("Failed to fetch matches");
+        }
+        if (!tournamentsResponse.ok) {
+          throw new Error("Failed to fetch tournaments");
         }
         if (!teamsResponse.ok) {
           throw new Error("Failed to fetch teams");
@@ -73,10 +80,13 @@ export default function Matches() {
         }
 
         const matchesData = await matchesResponse.json();
+        const tournamentsData = await tournamentsResponse.json();
         const teamsData = await teamsResponse.json();
-
+        const venuesData = await venuesResponse.json();
+        setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
         setMatches(Array.isArray(matchesData) ? matchesData : []);
         setTeams(Array.isArray(teamsData) ? teamsData : []);
+        setVenues(Array.isArray(venuesData) ? venuesData : []);
       } catch (err) {
         console.error("Error loading data:", err);
         setError(err.message);
