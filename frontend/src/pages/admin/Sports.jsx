@@ -288,8 +288,8 @@ export default function SportsManagment() {
   // If data is still loading, show a loading message
   function renderSkeleton() {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-6xl mx-auto animate-pulse">
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="w-full mx-auto animate-pulse">
           {/* Header and Add Button Placeholder */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
@@ -355,9 +355,9 @@ export default function SportsManagment() {
   
   return (
     // Main container with light gray background and padding
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4">
       {/* Centered container with max width to keep content readable */}
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full mx-auto">
         
         {/* HEADER AND SEARCH SECTION */}
         <div className="mb-8">

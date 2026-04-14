@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthContext from '../context/AuthContext';
+import AuthContext from '../../context/AuthContext';
 
 const Login = () => {
   // State for form inputs
@@ -20,7 +20,7 @@ const Login = () => {
       const data = await login(email, password);
 
       if (data?.userData?.is_admin || data?.user?.is_admin) {
-        navigate('/adminPanel');
+        navigate('/dashboard');
       } else {
         navigate('/');
       }

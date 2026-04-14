@@ -559,22 +559,19 @@ export default function Teams() {
                       placeholder="City"
                     />
                   </div>
-                </div>
                 <div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Founded Date
-  </label>
-  <input
-    type="date"
-    name="data_themelimit"
-    value={formData.data_themelimit}
-    onChange={handleInputChange}
-    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-    
-  />
-</div>
-
-                 
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Founded Date
+                    </label>
+                    <input
+                      type="date"
+                      name="data_themelimit"
+                      value={formData.data_themelimit}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
                 {/* Form buttons */}
                 <div className="flex gap-4 pt-4">
                   <button
@@ -831,9 +828,3 @@ export default function Teams() {
     </div>
   );
 };
-
-
-
-    
-
-

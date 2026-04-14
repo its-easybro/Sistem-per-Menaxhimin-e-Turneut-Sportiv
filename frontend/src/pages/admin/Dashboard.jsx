@@ -4,7 +4,7 @@ import { API_BASE_URL } from "../../config/api";
 import { Users, Trophy, Activity } from 'lucide-react';
 import axios from 'axios';
 
-const AdminPanel = () => {
+const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [stats, setStats] = useState({ users: 0, sports: 0 });
   const [recentUsers, setRecentUsers] = useState([]);
@@ -240,4 +240,4 @@ const AdminPanel = () => {
   };
 }
 
-export default AdminPanel;
+export default Dashboard;
