@@ -11,6 +11,7 @@ import {
   Menu,
   Swords,
   ShieldHalf,
+  ClipboardList,
 } from "lucide-react";
 
 const AdminRoute = () => {
@@ -44,14 +45,22 @@ const AdminRoute = () => {
               <Menu size={20} />
             </button>
           </div>
-          <nav className="space-y-2">
-            <Link to="/adminPanel" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+          <nav className="space-y-2 h-110 overflow-y-auto sticky top-0">
+            <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
               <LayoutDashboard size={20} />
               Dashboard
             </Link>
-            <Link to="/sportsManagment" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+            <Link to="/match-results" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+              <ClipboardList size={20} />
+              Match Results
+            </Link>
+            <Link to="/matches" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+              <Swords size={20} />
+              Matches
+            </Link>
+            <Link to="/sports" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
               <Trophy size={20} />
-              Sports Management
+              Sports
             </Link>
             <Link
               to="/users"
@@ -77,10 +86,6 @@ const AdminRoute = () => {
             <Link to="/Teams" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
              <ShieldHalf size={20} />
               Teams
-            </Link>
-            <Link to="/matches" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
-              <Swords size={20} />
-              Matches
             </Link>
           </nav>
         </div>

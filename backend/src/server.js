@@ -12,6 +12,7 @@ import venuesRoutes from "./routes/venuesRoutes.js";
 import teamRoutes from "./routes/teamroutes.js";
 import matchesRoutes from "./routes/matchesRoutes.js";
 import tournamentsRoutes from "./routes/tournamentsRoutes.js";
+import matchResultsRoutes from "./routes/matchResultsRoutes.js";
 
 
 dotenv.config();
@@ -33,6 +34,7 @@ app.use("/venues", venuesRoutes);
 app.use("/teams",teamRoutes);
 app.use("/matches", matchesRoutes);
 app.use("/tournaments", tournamentsRoutes);
+app.use("/match-results", matchResultsRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

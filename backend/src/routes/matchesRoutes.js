@@ -1,15 +1,7 @@
 import express from "express";
 import pool from "../config/db.js";
-import { protect } from "../middleware/auth.js";
+import { protect, requireAdmin } from "../middleware/auth.js";
 const router = express.Router();
-
-// Middleware për të kontrolluar nëse user-i është admin
-const requireAdmin = (req, res, next) => {
-  if (!req.user || req.user.roli !== "admin") {
-    return res.status(403).json({ error: "Admin access required" });
-  }
-  next(); 
-}; 
 
 router.get("/", protect, async (req, res) => {
   try {

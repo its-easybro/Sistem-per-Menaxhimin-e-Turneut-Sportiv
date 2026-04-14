@@ -40,28 +40,6 @@ export const protect = async (req, res, next) => {
     res.status(401).json({ message: "Not authorized, token failed" });
   }
 }
-
-export function requireAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = {
-      ...decoded,
-      is_admin: decoded.is_admin || decoded.roli === "admin",
-    };
-    next();
-  } catch {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-}
-
 export function requireAdmin(req, res, next) {
   if (!req.user || (!req.user.is_admin && req.user.roli !== "admin")) {
     return res.status(403).json({ error: 'Forbidden' });

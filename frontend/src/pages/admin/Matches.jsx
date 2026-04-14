@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
 
@@ -19,6 +19,7 @@ const formatDate = (isoDate) => {
 
 export default function Matches() {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   // State Variables
   const [matches, setMatches] = useState([]);
@@ -245,6 +246,10 @@ export default function Matches() {
     const match = matches.find((m) => m.id === id);
     setSelectedMatch(match);
     setShowDeleteModal(true);
+  };
+
+  const handleAddResult = (matchId) => {
+    navigate(`/match-results?matchId=${matchId}`);
   };
 
   // API handlers
@@ -539,6 +544,24 @@ export default function Matches() {
                           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
                         >
                           Delete
+                        </button>
+                        <button
+                          onClick={() => handleAddResult(m.id)}
+                          disabled={m.statusi !== "Përfunduar"}
+                          className={`px-3 py-1 rounded text-sm font-medium transition duration-200 ${
+                            m.statusi === "Përfunduar"
+                              ? "bg-indigo-500 hover:bg-indigo-600 text-white"
+                              : "bg-indigo-200 text-indigo-700 cursor-not-allowed"
+                          }`}
+                          title={
+                            m.statusi === "Përfunduar"
+                              ? "Add result"
+                              : "Finish the match first"
+                          }
+                        >
+                          {m.statusi === "Përfunduar"
+                            ? "Add Result"
+                            : "Finish Match First"}
                         </button>
                       </div>
                     </td>
