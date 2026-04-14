@@ -1,7 +1,7 @@
 import { useContext, useState } from 'react';
 import { Navigate, Outlet, Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { Users, Trophy, Volleyball, LandPlot, LayoutDashboard, LogOut, Menu } from 'lucide-react';
+import { Users, Trophy, Volleyball, LandPlot, LayoutDashboard, LogOut, Menu ,Swords} from 'lucide-react';
 
 const AdminRoute = () => {
   const { user, loading, logout } = useContext(AuthContext);
@@ -50,6 +50,10 @@ const AdminRoute = () => {
             <Link to="/venues" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
               <LandPlot size={20} />
               Venues
+            </Link>
+            <Link to="/matches" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+              <Swords size={20} />
+              Matches
             </Link>
           </nav>
         </div>
