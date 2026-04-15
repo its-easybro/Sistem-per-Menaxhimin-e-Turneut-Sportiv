@@ -19,7 +19,7 @@ router.get("/:id", protect, async (req, res) => {
       id,
     ]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Ndeshja nuk u gjet" });
+      return res.status(404).json({ error: "The match was not found" });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -41,11 +41,11 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   if (!turneu_id || !ekipi_shtepiak_id || !ekipi_mysafir_id || !data_ndeshjes) {
     return res.status(400).json({
       error:
-        "Fushat e detyrueshme: turneu_id, ekipi_shtepiak_id, ekipi_mysafir_id, data_ndeshjes",
+        "Fields required: turneu_id, ekipi_shtepiak_id, ekipi_mysafir_id, data_ndeshjes",
     });
   }
   if (ekipi_shtepiak_id === ekipi_mysafir_id) {
-    return res.status(400).json({ error: "Ekipet nuk mund të jenë të njëjta" });
+    return res.status(400).json({ error: "The teams cannot be the same" });
   }
   try {
     const result = await pool.query(
@@ -84,7 +84,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
     ekipi_mysafir_id &&
     ekipi_shtepiak_id === ekipi_mysafir_id
   ) {
-    return res.status(400).json({ error: "Ekipet nuk mund të jenë të njëjta" });
+    return res.status(400).json({ error: "The teams cannot be the same" });
   }
   try {
     const result = await pool.query(
@@ -102,7 +102,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
       ],
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Ndeshja nuk u gjet" });
+      return res.status(404).json({ error: "The match was not found" });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -118,9 +118,9 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
       [id],
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Ndeshja nuk u gjet" });
+      return res.status(404).json({ error: "The match was not found" });
     }
-    res.json({ message: "Ndeshja u fshi me sukses" });
+    res.json({ message: "The match was deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

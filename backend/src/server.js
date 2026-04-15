@@ -13,17 +13,22 @@ import teamRoutes from "./routes/teamroutes.js";
 import matchesRoutes from "./routes/matchesRoutes.js";
 import tournamentsRoutes from "./routes/tournamentsRoutes.js";
 import matchResultsRoutes from "./routes/matchResultsRoutes.js";
-
+import matchRefereesRoutes from "./routes/matchRefereesRoutes.js";
 
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 3005;
-const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, "");
+const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(
+  /\/$/,
+  "",
+);
 
-app.use(cors({
-  origin: clientUrl,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: clientUrl,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use("/sports", sportRoutes);
@@ -31,10 +36,11 @@ app.use("/players", playersRoutes);
 app.use("/users", usersRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/venues", venuesRoutes);
-app.use("/teams",teamRoutes);
+app.use("/teams", teamRoutes);
 app.use("/matches", matchesRoutes);
 app.use("/tournaments", tournamentsRoutes);
 app.use("/match-results", matchResultsRoutes);
+app.use("/match-referees", matchRefereesRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
