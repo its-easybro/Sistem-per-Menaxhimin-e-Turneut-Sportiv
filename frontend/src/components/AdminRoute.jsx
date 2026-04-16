@@ -12,6 +12,8 @@ import {
   Swords,
   ShieldHalf,
   ClipboardList,
+  Flag,
+  CalendarRange,
 } from "lucide-react";
 
 const AdminRoute = () => {
