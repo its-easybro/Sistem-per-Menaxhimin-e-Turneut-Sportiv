@@ -20,6 +20,7 @@ import Footer from "./components/Footer";
 import Login from "./pages/Users/Login";
 import Register from "./pages/Users/Register";
 import AboutUs from "./pages/Users/AboutUs";
+import ContactUs from "./pages/Users/ContactUs";
 
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/contact-us" element={<ContactUs />} />
         <Route element={<AdminRoute />}>
         {/*add admin routes in this route*/}
           <Route path="/players" element={<Players />} />

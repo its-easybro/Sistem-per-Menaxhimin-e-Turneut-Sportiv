@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
+import { Alert } from "../../components/Alert";
 
 export default function Users() {
   const { user, loading: authLoading } = useContext(AuthContext);
@@ -13,6 +14,7 @@ export default function Users() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [alert, setAlert ] = useState(null);
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -127,9 +129,10 @@ export default function Users() {
       }
 
       setUsers((prev) => [...prev, data]);
+      setAlert({ type: 'success', message: 'User created successfully!' });
       handleCloseCreateModal();
     } catch (err) {
-      alert(`Error creating user: ${err.message}`);
+      setAlert({ type: 'error', message: `Error creating user: ${err.message}` });
     }
   };
 
@@ -155,9 +158,10 @@ export default function Users() {
       }
 
       setUsers((prev) => prev.map((item) => (item.id === data.id ? data : item)));
+      setAlert({ type: 'success', message: 'User updated successfully!' });
       handleCloseEditModal();
     } catch (err) {
-      alert(`Error updating user: ${err.message}`);
+      setAlert({ type: 'error', message: `Error updating user: ${err.message}` });
     }
   };
 
@@ -177,9 +181,10 @@ export default function Users() {
       }
 
       setUsers((prev) => prev.filter((item) => item.id !== selectedUser.id));
+      setAlert({ type: 'success', message: 'User deleted successfully!' });
       handleCloseDeleteModal();
     } catch (err) {
-      alert(`Error deleting user: ${err.message}`);
+      setAlert({ type: 'error', message: `Error deleting user: ${err.message}` });
     }
   };
 
@@ -273,6 +278,13 @@ export default function Users() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">

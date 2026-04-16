@@ -2,6 +2,7 @@ import {useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
+import { Alert } from "../../components/Alert";
 
 const formatDate = (isoDate) => {
     if (!isoDate) return "N/A";
@@ -28,6 +29,7 @@ export default function Teams() {
     const [showDeleteModal, setShowDeleteModal]= useState(false);
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [alert, setAlert] = useState(null);
     const [formData, setFormData] = useState({
                   emertimi : "",
                 logoja : "",
@@ -109,9 +111,9 @@ export default function Teams() {
                 data_themelimit : "",
             });
             setShowModal(false);
-
+            setAlert({ type: "success", message: "Team created successfully!" });
         } catch(err){
-            alert("Error creating team: " + err.message);
+            setAlert({ type: "error", message: "Error creating team: " + err.message });
 
         }
     };
@@ -213,8 +215,9 @@ export default function Teams() {
 
         setSelectedTeam(null);
         setShowEditModal(false);
+        setAlert({ type: "success", message: "Team updated successfully!" });
         } catch(err) {
-            alert("Error updating team: " + err.message);
+            setAlert({ type: "error", message: "Error updating team: " + err.message });
         }
     };
 
@@ -234,9 +237,9 @@ export default function Teams() {
 
             setSelectedTeam(null);
             setShowDeleteModal(false);
-
+            setAlert({ type: "success", message: "Team deleted successfully!" });
         }catch(err){
-            alert("Error deleting team:" + err.message);
+            setAlert({ type: "error", message: "Error deleting team: " + err.message });
         }
 
     };
@@ -336,6 +339,13 @@ export default function Teams() {
     );
      return (
     <div className="bg-gray-50 p-4">
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
@@ -522,19 +532,20 @@ export default function Teams() {
                       Contact *
                     </label>
                     <input
-                      type="text"
+                      type="tel"
                       name="kontakti"
                       value={formData.kontakti}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="****-**-**"
-                      
+                      placeholder="+383 123 456"
+                      pattern="^\+383 \d{2} \d{3} \d{3}$"
+                      required
                     />
                   </div>
                   {/* Email input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
+                      Email *
                     </label>
                     <input
                       type="email"
@@ -543,12 +554,13 @@ export default function Teams() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       placeholder="Email"
+                      required
                     />
                   </div>
                   {/* City input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City
+                        City *
                     </label>
                     <input
                       type="text"
@@ -557,11 +569,12 @@ export default function Teams() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       placeholder="City"
+                      required
                     />
                   </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Founded Date
+                      Founded Date *
                     </label>
                     <input
                       type="date"
@@ -569,6 +582,7 @@ export default function Teams() {
                       value={formData.data_themelimit}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      required
                     />
                   </div>
                 </div>

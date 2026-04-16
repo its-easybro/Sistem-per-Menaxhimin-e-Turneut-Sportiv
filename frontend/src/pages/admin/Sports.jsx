@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 import { API_BASE_URL } from '../../config/api';
+import { Alert } from '../../components/Alert';
 
 // This component provides a comprehensive interface for managing sports, including creating, viewing, editing, and deleting sports. It uses modals for each action to keep the UI clean and user-friendly. The component also handles loading states and errors gracefully.
 export default function SportsManagment() {
@@ -36,6 +37,7 @@ export default function SportsManagment() {
   
   // stores the search query text entered by the user in the search bar
   const [searchQuery, setSearchQuery] = useState('');
+  const [alert, setAlert] = useState(null);
   
   // stores form field values (sport name, description, number of players, type)
   const [formData, setFormData] = useState({
@@ -126,9 +128,10 @@ export default function SportsManagment() {
       
       // Close the Create modal
       setShowModal(false);
+      setAlert({ type: 'success', message: 'Sport created successfully!' });
     } catch (err) {
       // Show error message to the user
-      alert('Error creating sport: ' + err.message);
+      setAlert({ type: 'error', message: 'Error creating sport: ' + err.message });
     }
   };
 
@@ -239,9 +242,10 @@ export default function SportsManagment() {
       
       // Close the Edit modal
       setShowEditModal(false);
+      setAlert({ type: 'success', message: 'Sport updated successfully!' });
     } catch (err) {
       // Show error message if the update fails
-      alert('Error updating sport: ' + err.message);
+      setAlert({ type: 'error', message: 'Error updating sport: ' + err.message });
     }
   };
 
@@ -267,9 +271,10 @@ export default function SportsManagment() {
       
       // Close the Delete confirmation modal
       setShowDeleteModal(false);
+      setAlert({ type: 'success', message: 'Sport deleted successfully!' });
     } catch (err) {
       // Show error message if the deletion fails
-      alert('Error deleting sport: ' + err.message);
+      setAlert({ type: 'error', message: 'Error deleting sport: ' + err.message });
     }
   };
 
@@ -356,6 +361,13 @@ export default function SportsManagment() {
   return (
     // Main container with light gray background and padding
     <div className="min-h-screen bg-gray-50 p-4">
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
       {/* Centered container with max width to keep content readable */}
       <div className="w-full mx-auto">
         

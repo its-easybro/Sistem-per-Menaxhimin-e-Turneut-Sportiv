@@ -30,7 +30,7 @@ const AdminRoute = () => {
     <div className="flex h-screen md:h-[calc(100vh-80px)] bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`w-64 bg-white border-r border-gray-200 flex flex-col justify-between shrink-0 transition-all duration-300 overflow-y-auto ${isSidebarOpen ? "ml-0" : "-ml-64 hidden md:flex md:-ml-64 md:hidden"} ${!isSidebarOpen && "hidden"}`}
+        className={`w-64 bg-white border-r border-gray-200 flex flex-col justify-between shrink-0 transition-all duration-300 ${isSidebarOpen ? "ml-0" : "-ml-64 hidden md:flex md:-ml-64 md:hidden"} ${!isSidebarOpen && "hidden"}`}
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">

@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
+import { Alert } from "../../components/Alert";
 
 const initialFormData = {
   emertimi: "",
@@ -26,7 +27,7 @@ export default function Venues() {
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState(initialFormData);
-
+  const [alert, setAlert] = useState(null);
   useEffect(() => {
     const loadVenues = async () => {
       if (!user?.is_admin) {
@@ -151,8 +152,9 @@ export default function Venues() {
 
       setVenues((prev) => [...prev, data]);
       handleCloseModal();
+      setAlert({ type: "success", message: "Venue created successfully!" });
     } catch (err) {
-      alert("Error creating venue: " + err.message);
+      setAlert({ type: "error", message: "Error creating venue: " + err.message });
     }
   };
 
@@ -179,8 +181,9 @@ export default function Venues() {
 
       setVenues((prev) => prev.map((item) => (item.id === data.id ? data : item)));
       handleCloseEditModal();
+      setAlert({ type: "success", message: "Venue updated successfully!" });
     } catch (err) {
-      alert("Error updating venue: " + err.message);
+      setAlert({ type: "error", message: "Error updating venue: " + err.message });
     }
   };
 
@@ -201,8 +204,9 @@ export default function Venues() {
 
       setVenues((prev) => prev.filter((item) => item.id !== selectedVenue.id));
       handleCloseDeleteModal();
+      setAlert({ type: "success", message: "Venue deleted successfully!" });
     } catch (err) {
-      alert("Error deleting venue: " + err.message);
+      setAlert({ type: "error", message: "Error deleting venue: " + err.message });
     }
   };
 
@@ -277,6 +281,13 @@ export default function Venues() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">

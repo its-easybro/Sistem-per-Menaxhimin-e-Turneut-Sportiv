@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
+import { Alert } from "../../components/Alert";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -34,6 +35,7 @@ export default function Matches() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState({
     turneu_id: "",
     ekipi_shtepiak_id: "",
@@ -171,10 +173,10 @@ export default function Matches() {
         statusi: "Planifikuar",
         faza: "",
       });
-      alert("Match created successfully!");
+      setAlert({ type: "success", message: "Match created successfully!" });
     } catch (err) {
       console.error("Error creating match:", err);
-      alert("Error creating match: " + err.message);
+      setAlert({ type: "error", message: "Error creating match: " + err.message });
     }
   };
 
@@ -300,10 +302,10 @@ export default function Matches() {
       );
       setShowEditModal(false);
       setSelectedMatch(null);
-      alert("Match updated successfully!");
+      setAlert({ type: "success", message: "Match updated successfully!" });
     } catch (err) {
       console.error("Error updating match:", err);
-      alert("Error updating match: " + err.message);
+      setAlert({ type: "error", message: "Error updating match: " + err.message });
     }
   };
 
@@ -328,10 +330,10 @@ export default function Matches() {
       setMatches(matches.filter((m) => m.id !== selectedMatch.id));
       setSelectedMatch(null);
       setShowDeleteModal(false);
-      alert("Match deleted successfully!");
+      setAlert({ type: "success", message: "Match deleted successfully!" });
     } catch (err) {
       console.error("Error deleting match:", err);
-      alert("Error deleting match: " + err.message);
+      setAlert({ type: "error", message: "Error deleting match: " + err.message });
     }
   };
 
@@ -425,6 +427,13 @@ export default function Matches() {
 
   return (
     <div className="bg-gray-50 p-4">
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">

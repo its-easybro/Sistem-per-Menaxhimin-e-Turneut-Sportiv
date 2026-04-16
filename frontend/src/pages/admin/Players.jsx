@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
+import { Alert } from "../../components/Alert";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -31,7 +32,7 @@ export default function Players() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [successMessage, setSuccessMessage] = useState(false);
+  const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState({
     emri: "",
     mbiemri: "",
@@ -141,14 +142,11 @@ export default function Players() {
         pesha: "",
         kombesia: "",
       });
-
-      setSuccessMessage(true);
       setShowModal(false);
       
-      // Auto-hide success message after 3 seconds
-      setTimeout(() => setSuccessMessage(false), 3000);
+      setAlert({ type: 'success', message: 'Player created successfully!' });
     } catch (err) {
-      alert("Error creating sport: " + err.message);
+      setAlert({ type: 'error', message: 'Error creating player: ' + err.message });
     }
   };
 
@@ -268,8 +266,9 @@ export default function Players() {
 
       setSelectedPlayer(null);
       setShowEditModal(false);
+      setAlert({ type: 'success', message: 'Player updated successfully!' });
     } catch (err) {
-      alert("Error updating player: " + err.message);
+      setAlert({ type: 'error', message: 'Error updating player: ' + err.message });
     }
   };
 
@@ -292,8 +291,9 @@ export default function Players() {
 
       setSelectedPlayer(null);
       setShowDeleteModal(false);
+      setAlert({ type: 'success', message: 'Player deleted successfully!' });
     } catch (err) {
-      alert("Error deleting player: " + err.message);
+      setAlert({ type: 'error', message: 'Error deleting player: ' + err.message });
     }
   };
 
@@ -397,66 +397,13 @@ export default function Players() {
 
   return (
     <div className="bg-gray-50 p-4">
-      {/* SUCCESS MESSAGE TOAST */}
-      {successMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-white inline-flex space-x-3 p-3 text-sm rounded border border-gray-200 shadow-lg">
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 18 18"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M16.5 8.31V9a7.5 7.5 0 1 1-4.447-6.855M16.5 3 9 10.508l-2.25-2.25"
-              stroke="#22C55E"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <div>
-            <h3 className="text-slate-700 font-medium">
-              Successfully added!
-            </h3>
-          </div>
-          <button
-            type="button"
-            aria-label="close"
-            onClick={() => setSuccessMessage(false)}
-            className="cursor-pointer mb-auto text-slate-400 hover:text-slate-600 active:scale-95 transition"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect
-                y="12.532"
-                width="17.498"
-                height="2.1"
-                rx="1.05"
-                transform="rotate(-45.74 0 12.532)"
-                fill="currentColor"
-                fillOpacity=".7"
-              />
-              <rect
-                x="12.531"
-                y="13.914"
-                width="17.498"
-                height="2.1"
-                rx="1.05"
-                transform="rotate(-135.74 12.531 13.914)"
-                fill="currentColor"
-                fillOpacity=".7"
-              />
-            </svg>
-          </button>
-        </div>
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
       )}
-      
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
