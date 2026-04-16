@@ -145,6 +145,20 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
   try {
+    const teamInMatches = await pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM matches
+       WHERE ekipi_shtepiak_id = $1 OR ekipi_mysafir_id = $1`,
+      [id],
+    );
+
+    if (teamInMatches.rows[0].total > 0) {
+      return res.status(409).json({
+        error:
+          "Ky ekip nuk mund te fshihet sepse eshte i lidhur me nje ose me shume ndeshje.",
+      });
+    }
+
     const result = await pool.query(
       `DELETE FROM teams
        WHERE id = $1
@@ -156,6 +170,12 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     }
     res.json({ message: "Ekipi u fshi me sukses", deleted: result.rows[0] });
   } catch (err) {
+    if (err.code === "23503") {
+      return res.status(409).json({
+        error:
+          "Ky ekip nuk mund te fshihet sepse ka te dhena te lidhura ne sistem.",
+      });
+    }
     res.status(500).json({ error: err.message });
   }
 });

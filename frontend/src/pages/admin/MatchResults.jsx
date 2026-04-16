@@ -29,6 +29,8 @@ export default function MatchResults() {
   const [matches, setMatches] = useState([]);
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [matchReferees, setMatchReferees] = useState([]);
+  const [referees, setReferees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -60,6 +62,8 @@ export default function MatchResults() {
           matchesResponse,
           teamsResponse,
           playersResponse,
+          matchRefereesResponse,
+          refereesResponse,
         ] = await Promise.all([
           fetch(`${API_BASE_URL}/match-results`, {
             credentials: "include",
@@ -71,6 +75,12 @@ export default function MatchResults() {
             credentials: "include",
           }),
           fetch(`${API_BASE_URL}/players`, {
+            credentials: "include",
+          }),
+          fetch(`${API_BASE_URL}/match-referees`, {
+            credentials: "include",
+          }),
+          fetch(`${API_BASE_URL}/referees`, {
             credentials: "include",
           }),
         ]);
@@ -87,16 +97,26 @@ export default function MatchResults() {
         if (!playersResponse.ok) {
           throw new Error("Failed to fetch players");
         }
+        if (!matchRefereesResponse.ok) {
+          throw new Error("Failed to fetch match referees");
+        }
+        if (!refereesResponse.ok) {
+          throw new Error("Failed to fetch referees");
+        }
 
         const MatchResultData = await matchResultsResponse.json();
         const matchesData = await matchesResponse.json();
         const teamsData = await teamsResponse.json();
         const playersData = await playersResponse.json();
+        const matchRefereesData = await matchRefereesResponse.json();
+        const refereesData = await refereesResponse.json();
 
         setMatchResults(MatchResultData);
         setMatches(matchesData);
         setTeams(teamsData);
         setPlayers(playersData);
+        setMatchReferees(matchRefereesData);
+        setReferees(refereesData);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -304,6 +324,19 @@ export default function MatchResults() {
   const getTeamNameById = (teamId) => {
     const team = teams.find((item) => String(item.id) === String(teamId));
     return team?.emertimi || `Ekipi #${teamId}`;
+  };
+
+  const getMatchReferees = (matchId) => {
+    return matchReferees
+      .filter((mr) => mr.ndeshja_id === matchId)
+      .map((mr) => {
+        const referee = referees.find((r) => r.id === mr.gjyqtari_id);
+        return {
+          name: referee ? `${referee.emri} ${referee.mbiemri}` : "N/A",
+          role: mr.roli,
+          category: referee?.kategoria || "N/A",
+        };
+      });
   };
 
   const existingResultMatchIds = new Set(
@@ -598,6 +631,37 @@ export default function MatchResults() {
                     required
                   />
                 </div>
+
+                {/* Match Referees Section */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Match Referees
+                  </label>
+                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                    {selectedMatchForForm &&
+                    getMatchReferees(selectedMatchForForm.id).length > 0 ? (
+                      <div className="space-y-2">
+                        {getMatchReferees(selectedMatchForForm.id).map(
+                          (ref, idx) => (
+                            <div key={idx} className="text-sm">
+                              <p className="font-medium text-gray-800">
+                                {ref.name}
+                              </p>
+                              <p className="text-gray-600 text-xs">
+                                {ref.role} • {ref.category}
+                              </p>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        No referees assigned
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Fituesi id */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -676,186 +740,217 @@ export default function MatchResults() {
         </div>
       )}
 
-        {/* EDIT RESULT MODAL */}
-        {showEditModal && selectedMatchResult && (
+      {/* EDIT RESULT MODAL */}
+      {showEditModal && selectedMatchResult && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseEditModal}
+        >
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseEditModal}
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2x1 font-bold text-gray-800 mb-6">
-                Edito Rezultatin
-              </h3>
-              <form onSubmit={handleEditSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select Match *
-                    </label>
-                    <select
-                      name="ndeshja_id"
-                      value={formData.ndeshja_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    >
-                      <option value="">Select match</option>
-                      {matches
-                        .filter(
-                          (m) =>
-                            m.statusi === "Përfunduar" ||
-                            String(m.id) === String(formData.ndeshja_id),
-                        )
-                        .map((match) => (
-                          <option key={match.id} value={match.id}>
-                            {getTeamNameById(match.ekipi_shtepiak_id)} vs {" "}
-                            {getTeamNameById(match.ekipi_mysafir_id)} - {" "}
-                            {formatDate(match.data_ndeshjes)}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Goals Home *
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="golat_shtepiak"
-                      value={formData.golat_shtepiak}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Goals Away *
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="golat_mysafir"
-                      value={formData.golat_mysafir}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Winner
-                    </label>
-                    <select
-                      name="fitues_id"
-                      value={formData.fitues_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      disabled={!selectedMatchForForm}
-                    >
-                      <option value="">No Team</option>
-                      {winnerTeamOptions.map((team) => (
-                        <option key={team.id} value={team.id}>
-                          {team.name}
+            <h3 className="text-2x1 font-bold text-gray-800 mb-6">
+              Edito Rezultatin
+            </h3>
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Match *
+                  </label>
+                  <select
+                    name="ndeshja_id"
+                    value={formData.ndeshja_id}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  >
+                    <option value="">Select match</option>
+                    {matches
+                      .filter(
+                        (m) =>
+                          m.statusi === "Përfunduar" ||
+                          String(m.id) === String(formData.ndeshja_id),
+                      )
+                      .map((match) => (
+                        <option key={match.id} value={match.id}>
+                          {getTeamNameById(match.ekipi_shtepiak_id)} vs{" "}
+                          {getTeamNameById(match.ekipi_mysafir_id)} -{" "}
+                          {formatDate(match.data_ndeshjes)}
                         </option>
                       ))}
-                    </select>
-                  </div>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes
-                    </label>
-                    <input
-                      type="text"
-                      name="shenime"
-                      value={formData.shenime}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Goals Home *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    name="golat_shtepiak"
+                    value={formData.golat_shtepiak}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      MVP
-                    </label>
-                    <select
-                      name="mvp_id"
-                      value={formData.mvp_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="">Select MVP</option>
-                      {players.map((player) => (
-                        <option key={player.id} value={player.id}>
-                          {player.emri} {player.mbiemri}
-                        </option>
-                      ))}
-                    </select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Goals Away *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    name="golat_mysafir"
+                    value={formData.golat_mysafir}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
+
+                {/* Match Referees Section */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Match Referees
+                  </label>
+                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                    {selectedMatchResult &&
+                    getMatchReferees(selectedMatchResult.ndeshja_id).length >
+                      0 ? (
+                      <div className="space-y-2">
+                        {getMatchReferees(selectedMatchResult.ndeshja_id).map(
+                          (ref, idx) => (
+                            <div key={idx} className="text-sm">
+                              <p className="font-medium text-gray-800">
+                                {ref.name}
+                              </p>
+                              <p className="text-gray-600 text-xs">
+                                {ref.role} • {ref.category}
+                              </p>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        No referees assigned
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Winner
+                  </label>
+                  <select
+                    name="fitues_id"
+                    value={formData.fitues_id}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    disabled={!selectedMatchForForm}
                   >
-                    Save Changes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseEditModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Cancel
-                  </button>
+                    <option value="">No Team</option>
+                    {winnerTeamOptions.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </form>
-            </div>
-          </div>
-        )}
 
-        {/* DELETE RESULT MODAL */}
-        {showDeleteModal && selectedMatchResult && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseDeleteModal}
-          >
-            <div
-              className="w-full max-w-md rounded-lg bg-white p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-red-600 mb-4">
-                Delete result?
-              </h3>
-              <p className="text-gray-700 mb-6">
-                Are you sure you want to delete this result?
-              </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <input
+                    type="text"
+                    name="shenime"
+                    value={formData.shenime}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
 
-              <div className="flex gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    MVP
+                  </label>
+                  <select
+                    name="mvp_id"
+                    value={formData.mvp_id}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">Select MVP</option>
+                    {players.map((player) => (
+                      <option key={player.id} value={player.id}>
+                        {player.emri} {player.mbiemri}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
                 <button
-                  onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                  type="submit"
+                  className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 rounded-lg transition duration-200"
                 >
-                  Delete
+                  Save Changes
                 </button>
                 <button
-                  onClick={handleCloseDeleteModal}
+                  type="button"
+                  onClick={handleCloseEditModal}
                   className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
                 >
                   Cancel
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE RESULT MODAL */}
+      {showDeleteModal && selectedMatchResult && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseDeleteModal}
+        >
+          <div
+            className="w-full max-w-md rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-2xl font-bold text-red-600 mb-4">
+              Delete result?
+            </h3>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this result?
+            </p>
+
+            <div className="flex gap-4">
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+              >
+                Delete
+              </button>
+              <button
+                onClick={handleCloseDeleteModal}
+                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+              >
+                Cancel
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }

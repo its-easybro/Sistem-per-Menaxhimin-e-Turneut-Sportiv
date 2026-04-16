@@ -232,6 +232,13 @@ const Navbar = () => {
                     >
                       Users
                     </Link>
+                    <Link
+                      to="/tournaments"
+                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Tournaments
+                    </Link>
                     <button
                       type="button"
                       onClick={handleLogout}

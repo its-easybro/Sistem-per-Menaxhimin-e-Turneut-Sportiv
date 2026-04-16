@@ -12,6 +12,8 @@ import {
   Swords,
   ShieldHalf,
   ClipboardList,
+  Flag,
+  CalendarRange,
 } from "lucide-react";
 
 const AdminRoute = () => {
@@ -68,6 +70,13 @@ const AdminRoute = () => {
               Matches
             </Link>
             <Link
+              to="/tournaments"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
+              <CalendarRange size={20} />
+              Tournaments
+            </Link>
+            <Link
               to="/sports"
               className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
@@ -101,6 +110,13 @@ const AdminRoute = () => {
             >
               <ShieldHalf size={20} />
               Teams
+            </Link>
+            <Link
+              to="/match-referees"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
+              <Flag size={20} />
+              Match Referees
             </Link>
           </nav>
         </div>
