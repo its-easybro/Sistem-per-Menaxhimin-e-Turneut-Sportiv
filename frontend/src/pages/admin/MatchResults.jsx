@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE_URL } from "../../config/api";
 import AuthContext from "../../context/AuthContext";
 import { Award, Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Alert } from "../../components/Alert";
 
 // Format data from ISO String to readable format
 const formatDate = (isoDate) => {
@@ -37,6 +38,7 @@ export default function MatchResults() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMatchResult, setSelectedMatchResult] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState({
     ndeshja_id: "",
     golat_shtepiak: "",
@@ -192,8 +194,9 @@ export default function MatchResults() {
       });
 
       setShowModal(false);
+      setAlert({ type: "success", message: "Match result created successfully!" });
     } catch (err) {
-      alert("Error creating match: " + err.message);
+      setAlert({ type: "error", message: "Error creating match result: " + err.message });
     }
   };
 
@@ -286,8 +289,9 @@ export default function MatchResults() {
 
       setShowEditModal(false);
       setSelectedMatchResult(null);
+      setAlert({ type: "success", message: "Match result updated successfully!" });
     } catch (err) {
-      alert("Error updating match: " + err.message);
+      setAlert({ type: "error", message: "Error updating match result: " + err.message });
     }
   };
 
@@ -311,8 +315,9 @@ export default function MatchResults() {
 
       setSelectedMatchResult(null);
       setShowDeleteModal(false);
+      setAlert({ type: "success", message: "Match result deleted successfully!" });
     } catch (err) {
-      alert("Error deleting match: " + err.message);
+      setAlert({ type: "error", message: "Error deleting match result: " + err.message });
     }
   };
 
@@ -436,7 +441,13 @@ export default function MatchResults() {
 
   return (
     <div className="flex flex-col flex-1 p-8 bg-gray-50/50 min-h-screen">
-      {/* Header */}
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">

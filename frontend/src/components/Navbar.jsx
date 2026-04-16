@@ -115,11 +115,11 @@ const Navbar = () => {
             </PopoverPanel>
           </Popover>
 
-          <a href="#" className="text-sm/6 font-semibold text-white">
-            Features
+          <a href="/about-us" className="text-sm/6 font-semibold text-white">
+            About Us
           </a>
-          <a href="#" className="text-sm/6 font-semibold text-white">
-            Marketplace
+          <a href="/contact-us" className="text-sm/6 font-semibold text-white">
+            Contact us
           </a>
           <a href="#" className="text-sm/6 font-semibold text-white">
             Company
