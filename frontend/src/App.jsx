@@ -2,12 +2,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useContext } from "react";
 import AuthContext from "./context/AuthContext";
 
+// Importing Admin Pages
 import Sports from "./pages/admin/Sports";
-import Login from "./pages/Users/Login";
-import Register from "./pages/Users/Register";
 import AdminRoute from "./components/AdminRoute";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import Matches from "./pages/admin/matches";
+import Teams from "./pages/admin/Teams";
 import Home from "./pages/Users/Home";
 import Users from "./pages/admin/users";
 import Dashboard from "./pages/admin/Dashboard";
@@ -16,8 +15,13 @@ import Venues from "./pages/admin/venues";
 import MatchResults from "./pages/admin/MatchResults";
 import Tournaments from "./pages/admin/Tournaments";
 
-import Matches from "./pages/admin/matches";
-import Teams from "./pages/admin/Teams";
+// Importing User Pages
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import Login from "./pages/Users/Login";
+import Register from "./pages/Users/Register";
+import AboutUs from "./pages/Users/AboutUs";
+
 
 function App() {
   const { loading } = useContext(AuthContext);
@@ -31,6 +35,7 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/about-us" element={<AboutUs />} />
         <Route element={<AdminRoute />}>
         {/*add admin routes in this route*/}
           <Route path="/players" element={<Players />} />

@@ -31,7 +31,7 @@ const AdminRoute = () => {
     <div className="flex h-screen md:h-[calc(100vh-80px)] bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`w-64 bg-white border-r border-gray-200 flex flex-col justify-between shrink-0 transition-all duration-300 ${isSidebarOpen ? "ml-0" : "-ml-64 hidden md:flex md:-ml-64 md:hidden"} ${!isSidebarOpen && "hidden"}`}
+        className={`w-64 bg-white border-r border-gray-200 flex flex-col justify-between shrink-0 transition-all duration-300 overflow-y-auto ${isSidebarOpen ? "ml-0" : "-ml-64 hidden md:flex md:-ml-64 md:hidden"} ${!isSidebarOpen && "hidden"}`}
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -47,23 +47,38 @@ const AdminRoute = () => {
             </button>
           </div>
           <nav className="space-y-2 h-110 overflow-y-auto sticky top-0">
-            <Link to="/dashboard" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
               <LayoutDashboard size={20} />
               Dashboard
             </Link>
-            <Link to="/match-results" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+            <Link
+              to="/match-results"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
               <ClipboardList size={20} />
               Match Results
             </Link>
-            <Link to="/matches" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+            <Link
+              to="/matches"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
               <Swords size={20} />
               Matches
             </Link>
-            <Link to="/tournaments" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+            <Link
+              to="/tournaments"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
               <CalendarRange size={20} />
               Tournaments
             </Link>
-            <Link to="/sports" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
+            <Link
+              to="/sports"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
               <Trophy size={20} />
               Sports
             </Link>
@@ -88,8 +103,11 @@ const AdminRoute = () => {
               <LandPlot size={20} />
               Venues
             </Link>
-            <Link to="/Teams" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors">
-             <ShieldHalf size={20} />
+            <Link
+              to="/Teams"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
+              <ShieldHalf size={20} />
               Teams
             </Link>
           </nav>
