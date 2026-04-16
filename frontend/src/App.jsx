@@ -14,6 +14,8 @@ import Players from "./pages/admin/Players";
 import Venues from "./pages/admin/venues";
 import MatchResults from "./pages/admin/MatchResults";
 import MatchReferees from "./pages/admin/MatchReferees";
+import Tournaments from "./pages/admin/Tournaments";
+
 // Importing User Pages
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -43,8 +45,10 @@ function App() {
           <Route path="/venues" element={<Venues />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/teams" element={<Teams />} />
+
           <Route path="/match-results" element={<MatchResults />} />
           <Route path="/match-referees" element={<MatchReferees />} />
+          <Route path="/tournaments" element={<Tournaments />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
