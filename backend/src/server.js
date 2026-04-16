@@ -15,7 +15,7 @@ import tournamentsRoutes from "./routes/tournamentsRoutes.js";
 import matchResultsRoutes from "./routes/matchResultsRoutes.js";
 import matchRefereesRoutes from "./routes/matchRefereesRoutes.js";
 import tournamentRegistrationsRoutes from "./routes/tournamentRegistrationsRoutes.js";
-
+import refereesRoutes from "./routes/refereesRoutes.js";
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 3005;
@@ -43,7 +43,7 @@ app.use("/tournaments", tournamentsRoutes);
 app.use("/match-results", matchResultsRoutes);
 app.use("/match-referees", matchRefereesRoutes);
 app.use("/tournament-registrations", tournamentRegistrationsRoutes);
-
+app.use("/referees", refereesRoutes);
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
