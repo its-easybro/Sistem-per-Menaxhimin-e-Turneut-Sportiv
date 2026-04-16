@@ -14,6 +14,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Players from "./pages/admin/Players";
 import Venues from "./pages/admin/venues";
 import MatchResults from "./pages/admin/MatchResults";
+import Tournaments from "./pages/admin/Tournaments";
 
 import Matches from "./pages/admin/matches";
 import Teams from "./pages/admin/Teams";
@@ -39,6 +40,7 @@ function App() {
           <Route path="/venues" element={<Venues />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/teams" element={<Teams />} />
+          <Route path="/tournaments" element={<Tournaments />} />
           <Route path="/match-results" element={<MatchResults />}/>
         </Route>
         <Route path="/login" element={<Login />} />

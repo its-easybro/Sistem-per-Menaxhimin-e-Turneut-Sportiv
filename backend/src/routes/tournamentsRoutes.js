@@ -3,6 +3,86 @@ import express from "express";
 import pool from "../config/db.js";
 
 const router = express.Router();
+const tournamentTypeOptions = [
+    "Grup + Eliminim",
+    "Vetëm Grup",
+    "Vetëm Eliminim",
+    "Liga",
+];
+const tournamentStatusOptions = [
+    "Regjistrimi",
+    "Aktiv",
+    "Përfunduar",
+    "Anuluar",
+];
+
+function validateTournamentPayload(body) {
+    const {
+        emertimi,
+        sporti_id,
+        lloji,
+        data_fillimit,
+        data_perfundimit,
+        lokacioni,
+        cmimi_regjistrimit,
+        statusi = "Regjistrimi",
+        pershkrimi,
+    } = body;
+
+    if (!emertimi?.trim()) {
+        return { error: "Emertimi i turneut eshte i detyrueshem." };
+    }
+
+    const sportId = Number(sporti_id);
+    if (!Number.isInteger(sportId) || sportId <= 0) {
+        return { error: "Sporti i turneut eshte i pavlefshem." };
+    }
+
+    if (!tournamentTypeOptions.includes(lloji)) {
+        return { error: `Lloji duhet te jete nje nga: ${tournamentTypeOptions.join(", ")}.` };
+    }
+
+    if (!tournamentStatusOptions.includes(statusi)) {
+        return { error: `Statusi duhet te jete nje nga: ${tournamentStatusOptions.join(", ")}.` };
+    }
+
+    if (!data_fillimit || !data_perfundimit) {
+        return { error: "Data e fillimit dhe data e perfundimit jane te detyrueshme." };
+    }
+
+    const startDate = new Date(data_fillimit);
+    const endDate = new Date(data_perfundimit);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+        return { error: "Datat e turneut nuk jane te vlefshme." };
+    }
+
+    if (endDate <= startDate) {
+        return { error: "Data e perfundimit duhet te jete pas dates se fillimit." };
+    }
+
+    const registrationPrice =
+        cmimi_regjistrimit === "" || cmimi_regjistrimit === null || cmimi_regjistrimit === undefined
+            ? 0
+            : Number(cmimi_regjistrimit);
+
+    if (!Number.isFinite(registrationPrice) || registrationPrice < 0) {
+        return { error: "Cmimi i regjistrimit duhet te jete numer jo-negativ." };
+    }
+
+    return {
+        value: {
+            emertimi: emertimi.trim(),
+            sporti_id: sportId,
+            lloji,
+            data_fillimit,
+            data_perfundimit,
+            lokacioni: lokacioni?.trim() || null,
+            cmimi_regjistrimit: registrationPrice,
+            statusi,
+            pershkrimi: pershkrimi?.trim() || null,
+        },
+    };
+}
 
 router.get("/", async (req, res) => {
     try{
@@ -27,7 +107,12 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", protect, requireAdmin, async (req, res) => {
-    const { emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, cmimi_regjistrimit, statusi, pershkrimi } = req.body;
+    const validation = validateTournamentPayload(req.body);
+    if (validation.error) {
+        return res.status(400).json({ error: validation.error });
+    }
+
+    const { emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, cmimi_regjistrimit, statusi, pershkrimi } = validation.value;
     const organizatori_id = req.user.id; // Assuming the user ID is stored in req.user after authentication
     try{
         const result = await pool.query(`
@@ -43,7 +128,12 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 
 router.put("/:id",protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
-    const { emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, cmimi_regjistrimit, statusi, pershkrimi } = req.body;
+    const validation = validateTournamentPayload(req.body);
+    if (validation.error) {
+        return res.status(400).json({ error: validation.error });
+    }
+
+    const { emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, cmimi_regjistrimit, statusi, pershkrimi } = validation.value;
     try{
         const result = await pool.query(`
             UPDATE tournaments SET emertimi = $1, sporti_id = $2, lloji = $3, data_fillimit = $4, data_perfundimit = $5, lokacioni = $6, cmimi_regjistrimit = $7, statusi = $8, pershkrimi = $9 WHERE id = $10 RETURNING *`, 
