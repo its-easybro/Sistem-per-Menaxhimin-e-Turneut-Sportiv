@@ -13,6 +13,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Players from "./pages/admin/Players";
 import Venues from "./pages/admin/venues";
 import MatchResults from "./pages/admin/MatchResults";
+import MatchReferees from "./pages/admin/MatchReferees";
 import Tournaments from "./pages/admin/Tournaments";
 
 // Importing User Pages
@@ -21,7 +22,6 @@ import Footer from "./components/Footer";
 import Login from "./pages/Users/Login";
 import Register from "./pages/Users/Register";
 import AboutUs from "./pages/Users/AboutUs";
-
 
 function App() {
   const { loading } = useContext(AuthContext);
@@ -37,7 +37,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route element={<AdminRoute />}>
-        {/*add admin routes in this route*/}
+          {/*add admin routes in this route*/}
           <Route path="/players" element={<Players />} />
           <Route path="/sports" element={<Sports />} />
           <Route path="/users" element={<Users />} />
@@ -45,8 +45,10 @@ function App() {
           <Route path="/venues" element={<Venues />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/teams" element={<Teams />} />
+
+          <Route path="/match-results" element={<MatchResults />} />
+          <Route path="/match-referees" element={<MatchReferees />} />
           <Route path="/tournaments" element={<Tournaments />} />
-          <Route path="/match-results" element={<MatchResults />}/>
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

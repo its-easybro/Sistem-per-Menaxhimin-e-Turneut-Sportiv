@@ -12,6 +12,7 @@ import {
   Swords,
   ShieldHalf,
   ClipboardList,
+  Flag,
   CalendarRange,
 } from "lucide-react";
 
@@ -31,7 +32,7 @@ const AdminRoute = () => {
     <div className="flex h-screen md:h-[calc(100vh-80px)] bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`w-64 bg-white border-r border-gray-200 flex flex-col justify-between shrink-0 transition-all duration-300 overflow-y-auto ${isSidebarOpen ? "ml-0" : "-ml-64 hidden md:flex md:-ml-64 md:hidden"} ${!isSidebarOpen && "hidden"}`}
+        className={`w-64 bg-white border-r border-gray-200 flex flex-col justify-between shrink-0 transition-all duration-300 ${isSidebarOpen ? "ml-0" : "-ml-64 hidden md:flex md:-ml-64 md:hidden"} ${!isSidebarOpen && "hidden"}`}
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -109,6 +110,13 @@ const AdminRoute = () => {
             >
               <ShieldHalf size={20} />
               Teams
+            </Link>
+            <Link
+              to="/match-referees"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
+              <Flag size={20} />
+              Match Referees
             </Link>
           </nav>
         </div>
