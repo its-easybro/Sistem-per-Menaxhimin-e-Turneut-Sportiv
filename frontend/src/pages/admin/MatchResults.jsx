@@ -442,46 +442,55 @@ export default function MatchResults() {
   return (
     <div className="flex flex-col flex-1 p-8 bg-gray-50/50 min-h-screen">
       {alert && (
-        <Alert 
-          type={alert.type} 
+        <Alert
+          type={alert.type}
           message={alert.message}
           onClose={() => setAlert(null)}
         />
       )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Rezultatet e Ndeshjeve
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Match Results</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Menaxhoni rezultatet, shenimet dhe lojtaret MVP
+            Manage match results, notes, and MVP players
           </p>
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
         >
-          <Plus className="w-5 h-5" />
-          <span className="font-medium">Shto Rezultat</span>
+          <span className="font-medium">+ Add Result</span>
         </button>
       </div>
 
       {/* Search */}
-      <div className="mb-6 relative max-w-md">
-        <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      <div className="relative mb-6">
         <input
           type="text"
-          placeholder="Kërko me emër ekipi ose turneu..."
+          placeholder="Search by team name or tournament..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
         />
+        <svg
+          className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
       </div>
 
       {/* Match Cards Grid */}
       {filteredMatches.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
-          <p className="text-gray-500">Nuk u gjet asnje rezultat ndeshjeje.</p>
+          <p className="text-gray-500">No match results found.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">

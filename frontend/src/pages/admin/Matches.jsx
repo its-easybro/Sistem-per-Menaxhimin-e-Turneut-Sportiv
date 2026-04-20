@@ -450,7 +450,7 @@ export default function Matches() {
 
           {/* SEARCH BAR */}
           <div className="relative">
-            <input
+            <input  
               type="text"
               name="search"
               placeholder="Search by tournament or team"
@@ -479,16 +479,16 @@ export default function Matches() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">ID</th>
+                <th className="px-4 py-3 text-center font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">
                   Tournament
                 </th>
                 <th className="px-4 py-3 text-left font-semibold">Home Team</th>
                 <th className="px-4 py-3 text-left font-semibold">Away Team</th>
-                <th className="px-4 py-3 text-left font-semibold">Date</th>
+                <th className="px-4 py-3 text-center font-semibold">Date</th>
                 <th className="px-4 py-3 text-left font-semibold">Time</th>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
-                <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                <th className="px-4 py-3 text-center font-semibold">Actions</th>
               </tr>
             </thead>
             {/* Table Body */}
@@ -499,22 +499,22 @@ export default function Matches() {
                     key={m.id}
                     className="hover:bg-gray-100 transition-colors duration-150"
                   >
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-500 text-center">
                       {m.id}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-900 font-semibold">
                       {getTournamentName(m.turneu_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-900 font-semibold">
                       {getTeamName(m.ekipi_shtepiak_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-900 font-semibold">
                       {getTeamName(m.ekipi_mysafir_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-900 font-semibold text-center">
                       {formatDate(m.data_ndeshjes)}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-900 font-semibold">
                       {m.ora_fillimit || "N/A"}
                     </td>
                     <td className="px-4 py-3">

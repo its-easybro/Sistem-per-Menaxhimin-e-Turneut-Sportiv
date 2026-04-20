@@ -449,10 +449,10 @@ export default function Players() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">ID</th>
+                <th className="px-4 py-3 text-center font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">Name</th>
                 <th className="px-4 py-3 text-left font-semibold">Last Name</th>
-                <th className="px-4 py-3 text-left font-semibold">Birthday</th>
+                <th className="px-4 py-3 text-center font-semibold">Birthday</th>
                 <th className="px-4 py-3 text-left font-semibold">Team</th>
                 <th className="px-4 py-3 text-left font-semibold">Pozition</th>
                 <th className="px-4 py-3 text-left font-semibold">Number</th>
@@ -461,7 +461,7 @@ export default function Players() {
                 <th className="px-4 py-3 text-left font-semibold">
                   Nationality
                 </th>
-                <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                <th className="px-4 py-3 text-center font-semibold">Actions</th>
               </tr>
             </thead>
             {/* Table Body */}
@@ -478,34 +478,34 @@ export default function Players() {
                       key={s.id}
                       className="hover:bg-gray-100 transtion-colors duration-150"
                     >
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-500 text-center">
                         {s.id}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-900 font-semibold">
                         {s.emri}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-900 font-semibold">
                         {s.mbiemri}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 text-center">
                         {formatDate(s.data_lindjes)}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-900 font-semibold">
                         {s.ekipi_id}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800">
                         {s.pozicioni}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-900 font-semibold">
                         {s.numri}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800">
                         {s.gjatesia}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800">
                         {s.pesha}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-900 font-semibold">
                         {s.kombesia}
                       </td>
                       <td className="px-4 py-3">

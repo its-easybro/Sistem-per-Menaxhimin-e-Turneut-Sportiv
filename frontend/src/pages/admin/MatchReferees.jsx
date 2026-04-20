@@ -401,12 +401,12 @@ export default function MatchReferees() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">ID</th>
+                <th className="px-4 py-3 text-center font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">Match</th>
                 <th className="px-4 py-3 text-left font-semibold">Referee</th>
                 <th className="px-4 py-3 text-left font-semibold">Role</th>
-                <th className="px-4 py-3 text-left font-semibold">Category</th>
-                <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                <th className="px-4 py-3 text-center font-semibold">Category</th>
+                <th className="px-4 py-3 text-center font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -416,13 +416,13 @@ export default function MatchReferees() {
                     key={a.id}
                     className="hover:bg-gray-100 transition-colors duration-150"
                   >
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-500 text-center">
                       {a.id}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-800 font-semibold">
                       {getMatchInfo(a.ndeshja_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-800 font-semibold">
                       {getRefereeInfo(a.gjyqtari_id)}
                     </td>
                     <td className="px-4 py-3">
@@ -430,7 +430,7 @@ export default function MatchReferees() {
                         {a.roli}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-800 text-center">
                       {referees.find((r) => r.id === a.gjyqtari_id)
                         ?.kategoria || "N/A"}
                     </td>

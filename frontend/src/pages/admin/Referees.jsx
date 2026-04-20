@@ -316,14 +316,14 @@ function renderSkeleton() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-6 py-4 text-left font-semibold">ID</th>
+                <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Name</th>
                 <th className="px-6 py-4 text-left font-semibold">Surname</th>
                 <th className="px-6 py-4 text-left font-semibold">Email</th>
                 <th className="px-6 py-4 text-left font-semibold">Phone Number</th>
                 <th className="px-6 py-4 text-left font-semibold">Nr of License</th>
                 <th className="px-6 py-4 text-left font-semibold">Category</th>
-                <th className="px-6 py-4 text-left font-semibold">Years of experience</th>
+                <th className="px-6 py-4 text-center font-semibold">Years of experience</th>
                 <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
@@ -331,14 +331,14 @@ function renderSkeleton() {
               {filteredReferees.length > 0 ? (
                 filteredReferees.map((referee) => (
                   <tr key={referee.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-800 font-medium">{referee.id}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{referee.emri}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{referee.mbiemri || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{referee.email || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{referee.telefoni || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{referee.nr_licences || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{referee.kategoria || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{referee.pervoja_vitesh || "-"}</td>
+                    <td className="px-6 py-4 text-gray-500 text-center">{referee.id}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{referee.emri}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{referee.mbiemri || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800">{referee.email || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{referee.telefoni || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{referee.nr_licences || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800">{referee.kategoria || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 text-center">{referee.pervoja_vitesh || "-"}</td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <button

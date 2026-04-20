@@ -329,7 +329,7 @@ export default function Venues() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-6 py-4 text-left font-semibold">ID</th>
+                <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Name</th>
                 <th className="px-6 py-4 text-left font-semibold">Address</th>
                 <th className="px-6 py-4 text-left font-semibold">City</th>
@@ -344,18 +344,18 @@ export default function Venues() {
               {filteredVenues.length > 0 ? (
                 filteredVenues.map((venue) => (
                   <tr key={venue.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-800 font-medium">{venue.id}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{venue.emertimi}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{venue.adresa || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{venue.qyteti}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{venue.kapaciteti ?? "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">
+                    <td className="px-6 py-4 text-gray-500 text-center">{venue.id}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.emertimi}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.adresa || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.qyteti }</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.kapaciteti ?? "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">
                       {venue.lloji_siperfaqes || "-"}
                     </td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">
+                    <td className="px-6 py-4 text-gray-800">
                       {venue.ndricimi ? "Yes" : "No"}
                     </td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{venue.statusi}</td>
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.statusi}</td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <button

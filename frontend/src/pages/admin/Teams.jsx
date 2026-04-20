@@ -391,13 +391,13 @@ export default function Teams() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">ID</th>
+                <th className="px-4 py-3 text-center font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">Team Name</th>
                 <th className="px-4 py-3 text-left font-semibold">Trainer</th>
                 <th className="px-4 py-3 text-left font-semibold">Contact</th>
                 <th className="px-4 py-3 text-left font-semibold">Email</th>
                 <th className="px-4 py-3 text-left font-semibold">City</th>
-                <th className="px-4 py-3 text-left font-semibold">Start Date</th>
+                <th className="px-4 py-3 text-center font-semibold">Start Date</th>
                 <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 
               
@@ -417,25 +417,25 @@ export default function Teams() {
                       key={s.id}
                       className="hover:bg-gray-100 transtion-colors duration-150"
                     >
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-500 text-center">
                         {s.id}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-semibold">
                         {s.emertimi}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-semibold">
                         {s.trajneri}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-semibold">
                         {s.kontakti || "N/A"}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800">
                         {s.email || "N/A"}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 font-semibold">
                         {s.qyteti || "N/A"}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-medium">
+                      <td className="px-4 py-3 text-gray-800 text-center">
                         {formatDate(s.data_themelimit)}
                       </td>
                       

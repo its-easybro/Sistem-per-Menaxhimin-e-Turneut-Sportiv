@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
+import { Alert } from "../../components/Alert";
 
 const initialFormData = {
   emertimi: "",
@@ -121,25 +122,7 @@ function formatCurrency(value) {
   return Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
 }
 
-function ModalShell({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md px-3 py-1 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-          >
-            Close
-          </button>
-        </div>
-        <div className="max-h-[80vh] overflow-y-auto px-6 py-5">{children}</div>
-      </div>
-    </div>
-  );
-}
+
 
 function TournamentFormFields({ formData, sports, onChange }) {
   return (
@@ -282,6 +265,7 @@ export default function Tournaments() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState(null);
+  const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
 
   useEffect(() => {
@@ -433,8 +417,9 @@ export default function Tournaments() {
 
       setTournaments((prev) => [...prev, data]);
       handleCloseModal();
+      setAlert({ type: 'success', message: 'Tournament created successfully!' });
     } catch (err) {
-      alert("Error creating tournament: " + err.message);
+      setAlert({ type: 'error', message: 'Error creating tournament: ' + err.message });
     }
   };
 
@@ -473,8 +458,9 @@ export default function Tournaments() {
       );
 
       handleCloseEditModal();
+      setAlert({ type: 'success', message: 'Tournament updated successfully!' });
     } catch (err) {
-      alert("Error updating tournament: " + err.message);
+      setAlert({ type: 'error', message: 'Error updating tournament: ' + err.message });
     }
   };
 
@@ -501,8 +487,9 @@ export default function Tournaments() {
       );
 
       handleCloseDeleteModal();
+      setAlert({ type: 'success', message: 'Tournament deleted successfully!' });
     } catch (err) {
-      alert("Error deleting tournament: " + err.message);
+      setAlert({ type: 'error', message: 'Error deleting tournament: ' + err.message });
     }
   };
 
@@ -542,298 +529,326 @@ export default function Tournaments() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+    <div className="bg-gray-50 p-4">
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
+      <div className="w-full mx-auto space-y-6">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">
               Tournament Management
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Create, review, update, and remove tournaments from one place.
-            </p>
+            </h2>
+
+            <button
+              onClick={handleCreate}
+              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
+            >
+              + Add Tournament
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleCreate}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-          >
-            Add Tournament
-          </button>
-        </div>
-
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-700">Search</span>
+          <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, sport, format, location, or status"
-              className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
             />
-          </label>
+            <svg
+              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
         </div>
 
-        {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
           {filteredTournaments.length === 0 ? (
-            <div className="px-6 py-12 text-center text-gray-500">
-              No tournaments found.
+            <div className="w-full px-6 py-12 text-center text-gray-600">
+              {searchQuery ? `No tournaments match "${searchQuery}". Try a different search.` : 'No tournaments found. Click "Add Tournament" to add a new one.'}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Tournament
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Sport
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Format
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Dates
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Location
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Actions
-                    </th>
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-800 text-white">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold">Tournament</th>
+                  <th className="px-4 py-3 text-left font-semibold">Sport</th>
+                  <th className="px-4 py-3 text-left font-semibold">Format</th>
+                  <th className="px-4 py-3 text-center font-semibold">Dates</th>
+                  <th className="px-4 py-3 text-left font-semibold">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold">Location</th>
+                  <th className="px-4 py-3 text-center font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredTournaments.map((tournament) => (
+                  <tr key={tournament.id} className="hover:bg-gray-100 transition-colors duration-150">
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-gray-900">
+                        {tournament.emertimi}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        Registration: {formatCurrency(tournament.cmimi_regjistrimit)} EUR
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 font-semibold">
+                      {getSportName(tournament.sporti_id)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getFormatBadgeClasses(tournament.lloji)}`}
+                      >
+                        {tournament.lloji || "N/A"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700 text-center">
+                      <div>{formatDate(tournament.data_fillimit)}</div>
+                      <div className="text-gray-500"> 
+                        to {formatDate(tournament.data_perfundimit)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClasses(tournament.statusi)}`}
+                      >
+                        {tournament.statusi || "N/A"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">
+                      {tournament.lokacioni || "N/A"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => handleView(tournament.id)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleEdit(tournament.id)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(tournament.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredTournaments.map((tournament) => (
-                    <tr key={tournament.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-gray-900">
-                          {tournament.emertimi}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          Registration: {formatCurrency(tournament.cmimi_regjistrimit)} EUR
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {getSportName(tournament.sporti_id)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getFormatBadgeClasses(tournament.lloji)}`}
-                        >
-                          {tournament.lloji || "N/A"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <div>{formatDate(tournament.data_fillimit)}</div>
-                        <div className="text-gray-500">
-                          to {formatDate(tournament.data_perfundimit)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClasses(tournament.statusi)}`}
-                        >
-                          {tournament.statusi || "N/A"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {tournament.lokacioni || "N/A"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleView(tournament.id)}
-                            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            View
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(tournament.id)}
-                            className="rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(tournament.id)}
-                            className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
 
       {showModal && (
-        <ModalShell title="Create Tournament" onClose={handleCloseModal}>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <TournamentFormFields
-              formData={formData}
-              sports={sports}
-              onChange={handleInputChange}
-            />
-
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-              >
-                Create Tournament
-              </button>
-            </div>
-          </form>
-        </ModalShell>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Add Tournament</h3>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <TournamentFormFields
+                formData={formData}
+                sports={sports}
+                onChange={handleInputChange}
+              />
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {showViewModal && selectedTournament && (
-        <ModalShell title="Tournament Details" onClose={handleCloseViewModal}>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Name</p>
-              <p className="mt-1 text-base text-gray-900">
-                {selectedTournament.emertimi || "N/A"}
-              </p>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseViewModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Tournament Details</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  {selectedTournament.emertimi || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sport</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  {getSportName(selectedTournament.sporti_id)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  {selectedTournament.lloji || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  {selectedTournament.statusi || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  {formatDate(selectedTournament.data_fillimit)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  {formatDate(selectedTournament.data_perfundimit)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  {selectedTournament.lokacioni || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Registration Price</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  {formatCurrency(selectedTournament.cmimi_regjistrimit)} EUR
+                </p>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg whitespace-pre-wrap">
+                  {selectedTournament.pershkrimi || "N/A"}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Sport</p>
-              <p className="mt-1 text-base text-gray-900">
-                {getSportName(selectedTournament.sporti_id)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Format</p>
-              <p className="mt-1 text-base text-gray-900">
-                {selectedTournament.lloji || "N/A"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
-              <p className="mt-1 text-base text-gray-900">
-                {selectedTournament.statusi || "N/A"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Start Date</p>
-              <p className="mt-1 text-base text-gray-900">
-                {formatDate(selectedTournament.data_fillimit)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">End Date</p>
-              <p className="mt-1 text-base text-gray-900">
-                {formatDate(selectedTournament.data_perfundimit)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Location</p>
-              <p className="mt-1 text-base text-gray-900">
-                {selectedTournament.lokacioni || "N/A"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">
-                Registration Price
-              </p>
-              <p className="mt-1 text-base text-gray-900">
-                {formatCurrency(selectedTournament.cmimi_regjistrimit)} EUR
-              </p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Description</p>
-              <p className="mt-1 whitespace-pre-wrap text-base text-gray-900">
-                {selectedTournament.pershkrimi || "N/A"}
-              </p>
+            <div className="flex gap-4 pt-4">
+              <button
+                type="button"
+                onClick={handleCloseViewModal}
+                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+              >
+                Close
+              </button>
             </div>
           </div>
-        </ModalShell>
+        </div>
       )}
 
       {showEditModal && selectedTournament && (
-        <ModalShell title="Edit Tournament" onClose={handleCloseEditModal}>
-          <form onSubmit={handleEditSubmit} className="space-y-6">
-            <TournamentFormFields
-              formData={formData}
-              sports={sports}
-              onChange={handleInputChange}
-            />
-
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCloseEditModal}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
-              >
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </ModalShell>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseEditModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Tournament</h3>
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              <TournamentFormFields
+                formData={formData}
+                sports={sports}
+                onChange={handleInputChange}
+              />
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseEditModal}
+                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {showDeleteModal && selectedTournament && (
-        <ModalShell title="Delete Tournament" onClose={handleCloseDeleteModal}>
-          <div className="space-y-4">
-            <p className="text-gray-700">
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-gray-900">
-                {selectedTournament.emertimi}
-              </span>
-              ?
-            </p>
-
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCloseDeleteModal}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteConfirm}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-              >
-                Delete
-              </button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseDeleteModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Delete Tournament</h3>
+            <div className="space-y-4">
+              <p className="text-gray-700">
+                Are you sure you want to delete{" "}
+                <span className="font-semibold text-gray-900">
+                  {selectedTournament.emertimi}
+                </span>
+                ?
+              </p>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseDeleteModal}
+                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </ModalShell>
+        </div>
       )}
     </div>
   );

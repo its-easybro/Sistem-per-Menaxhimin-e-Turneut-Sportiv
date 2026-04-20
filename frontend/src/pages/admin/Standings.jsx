@@ -516,31 +516,31 @@ export default function Standings() {
                     key={standing.id}
                     className="hover:bg-gray-100 transition-colors duration-150"
                   >
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-500">
                       {standing.id}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-800 font-semibold">
                       {getTournamentName(standing.turneu_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium">
+                    <td className="px-4 py-3 text-gray-800 font-semibold">
                       {getTeamName(standing.ekipi_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium text-center">
+                    <td className="px-4 py-3 text-gray-800 font-semibold text-center">
                       {standing.ndeshjet_luajtura}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium text-center">
+                    <td className="px-4 py-3 text-gray-800 font-semibold text-center">
                       {standing.fitoret}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium text-center">
+                    <td className="px-4 py-3 text-gray-800 font-semibold text-center">
                       {standing.barazimet}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium text-center">
+                    <td className="px-4 py-3 text-gray-800 text-center">
                       {standing.humbjet}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium text-center">
+                    <td className="px-4 py-3 text-gray-800 font-semibold text-center">
                       {standing.golat_shenuar}
                     </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium text-center">
+                    <td className="px-4 py-3 text-gray-800 font-semibold text-center">
                       {standing.golat_pranuar}
                     </td>
                     <td className="px-4 py-3 text-gray-800 font-bold text-center bg-blue-50">

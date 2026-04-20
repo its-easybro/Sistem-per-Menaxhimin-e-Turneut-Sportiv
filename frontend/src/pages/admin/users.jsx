@@ -326,7 +326,7 @@ export default function Users() {
           <table className="w-full text-left border-collapse min-w-[500px]">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-6 py-4 text-left font-semibold">ID</th>
+                <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Email</th>
                 <th className="px-6 py-4 text-left font-semibold">Username</th>
                 <th className="px-6 py-4 text-left font-semibold">Full Name</th>
@@ -340,15 +340,15 @@ export default function Users() {
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-800">{item.id}</td>
+                    <td className="px-6 py-4 text-gray-500 text-center">{item.id}</td>
                     <td className="px-6 py-4 text-gray-700">{item.email}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{item.username}</td>
-                    <td className="px-6 py-4 text-gray-700">{item.full_name || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800">{item.is_admin ? "Yes" : "No"}</td>
-                    <td className="px-6 py-4 text-gray-700">
+                    <td className="px-6 py-4 text-gray-800 font-semibold">{item.username}</td>
+                    <td className="px-6 py-4 text-gray-700 font-semibold">{item.full_name || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 text-center">{item.is_admin ? "Yes" : "No"}</td>
+                    <td className="px-6 py-4 text-gray-700 text-center">
                       {item.created_at ? new Date(item.created_at).toLocaleString() : "-"}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 text-center">
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => handleEdit(item)}
