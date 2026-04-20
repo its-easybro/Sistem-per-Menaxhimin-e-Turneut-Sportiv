@@ -1,55 +1,35 @@
-// Import React hooks: useEffect for side effects, useState for managing component state
 import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 import { API_BASE_URL } from '../../config/api';
 import { Alert } from '../../components/Alert';
 
-// This component provides a comprehensive interface for managing sports, including creating, viewing, editing, and deleting sports. It uses modals for each action to keep the UI clean and user-friendly. The component also handles loading states and errors gracefully.
+const initialFormData = {
+  emertimi: '',
+  pershkrimi: '',
+  numri_lojtareve: '',
+  lloji: '',
+};
+
+const sportTypeOptions = ['Ekipor', 'Individual', 'I dyfishtë'];
+
 export default function SportsManagment() {
   const { user, loading: authLoading } = useContext(AuthContext);
 
-  // ===== STATE VARIABLES =====
-  
-  // stores the array of sports fetched from the backend API
+  // State variables
   const [sports, setSports] = useState([]);
-  
-  // tracks whether the page is currently loading sports data
   const [loading, setLoading] = useState(true);
-  
-  // stores any error messages that occur during API calls
   const [error, setError] = useState('');
-  
-  // controls visibility of the Create Sport modal dialog
   const [showModal, setShowModal] = useState(false);
-  
-  // controls visibility of the Edit Sport modal dialog
   const [showEditModal, setShowEditModal] = useState(false);
-  
-  // controls visibility of the View Sport details modal dialog
   const [showViewModal, setShowViewModal] = useState(false);
-  
-  // controls visibility of the Delete Sport confirmation modal dialog
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  
-  // stores the currently selected sport object when viewing, editing, or deleting
   const [selectedSport, setSelectedSport] = useState(null);
-  
-  // stores the search query text entered by the user in the search bar
   const [searchQuery, setSearchQuery] = useState('');
   const [alert, setAlert] = useState(null);
-  
-  // stores form field values (sport name, description, number of players, type)
-  const [formData, setFormData] = useState({
-    emertimi: '',              // Sport name in Albanian
-    pershkrimi: '',            // Description in Albanian
-    numri_lojtareve: '',       // Number of players
-    lloji: ''                  // Type of sport
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
-  // ===== FETCH SPORTS DATA ON COMPONENT MOUNT =====
-  // This useEffect runs once when the component first loads (empty dependency array [])
-  // It fetches all sports from the backend API and updates the state
+  // Fetch sports data from backend
   useEffect(() => {
     const loadSports = async () => {
       if (!user?.is_admin) {
@@ -65,45 +45,50 @@ export default function SportsManagment() {
         if (!response.ok) {
           throw new Error('Failed to fetch sports');
         }
-
-        // Parse the response as JSON and extract the sports data array
         const data = await response.json();
-        
-        // Update the sports state with the fetched data
         setSports(data);
       } catch (err) {
-        // If there's an error, store the error message in state
         setError(err.message);
       } finally {
-        // After success or error, set loading to false to show the UI
         setLoading(false);
       }
     };
-
-    // Call the async function
     loadSports();
   }, [user]);
 
-  // ===== CREATE SPORT HANDLERS =====
-  
-  // Opens the Create Sport modal dialog when the "Create New Sport" button is clicked
+  // Create sport handlers
   const handleCreate = () => {
+    setFormData(initialFormData);
     setShowModal(true);
   };
 
-  // Updates the formData state as the user types in form input fields
-  // Extracts the field name and value from the input element and updates formData
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value  // Update only the specific field that was changed
+      [name]: value
     }));
   };
 
-  // Handles form submission when the user clicks the "Create" button in the modal
+  const buildSportPayload = () => ({
+    emertimi: formData.emertimi.trim(),
+    pershkrimi: formData.pershkrimi.trim(),
+    numri_lojtareve:
+      formData.numri_lojtareve === '' ? '' : Number(formData.numri_lojtareve),
+    lloji: formData.lloji,
+  });
+
+  const getErrorMessage = async (response, fallbackMessage) => {
+    try {
+      const data = await response.json();
+      return data.error || fallbackMessage;
+    } catch {
+      return fallbackMessage;
+    }
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent the default form submission behavior
+    e.preventDefault();
     try {
       const response = await fetch(`${API_BASE_URL}/sports`, {
         method: 'POST',
@@ -111,106 +96,69 @@ export default function SportsManagment() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(formData)  // Send the form data as JSON
+        body: JSON.stringify(buildSportPayload())
       });
-      
-      // Check if the request was successful
-      if (!response.ok) throw new Error('Failed to create sport');
-      
-      // Parse the response to get the newly created sport with its ID
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, 'Failed to create sport'));
+      }
       const newSport = await response.json();
-      
-      // Add the new sport to the sports array in state
-      setSports([...sports, newSport]);
-      
-      // Clear the form fields
-      setFormData({ emertimi: '', pershkrimi: '', numri_lojtareve: '', lloji: '' });
-      
-      // Close the Create modal
+      setSports((prev) => [...prev, newSport]);
+      setFormData(initialFormData);
       setShowModal(false);
       setAlert({ type: 'success', message: 'Sport created successfully!' });
     } catch (err) {
-      // Show error message to the user
       setAlert({ type: 'error', message: 'Error creating sport: ' + err.message });
     }
   };
 
-  // Closes the Create Sports modal and resets the form
   const handleCloseModal = () => {
-    setFormData({ emertimi: '', pershkrimi: '', numri_lojtareve: '', lloji: '' });
+    setFormData(initialFormData);
     setShowModal(false);
   };
 
-  // ===== MODAL CLOSE HANDLERS =====
-  
-  // Closes the Edit modal and clears the selected sport and form data
+  // Modal close handlers
   const handleCloseEditModal = () => {
-    setFormData({ emertimi: '', pershkrimi: '', numri_lojtareve: '', lloji: '' });
+    setFormData(initialFormData);
     setSelectedSport(null);
     setShowEditModal(false);
   };
 
-  // Closes the View modal and clears the selected sport
   const handleCloseViewModal = () => {
     setSelectedSport(null);
     setShowViewModal(false);
   };
 
-  // Closes the Delete confirmation modal and clears the selected sport
   const handleCloseDeleteModal = () => {
     setSelectedSport(null);
     setShowDeleteModal(false);
   };
 
-  // ===== VIEW/EDIT/DELETE BUTTON HANDLERS =====
-  
-  // Opens the View modal to display details of a specific sport
+  // Button handlers
   const handleView = (id) => {
-    // Find the sport with the matching ID from the sports array
     const sport = sports.find(s => s.id === id);
-    
-    // Set it as the selected sport to display in the modal
     setSelectedSport(sport);
-    
-    // Open the View modal
     setShowViewModal(true);
   };
 
-  // Opens the Edit modal and pre-fills the form with the sport's current data
   const handleEdit = (id) => {
-    // Find the sport with the matching ID
     const sport = sports.find(s => s.id === id);
-    
-    // Set it as the selected sport
     setSelectedSport(sport);
-    
-    // Pre-fill the form fields with the sport's current values
     setFormData({
       emertimi: sport.emertimi,
       pershkrimi: sport.pershkrimi,
       numri_lojtareve: sport.numri_lojtareve,
       lloji: sport.lloji
     });
-    
-    // Open the Edit modal
     setShowEditModal(true);
   };
 
-  // Opens the Delete confirmation modal for a specific sport
   const handleDelete = (id) => {
-    // Find the sport with the matching ID
     const sport = sports.find(s => s.id === id);
-    
-    // Set it as the selected sport to display in the confirmation
     setSelectedSport(sport);
-    
-    // Open the Delete confirmation modal
     setShowDeleteModal(true);
   };
 
-  // ===== UPDATE/DELETE API HANDLERS =====
-  
-  // Handles form submission in the Edit modal when user clicks "Save Changes"
+  // API handlers
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!selectedSport) return;
@@ -222,34 +170,22 @@ export default function SportsManagment() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(formData)  // Send the updated form data
+        body: JSON.stringify(buildSportPayload())
       });
-      
-      // Check if the update was successful
-      if (!response.ok) throw new Error('Failed to update sport');
-      
-      // Parse the response to get the updated sport data
+      if (!response.ok) {
+        throw new Error(await getErrorMessage(response, 'Failed to update sport'));
+      }
       const updatedSport = await response.json();
-      
-      // Update the sports array, replacing the old sport with the updated one
-      setSports(sports.map(s => s.id === updatedSport.id ? updatedSport : s));
-      
-      // Clear the form fields
-      setFormData({ emertimi: '', pershkrimi: '', numri_lojtareve: '', lloji: '' });
-      
-      // Clear the selected sport
+      setSports((prev) => prev.map((s) => (s.id === updatedSport.id ? updatedSport : s)));
+      setFormData(initialFormData);
       setSelectedSport(null);
-      
-      // Close the Edit modal
       setShowEditModal(false);
       setAlert({ type: 'success', message: 'Sport updated successfully!' });
     } catch (err) {
-      // Show error message if the update fails
       setAlert({ type: 'error', message: 'Error updating sport: ' + err.message });
     }
   };
 
-  // Deletes a sport when user confirms in the Delete modal
   const handleDeleteConfirm = async () => {
     if (!selectedSport) return;
 
@@ -260,25 +196,18 @@ export default function SportsManagment() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete sport');
+        throw new Error(await getErrorMessage(response, 'Failed to delete sport'));
       }
-
-      // Remove the deleted sport from the sports array using filter
-      setSports(sports.filter(s => s.id !== selectedSport.id));
-      
-      // Clear the selected sport
+      setSports((prev) => prev.filter((s) => s.id !== selectedSport.id));
       setSelectedSport(null);
-      
-      // Close the Delete confirmation modal
       setShowDeleteModal(false);
       setAlert({ type: 'success', message: 'Sport deleted successfully!' });
     } catch (err) {
-      // Show error message if the deletion fails
       setAlert({ type: 'error', message: 'Error deleting sport: ' + err.message });
     }
   };
 
-  // ===== CONDITIONAL RENDERING FOR LOADING/ERROR STATES =====
+  // Conditional loading / skeleton loading
 
   if (authLoading) return (
     <div className="flex justify-center items-center h-screen">
@@ -289,25 +218,21 @@ export default function SportsManagment() {
   if (!user || !user.is_admin) {
     return <Navigate to="/login" replace />;
   }
-  
-  // If data is still loading, show a loading message
+
   function renderSkeleton() {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="w-full mx-auto animate-pulse">
-          {/* Header and Add Button Placeholder */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
               <div className="h-8 bg-gray-300 rounded w-64"></div>
               <div className="h-10 bg-gray-300 rounded w-32"></div>
             </div>
-            {/* Search Bar Placeholder */}
             <div className="relative">
               <div className="h-12 bg-gray-300 rounded-lg w-full"></div>
             </div>
           </div>
 
-          {/* Table Placeholder */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-800">
@@ -349,17 +274,17 @@ export default function SportsManagment() {
     return renderSkeleton();
   }
 
-  // If an error occurred during data fetch, show an error message
   if (error) return (
     <div className="flex justify-center items-center h-screen">
       <p className="text-lg text-red-600">Error: {error}</p>
     </div>
   );
 
-  // ===== MAIN COMPONENT RETURN - JSX RENDERING =====
-  
+  const filteredSports = sports.filter((sport) =>
+    sport.emertimi?.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   return (
-    // Main container with light gray background and padding
     <div className="min-h-screen bg-gray-50 p-4">
       {alert && (
         <Alert 
@@ -368,17 +293,10 @@ export default function SportsManagment() {
           onClose={() => setAlert(null)}
         />
       )}
-      {/* Centered container with max width to keep content readable */}
       <div className="w-full mx-auto">
-        
-        {/* HEADER AND SEARCH SECTION */}
         <div className="mb-8">
-          {/* Top row with title and Create button */}
           <div className="flex justify-between items-center mb-6">
-            {/* Page title */}
             <h2 className="text-3xl font-bold text-gray-800">Sports Management</h2>
-            
-            {/* Create New Sport button - opens the Create modal when clicked */}
             <button
               onClick={handleCreate}
               className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
@@ -386,18 +304,16 @@ export default function SportsManagment() {
               + Create New Sport
             </button>
           </div>
-          
-          {/* SEARCH BAR - allows users to filter sports by name */}
+
+          {/* Search bar */}
           <div className="relative">
-            {/* Search input field that updates searchQuery state as user types */}
             <input
               type="text"
               placeholder="Search by sport name..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}  // Update search state on every keystroke
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
             />
-            {/* Decorative search icon (magnifying glass) */}
             <svg
               className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
               fill="none"
@@ -414,11 +330,9 @@ export default function SportsManagment() {
           </div>
         </div>
 
-        {/* SPORTS TABLE SECTION */}
+        {/* Sports table section */}
         <div className="flex-1 bg-white rounded-lg shadow-md overflow-x-auto">
-          {/* HTML table for displaying sports in a structured format */}
           <table className="w-full text-left border-collapse min-w-[500px]">
-            {/* TABLE HEADER - defines column names */}
             <thead className="bg-gray-800 text-white">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">ID</th>
@@ -429,55 +343,29 @@ export default function SportsManagment() {
                 <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
-            
-            {/* TABLE BODY - displays the sports data */}
             <tbody className="divide-y divide-gray-200">
-              {/* 
-                Filter the sports array based on the search query:
-                - Convert both sport name and search query to lowercase for case-insensitive comparison
-                - Only show sports whose name includes the search query text
-                - Then check if there are any filtered results
-              */}
-              {sports.filter(s => s.emertimi.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 ? (
-                // If there are results, map through each sport and create a table row
-                sports.filter(s => s.emertimi.toLowerCase().includes(searchQuery.toLowerCase())).map((s) => (
-                  // Each row represents one sport with hover effect for better UX
+              {filteredSports.length > 0 ? (
+                filteredSports.map((s) => (
                   <tr key={s.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    {/* Display sport ID */}
                     <td className="px-6 py-4 text-gray-800">{s.id}</td>
-                    
-                    {/* Display sport name (Emertimi) */}
                     <td className="px-6 py-4 text-gray-800 font-medium">{s.emertimi}</td>
-                    
-                    {/* Display sport description (Pershkrimi) */}
                     <td className="px-6 py-4 text-gray-600">{s.pershkrimi}</td>
-                    
-                    {/* Display number of players (Numri Lojtareve) */}
                     <td className="px-6 py-4 text-gray-800">{s.numri_lojtareve}</td>
-                    
-                    {/* Display sport type (Lloji) */}
                     <td className="px-6 py-4 text-gray-800">{s.lloji}</td>
-                    
-                    {/* Action buttons for View, Edit, Delete */}
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
-                        {/* View button - opens View modal with sport details */}
                         <button
                           onClick={() => handleView(s.id)}
                           className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
                         >
                           View
                         </button>
-                        
-                        {/* Edit button - opens Edit modal with pre-filled form data */}
                         <button
                           onClick={() => handleEdit(s.id)}
                           className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
                         >
                           Edit
                         </button>
-                        
-                        {/* Delete button - opens Delete confirmation modal */}
                         <button
                           onClick={() => handleDelete(s.id)}
                           className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
@@ -489,10 +377,8 @@ export default function SportsManagment() {
                   </tr>
                 ))
               ) : (
-                // If no results are found, show an empty state message
                 <tr>
                   <td colSpan="6" className="px-6 py-4 text-center text-gray-600">
-                    {/* Show different message depending on whether user is searching or if no sports exist */}
                     {searchQuery ? `No sports match "${searchQuery}". Try a different search.` : 'No sports found. Click "Create New Sport" to add one.'}
                   </td>
                 </tr>
@@ -502,23 +388,16 @@ export default function SportsManagment() {
         </div>
 
 
-        {/* ===== CREATE SPORT MODAL ===== */}
-        {/* This modal is visible only when showModal is true (clicked Create button) */}
+        {/* Create sport modal */}
         {showModal && (
-          // Dark overlay background to focus attention on the modal dialog
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseModal}
           >
-            {/* Modal dialog box - white container with rounded corners and shadow */}
             <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Create New Sport</h3>
-              
-              {/* Form to collect sport information */}
               <form onSubmit={handleSubmit} className="space-y-4">
-                
-                {/* Sport Name Input Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Sport Name (Emertimi)
@@ -527,14 +406,13 @@ export default function SportsManagment() {
                     type="text"
                     name="emertimi"
                     value={formData.emertimi}
-                    onChange={handleInputChange}  // Update formData as user types
+                    onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="e.g., Football"
-                    required  // Make this field mandatory
+                    required
                   />
                 </div>
 
-                {/* Description Input Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description (Pershkrimi)
@@ -550,7 +428,6 @@ export default function SportsManagment() {
                   />
                 </div>
 
-                {/* Number of Players Input Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Number of Players (Numri Lojtareve)
@@ -566,33 +443,33 @@ export default function SportsManagment() {
                   />
                 </div>
 
-                {/* Sport Type Input Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Type (Lloji)
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="lloji"
                     value={formData.lloji}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="e.g., Team Sport"
                     required
-                  />
+                  >
+                    <option value="">Select type</option>
+                    {sportTypeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Form Action Buttons */}
                 <div className="flex gap-4 pt-4">
-                  {/* Create button - submits the form and creates the sport */}
                   <button
                     type="submit"
                     className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-200"
                   >
                     Create
                   </button>
-                  
-                  {/* Cancel button - closes modal without saving */}
                   <button
                     type="button"
                     onClick={handleCloseModal}
@@ -606,22 +483,16 @@ export default function SportsManagment() {
           </div>
         )}
 
-        {/* ===== VIEW SPORT MODAL ===== */}
-        {/* This modal is visible when showViewModal is true and a sport is selected */}
+        {/* View sport modal */}
         {showViewModal && selectedSport && (
-          // Dark overlay background
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseViewModal}
           >
-            {/* Modal dialog showing read-only sport details */}
             <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Sport Details</h3>
-              
-              {/* Read-only display of sport information */}
               <div className="space-y-4">
-                {/* Sport Name - displayed as non-editable text */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Sport Name (Emertimi)
@@ -629,7 +500,6 @@ export default function SportsManagment() {
                   <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{selectedSport.emertimi}</p>
                 </div>
 
-                {/* Description - displayed as non-editable text */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Description (Pershkrimi)
@@ -637,7 +507,6 @@ export default function SportsManagment() {
                   <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{selectedSport.pershkrimi}</p>
                 </div>
 
-                {/* Number of Players - displayed as non-editable text */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Number of Players (Numri Lojtareve)
@@ -645,7 +514,6 @@ export default function SportsManagment() {
                   <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{selectedSport.numri_lojtareve}</p>
                 </div>
 
-                {/* Sport Type - displayed as non-editable text */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Type (Lloji)
@@ -653,7 +521,6 @@ export default function SportsManagment() {
                   <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{selectedSport.lloji}</p>
                 </div>
 
-                {/* Close button to dismiss the modal */}
                 <div className="flex gap-4 pt-4">
                   <button
                     type="button"
@@ -668,23 +535,16 @@ export default function SportsManagment() {
           </div>
         )}
 
-        {/* ===== EDIT SPORT MODAL ===== */}
-        {/* This modal is visible when showEditModal is true and a sport is selected */}
+        {/* Edit sport modal */}
         {showEditModal && selectedSport && (
-          // Dark overlay background
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseEditModal}
           >
-            {/* Modal dialog with editable form fields pre-filled with current values */}
             <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Sport</h3>
-              
-              {/* Form to edit sport information */}
               <form onSubmit={handleEditSubmit} className="space-y-4">
-                
-                {/* Sport Name Edit Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Sport Name (Emertimi)
@@ -693,14 +553,13 @@ export default function SportsManagment() {
                     type="text"
                     name="emertimi"
                     value={formData.emertimi}
-                    onChange={handleInputChange}  // Update formData as user types
+                    onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     placeholder="e.g., Football"
                     required
                   />
                 </div>
 
-                {/* Description Edit Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description (Pershkrimi)
@@ -716,7 +575,6 @@ export default function SportsManagment() {
                   />
                 </div>
 
-                {/* Number of Players Edit Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Number of Players (Numri Lojtareve)
@@ -732,33 +590,33 @@ export default function SportsManagment() {
                   />
                 </div>
 
-                {/* Sport Type Edit Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Type (Lloji)
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="lloji"
                     value={formData.lloji}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    placeholder="e.g., Team Sport"
                     required
-                  />
+                  >
+                    <option value="">Select type</option>
+                    {sportTypeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Form Action Buttons */}
                 <div className="flex gap-4 pt-4">
-                  {/* Save Changes button - submits updated data to backend */}
                   <button
                     type="submit"
                     className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg transition duration-200"
                   >
                     Save Changes
                   </button>
-                  
-                  {/* Cancel button - closes modal without saving changes */}
                   <button
                     type="button"
                     onClick={handleCloseEditModal}
@@ -772,36 +630,24 @@ export default function SportsManagment() {
           </div>
         )}
 
-        {/* ===== DELETE CONFIRMATION MODAL ===== */}
-        {/* This modal is visible when showDeleteModal is true and a sport is selected */}
+        {/* Delete confirmation modal */}
         {showDeleteModal && selectedSport && (
-          // Dark overlay background
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseDeleteModal}
           >
-            {/* Modal dialog asking user to confirm deletion */}
             <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}>
-              
-              {/* Warning title in red to indicate destructive action */}
               <h3 className="text-2xl font-bold text-red-600 mb-4">Delete Sport?</h3>
-              
-              {/* Confirmation message showing which sport will be deleted */}
               <p className="text-gray-700 mb-6">
                 Are you sure you want to delete <strong>{selectedSport.emertimi}</strong>? This action cannot be undone.
               </p>
-              
-              {/* Confirmation Action Buttons */}
               <div className="flex gap-4">
-                {/* Delete button - confirms deletion and calls handleDeleteConfirm */}
                 <button
                   onClick={handleDeleteConfirm}
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
                 >
                   Delete
                 </button>
-                
-                {/* Cancel button - closes modal without deleting */}
                 <button
                   onClick={handleCloseDeleteModal}
                   className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"

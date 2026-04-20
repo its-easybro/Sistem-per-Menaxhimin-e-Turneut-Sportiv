@@ -2,6 +2,42 @@ import { protect, requireAdmin } from "../middleware/auth.js";
 import express from "express";
 import pool from "../config/db.js";
 const router = express.Router();
+const sportTypeOptions = ["Ekipor", "Individual", "I dyfishtë"];
+
+function normalizeSportType(value) {
+  if (value === "I dyfishtÃ«" || value === "I dyfishte") {
+    return "I dyfishtë";
+  }
+
+  return value;
+}
+
+function validateSportPayload(body) {
+  const { emertimi, pershkrimi, numri_lojtareve, lloji } = body;
+
+  if (!emertimi?.trim()) {
+    return { error: "Emertimi i sportit eshte i detyrueshem." };
+  }
+
+  const playersCount = Number(numri_lojtareve);
+  if (!Number.isInteger(playersCount) || playersCount <= 0) {
+    return { error: "Numri i lojtareve duhet te jete numer pozitiv." };
+  }
+
+  const normalizedType = normalizeSportType(lloji);
+  if (!sportTypeOptions.includes(normalizedType)) {
+    return { error: `Lloji duhet te jete nje nga: ${sportTypeOptions.join(", ")}.` };
+  }
+
+  return {
+    value: {
+      emertimi: emertimi.trim(),
+      pershkrimi: pershkrimi?.trim() || null,
+      numri_lojtareve: playersCount,
+      lloji: normalizedType,
+    },
+  };
+}
 
 router.get("/", async (req, res) => {
   try {
@@ -27,7 +63,12 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", protect, requireAdmin, async (req, res) => {
-  const { emertimi, pershkrimi, numri_lojtareve, lloji } = req.body;
+  const validation = validateSportPayload(req.body);
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
+  }
+
+  const { emertimi, pershkrimi, numri_lojtareve, lloji } = validation.value;
   try {
     const result = await pool.query(
       `INSERT INTO sports (emertimi, pershkrimi, numri_lojtareve, lloji)
@@ -43,7 +84,12 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { emertimi, pershkrimi, numri_lojtareve, lloji } = req.body;
+  const validation = validateSportPayload(req.body);
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
+  }
+
+  const { emertimi, pershkrimi, numri_lojtareve, lloji } = validation.value;
 
   try {
     const result = await pool.query(
