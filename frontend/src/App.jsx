@@ -15,6 +15,7 @@ import Venues from "./pages/admin/venues";
 import MatchResults from "./pages/admin/MatchResults";
 import MatchReferees from "./pages/admin/MatchReferees";
 import Tournaments from "./pages/admin/Tournaments";
+import Referees from "./pages/admin/Referees";
 
 // Importing User Pages
 import Navbar from "./components/Navbar";
@@ -51,6 +52,7 @@ function App() {
           <Route path="/match-results" element={<MatchResults />} />
           <Route path="/match-referees" element={<MatchReferees />} />
           <Route path="/tournaments" element={<Tournaments />} />
+          <Route path="/referees" element={<Referees />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

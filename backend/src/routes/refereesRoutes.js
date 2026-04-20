@@ -30,12 +30,12 @@ router.get("/:id", async (req, res) => {
 
 // POST /referees
 router.post("/", protect, requireAdmin, async (req, res) => {
-    const { emri, mbiemri, email, telefoni, nr_licenses, kategoria, pervoja_vitesh } = req.body;
+    const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
 
     try {
         const result = await pool.query(`
-        INSERT INTO referees (emri,mbiemri,email,telefoni,nr_licenses,kategoria,pervoja_vitesh) VALUES ($1, $2 , $3, $4, $5, $6, $7)RETURNING *`,
-            [emri, mbiemri, email, telefoni, nr_licenses, kategoria, pervoja_vitesh]
+        INSERT INTO referees (emri,mbiemri,email,telefoni,nr_licences,kategoria,pervoja_vitesh) VALUES ($1, $2 , $3, $4, $5, $6, $7)RETURNING *`,
+            [emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh]
         );
         res.status(201).json(result.rows[0]);
 
@@ -47,11 +47,11 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 // PUT /referees/:id
 router.put("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
-    const { emri, mbiemri, email, telefoni, nr_licenses, kategoria, pervoja_vitesh } = req.body;
+    const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
     try {
         const result = await pool.query(`
-        UPDATE referees SET emri=$1,mbiemri=$2,email=$3,telefoni=$4,nr_licenses=$5,kategoria=$6,pervoja_vitesh =$7  WHERE id = $8 RETURNING *`,
-            [emri, mbiemri, email, telefoni, nr_licenses, kategoria, pervoja_vitesh, id]
+        UPDATE referees SET emri=$1,mbiemri=$2,email=$3,telefoni=$4,nr_licences=$5,kategoria=$6,pervoja_vitesh =$7  WHERE id = $8 RETURNING *`,
+            [emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh, id]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Referi nuk u gjet" });

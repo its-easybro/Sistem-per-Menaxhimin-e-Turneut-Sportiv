@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Flag,
   CalendarRange,
+  FlagTriangleRight,
 } from "lucide-react";
 
 const AdminRoute = () => {
@@ -111,6 +112,13 @@ const AdminRoute = () => {
               <ShieldHalf size={20} />
               Teams
             </Link>
+             <Link
+              to="/referees"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
+              <FlagTriangleRight  size = {20}/>
+              Referees
+            </Link>
             <Link
               to="/match-referees"
               className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
@@ -118,6 +126,7 @@ const AdminRoute = () => {
               <Flag size={20} />
               Match Referees
             </Link>
+            
           </nav>
         </div>
 
