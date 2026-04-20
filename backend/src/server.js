@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import pool from "./config/db.js";
 
+// Import routes
 import sportRoutes from "./routes/sportRoutes.js";
 import authRoutes from "./routes/auth.js";
 import playersRoutes from "./routes/playersRoutes.js";
@@ -16,6 +17,9 @@ import matchResultsRoutes from "./routes/matchResultsRoutes.js";
 import matchRefereesRoutes from "./routes/matchRefereesRoutes.js";
 import tournamentRegistrationsRoutes from "./routes/tournamentRegistrationsRoutes.js";
 import refereesRoutes from "./routes/refereesRoutes.js";
+import standingsRoutes from "./routes/standingsRoutes.js";
+
+// Load environment variables
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 3005;
@@ -24,12 +28,14 @@ const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(
   "",
 );
 
+// Middleware
 app.use(
   cors({
     origin: clientUrl,
     credentials: true,
   }),
 );
+//app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use("/sports", sportRoutes);
@@ -44,10 +50,14 @@ app.use("/match-results", matchResultsRoutes);
 app.use("/match-referees", matchRefereesRoutes);
 app.use("/tournament-registrations", tournamentRegistrationsRoutes);
 app.use("/referees", refereesRoutes);
+app.use("/standings", standingsRoutes);
+
+// Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
+// Test database connection
 async function testConnection() {
   try {
     const client = await pool.connect();
