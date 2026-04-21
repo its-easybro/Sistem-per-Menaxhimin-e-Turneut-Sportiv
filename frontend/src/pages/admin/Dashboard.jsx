@@ -5,11 +5,15 @@ import { Users, Trophy, Activity } from 'lucide-react';
 import axios from 'axios';
 
 const Dashboard = () => {
+  // Uses authenticated admin info for personalized dashboard content.
   const { user } = useContext(AuthContext);
+  // Stores top-card metrics shown on the overview page.
   const [stats, setStats] = useState({ users: 0, sports: 0 });
+  // Keeps the most recently registered users for the activity table.
   const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Loads dashboard totals and recent user registrations after auth is available.
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -33,6 +37,7 @@ const Dashboard = () => {
       }
     };
     
+    // Only admins are allowed to load dashboard analytics.
     if (user?.is_admin) {
       fetchStats();
     }
@@ -125,6 +130,7 @@ const Dashboard = () => {
     </div>
     );
   }
+  // Shows a skeleton layout while dashboard data is being fetched.
   if(loading){
     return renderSkeleton();
   }

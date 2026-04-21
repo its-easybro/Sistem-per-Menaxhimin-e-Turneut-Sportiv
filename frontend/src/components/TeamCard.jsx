@@ -1,10 +1,14 @@
 import React, { useState, useRef } from 'react';
 
 export const TeamCard = ({ image, name, role, description, linkedinUrl }) => {
+  // Toggles glow visibility while the cursor is over the card.
   const [visible, setVisible] = useState(false);
+  // Stores cursor coordinates relative to the card for glow positioning.
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  // References the card container to measure cursor offset bounds.
   const divRef = useRef(null);
 
+  // Repositions the glow effect to follow cursor movement inside the card.
   const handleMouseMove = (e) => {
     if (!divRef.current) return;
     const bounds = divRef.current.getBoundingClientRect();
@@ -15,7 +19,9 @@ export const TeamCard = ({ image, name, role, description, linkedinUrl }) => {
     <div
       ref={divRef}
       onMouseMove={handleMouseMove}
+      // Shows glow when entering the card area.
       onMouseEnter={() => setVisible(true)}
+      // Hides glow when leaving the card area.
       onMouseLeave={() => setVisible(false)}
       className="relative w-64 rounded-xl p-px bg-gray-900 backdrop-blur-md overflow-hidden shadow-lg cursor-pointer"
     >

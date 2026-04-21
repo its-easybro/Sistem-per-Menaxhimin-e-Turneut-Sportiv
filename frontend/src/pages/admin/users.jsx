@@ -5,7 +5,9 @@ import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
 
 export default function Users() {
+  // Uses auth context to enforce admin-only access and guard UI render timing.
   const { user, loading: authLoading } = useContext(AuthContext);
+  // Manages user records, modal visibility, selected row, and form state.
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -23,6 +25,7 @@ export default function Users() {
     is_admin: false,
   });
 
+  // Loads all users after confirming the current user is an admin.
   useEffect(() => {
     const loadUsers = async () => {
       if (!user?.is_admin) {
@@ -188,6 +191,7 @@ export default function Users() {
     }
   };
 
+  // Filters users by email, username, or full name from search input.
   const filteredUsers = users.filter((item) => {
     const query = searchQuery.toLowerCase();
 
@@ -198,6 +202,7 @@ export default function Users() {
     );
   });
 
+  // Waits for auth bootstrap so route protection decisions are accurate.
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -206,6 +211,7 @@ export default function Users() {
     );
   }
 
+  // Redirects non-admin users to login for protected admin pages.
   if (!user || !user.is_admin) {
     return <Navigate to="/login" replace />;
   }

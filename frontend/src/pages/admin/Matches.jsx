@@ -19,6 +19,7 @@ const formatDate = (isoDate) => {
 };
 
 export default function Matches() {
+  // Central admin page for managing matches and linked tournament/team/venue data.
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -47,7 +48,7 @@ export default function Matches() {
     faza: "",
   });
 
-  // Fetch matches data from backend via API
+  // Loads matches plus lookup datasets in one batch for form dropdowns.
   useEffect(() => {
     const loadData = async () => {
       if (!user?.is_admin) {
@@ -251,6 +252,7 @@ export default function Matches() {
   };
 
   const handleAddResult = (matchId) => {
+    // Opens match results page prefilled for the selected match.
     navigate(`/match-results?matchId=${matchId}`);
   };
 
@@ -397,8 +399,10 @@ export default function Matches() {
     );
   }
 
+  // Renders skeleton placeholders while initial API requests are in flight.
   if (loading) return renderSkeleton();
 
+  // Redirects any non-admin user away from this protected page.
   if (!user || !user.is_admin) {
     return <Navigate to="/login" replace />;
   }

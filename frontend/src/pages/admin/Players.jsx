@@ -19,6 +19,7 @@ const formatDate = (isoDate) => {
 };
 
 export default function Players() {
+  // Uses auth context to gate access to player management operations.
   const { user } = useContext(AuthContext);
 
   // State Variables
@@ -99,6 +100,7 @@ export default function Players() {
   };
 
   const getTeamSelectValue = (teamValue) => {
+    // Normalizes mixed team values to an id string accepted by the select input.
     if (!teamValue) return "";
 
     const matchedTeam = teams.find(
@@ -109,6 +111,7 @@ export default function Players() {
   };
 
   const buildPlayerPayload = () => ({
+    // Sends null when no team is selected to match backend expectations.
     ...formData,
     ekipi_id: formData.ekipi_id || null,
   });
@@ -299,6 +302,7 @@ export default function Players() {
 
   // Conditional loading / Skeleton loading
 
+  // Redirects unauthorized users away from admin-only pages.
   if (!user || !user.is_admin) {
     return <Navigate to=" /login" replace />;
   }

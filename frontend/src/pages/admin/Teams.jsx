@@ -18,8 +18,10 @@ const formatDate = (isoDate) => {
 };
 
 export default function Teams() {
+    // Provides admin-only team CRUD with modal-driven forms.
     const { user } = useContext(AuthContext);
 
+    // Stores team list, active dialogs, selected row, and form values.
     const [teams , setTeams ] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -41,6 +43,7 @@ export default function Teams() {
 
     });
 
+    // Loads team records after auth is ready and admin access is confirmed.
     useEffect(() => {
         const loadTeams = async () => {
         if (!user?.is_admin) {
@@ -244,6 +247,7 @@ export default function Teams() {
 
     };
 
+    // Redirects non-admin users away from protected team management.
     if(!user || !user.is_admin) {
         return < Navigate to="/login" replace/>;
     }

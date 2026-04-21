@@ -3,6 +3,7 @@ import React from 'react'
 export default function Example() {
     return (
         <>
+            {/* Loads Poppins font styling for this page section. */}
             <style>{`
                 @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
             
@@ -10,10 +11,13 @@ export default function Example() {
                     font-family: "Poppins", sans-serif;
                 }
             `}</style>
+            {/* Main contact section with intro content and form panel. */}
             <section className='relative bg-black flex flex-col md:flex-row justify-center px-4 py-20 gap-20'>
                 
+                {/* Decorative background glow to add depth behind content. */}
                 <div className='fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none mb-10 size-140 bg-green-500/35 rounded-full blur-[200px]'></div>
                 
+                {/* Left side call-to-action and social proof visuals. */}
                 <div className='text-center md:text-left mt-12'>
                     <div className="flex items-center  p-1.5 rounded-full border border-green-900 text-xs w-fit mx-auto md:mx-0">
                         <div className="flex items-center">
@@ -27,6 +31,7 @@ export default function Example() {
                     <p className='text-sm/6 text-white max-w-[345px] mt-4 mx-auto md:mx-0'>Let our design team craft a website that elevates your brand. Book a free session today.</p> 
                 </div>
                         
+                {/* Right side contact form for collecting user details and message. */}
                 <div className='w-full max-w-lg max-md:mx-auto bg-[#00A63E]/0 backdrop-blur-sm border border-white/10 rounded-xl p-8'>
                     <form className='space-y-6'>
                         <div>

@@ -15,8 +15,10 @@ const initialFormData = {
 };
 
 export default function Venues() {
+  // Venue CRUD page protected by admin authentication context.
   const { user } = useContext(AuthContext);
 
+  // Stores venue rows, modal state, selected item, and active form data.
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,6 +30,7 @@ export default function Venues() {
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState(initialFormData);
   const [alert, setAlert] = useState(null);
+  // Loads venues when admin access is confirmed.
   useEffect(() => {
     const loadVenues = async () => {
       if (!user?.is_admin) {
@@ -126,6 +129,7 @@ export default function Venues() {
   };
 
   const buildPayload = () => ({
+    // Normalizes optional numeric/boolean fields before API submission.
     ...formData,
     kapaciteti: formData.kapaciteti === "" ? null : Number(formData.kapaciteti),
     ndricimi: Boolean(formData.ndricimi),
@@ -210,6 +214,7 @@ export default function Venues() {
     }
   };
 
+  // Filters venue list by key searchable fields from the search box.
   const filteredVenues = venues.filter((venue) => {
     const query = searchQuery.toLowerCase();
 

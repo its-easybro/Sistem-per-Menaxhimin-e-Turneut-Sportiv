@@ -31,6 +31,7 @@ const statusOptions = [
 ];
 
 function validateTournamentForm(formData) {
+  // Validates required fields and business rules before API submission.
   if (!formData.emertimi.trim()) {
     return "Tournament name is required.";
   }
@@ -73,6 +74,7 @@ function validateTournamentForm(formData) {
 }
 
 function normalizeTournamentForm(formData) {
+  // Trims text fields to keep saved tournament data consistent.
   return {
     ...formData,
     emertimi: formData.emertimi.trim(),
@@ -82,6 +84,7 @@ function normalizeTournamentForm(formData) {
 }
 
 function getStatusBadgeClasses(status) {
+  // Maps tournament status values to badge color classes.
   if (status === "Aktiv") return "bg-green-100 text-green-700";
   if (status === "Regjistrimi") return "bg-blue-100 text-blue-700";
   if (status === "Përfunduar") return "bg-gray-200 text-gray-700";
@@ -90,6 +93,7 @@ function getStatusBadgeClasses(status) {
 }
 
 function getFormatBadgeClasses(format) {
+  // Maps tournament format values to badge color classes.
   if (format === "Liga") return "bg-purple-100 text-purple-700";
   if (format === "Grup + Eliminim") return "bg-amber-100 text-amber-700";
   if (format === "Vetëm Grup") return "bg-sky-100 text-sky-700";
@@ -254,7 +258,9 @@ function TournamentFormFields({ formData, sports, onChange }) {
 }
 
 export default function Tournaments() {
+  // Admin page for tournament CRUD with supporting sport lookups.
   const { user } = useContext(AuthContext);
+  // Stores tournament/sport datasets plus modal, selection, and form UI state.
   const [tournaments, setTournaments] = useState([]);
   const [sports, setSports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -268,6 +274,7 @@ export default function Tournaments() {
   const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
 
+  // Loads tournaments and sports in parallel for table and form dropdowns.
   useEffect(() => {
     const loadTournaments = async () => {
       if (!user?.is_admin) {
@@ -502,6 +509,7 @@ export default function Tournaments() {
     }));
   };
 
+  // Applies search against tournament name, sport, location, and status.
   const filteredTournaments = tournaments.filter((item) => {
     const query = searchQuery.toLowerCase();
 

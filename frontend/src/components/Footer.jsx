@@ -1,6 +1,7 @@
 const App = () => {
     return (
         <>
+            {/* Loads Geist font locally for this footer block. */}
             <style>
                 {`
                     @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
@@ -9,10 +10,13 @@ const App = () => {
                     }
                 `}
             </style>
+            {/* Outer dark background wrapper for footer contrast. */}
             <div className='bg-black pt-20 px-4'>
                 <footer className="bg-[#131314] w-full max-w-[1350px] mx-auto text-white pt-8 lg:pt-12 px-4 sm:px-8 md:px-16 lg:px-28 rounded-tl-3xl rounded-tr-3xl overflow-hidden">
+                    {/* Main footer content split into brand block and link columns. */}
                     <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-6 gap-8 md:gap-12">
                         
+                        {/* Brand description and social links. */}
                         <div className="lg:col-span-3 space-y-6">
                             <a href="https://prebuiltui.com" className="block">
                                 <svg width="157" height="40" viewBox="0 0 157 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -52,6 +56,7 @@ const App = () => {
                             </div>
                         </div>
 
+                        {/* Navigation groups for products, resources, and company links. */}
                         <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12 lg:gap-28 items-start">
                             {/* Products */}
                             <div>
@@ -92,10 +97,12 @@ const App = () => {
                         </div>
                     </div>
 
+                    {/* Bottom legal row with copyright and short note. */}
                     <div className="max-w-7xl mx-auto mt-12 pt-4 border-t border-neutral-700 flex justify-between items-center">
                         <p className="text-neutral-400 text-sm">© 2026 PrebuiltUI Design</p>
                         <p className='text-sm text-neutral-400'>All right reserved.</p>
                     </div>
+                    {/* Decorative glow and outlined brand wordmark. */}
                     <div className="relative">
                         <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl h-full max-h-64 bg-green-500 rounded-full blur-[170px] pointer-events-none"/>
                         <h3 className="text-center font-extrabold leading-[0.7] text-transparent text-[clamp(3rem,15vw,15rem)] [-webkit-text-stroke:1px_#0D542B] mt-6" >

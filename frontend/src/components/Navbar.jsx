@@ -37,10 +37,13 @@ const callsToAction = [
 ]
 
 const Navbar = () => {
+  // Tracks open/closed state for the mobile navigation drawer.
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  // Reads current session user and logout action from auth context.
   const { user, logout } = useContext(AuthContext)
   const navigate = useNavigate()
 
+  // Logs out the user, closes mobile UI state, then returns to home.
   const handleLogout = async () => {
     await logout()
     setMobileMenuOpen(false)
@@ -125,6 +128,7 @@ const Navbar = () => {
             Company
           </a>
         </PopoverGroup>
+        {/* Desktop auth actions vary by user role. */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
           {!user ? (
             <Link to="/login" className="text-sm/6 font-semibold text-white">
@@ -146,6 +150,7 @@ const Navbar = () => {
           )}
         </div>
       </nav>
+      {/* Mobile navigation drawer for small screens. */}
       <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
         <div className="fixed inset-0 z-50" />
         <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-gray-900 p-6 sm:max-w-sm sm:ring-1 sm:ring-gray-100/10">
@@ -208,6 +213,7 @@ const Navbar = () => {
                 </a>
               </div>
               <div className="py-6">
+                {/* Mobile auth actions also switch for guest/admin/user states. */}
                 {!user ? (
                   <Link
                     to="/login"

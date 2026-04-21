@@ -27,21 +27,27 @@ import AboutUs from "./pages/Users/AboutUs";
 import ContactUs from "./pages/Users/ContactUs";
 
 function App() {
+  // Waits for initial auth/session check before rendering app routes.
   const { loading } = useContext(AuthContext);
 
   if (loading) {
+    // Prevents route flicker while user auth state is still being resolved.
     return <div>Loading...</div>;
   }
 
   return (
+    // Enables client-side routing across all pages.
     <BrowserRouter>
+      {/* Shared top navigation shown on all routes. */}
       <Navbar />
       <Routes>
+        {/* Public routes accessible without admin privileges. */}
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/contact-us" element={<ContactUs />} />
+        {/* Wraps all nested routes with admin access protection + admin layout. */}
         <Route element={<AdminRoute />}>
-          {/*add admin routes in this route*/}
+          {/* Admin-only pages rendered inside AdminRoute's <Outlet />. */}
           <Route path="/players" element={<Players />} />
           <Route path="/sports" element={<Sports />} />
           <Route path="/users" element={<Users />} />
@@ -56,9 +62,11 @@ function App() {
           <Route path="/referees" element={<Referees />} />
           <Route path="/standings" element={<Standings />} />
         </Route>
+        {/* Public auth pages for signing in and creating an account. */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Routes>
+      {/* Shared footer shown on all routes. */}
       <Footer />
     </BrowserRouter>
   );

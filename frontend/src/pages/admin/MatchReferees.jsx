@@ -4,6 +4,7 @@ import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
 
 export default function MatchReferees() {
+  // Protects this management page behind authenticated admin context.
   const { user } = useContext(AuthContext);
 
   // State Variables
@@ -24,7 +25,7 @@ export default function MatchReferees() {
     roli: "Kryegjyqtar",
   });
 
-  // Referee roles
+  // Allowed role values when assigning referees to a match.
   const roles = [
     "Kryegjyqtar",
     "Asistent 1",
@@ -33,7 +34,7 @@ export default function MatchReferees() {
     "VAR",
   ];
 
-  // Fetch data from backend
+  // Loads assignments with related matches/referees used by table and forms.
   useEffect(() => {
     const loadData = async () => {
       if (!user?.is_admin) {
@@ -329,8 +330,10 @@ export default function MatchReferees() {
     );
   }
 
+  // Shows table skeleton while assignment data is still loading.
   if (loading) return renderSkeleton();
 
+  // Enforces admin-only access for this route.
   if (!user || !user.is_admin) {
     return <Navigate to="/login" replace />;
   }

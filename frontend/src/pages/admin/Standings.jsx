@@ -18,8 +18,10 @@ const formatDate = (isoDate) => {
 };
 
 export default function Standings() {
+  // Uses auth context to protect standings management routes.
   const { user } = useContext(AuthContext);
 
+  // Holds standings data, filters, modal state, and active form fields.
   const [standings, setStandings] = useState([]);
   const [tournaments, setTournaments] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -94,11 +96,13 @@ export default function Standings() {
   }, [user]);
 
   const getTournamentName = (tournamentId) => {
+    // Resolves tournament label for table rendering from cached list.
     const tournament = tournaments.find((t) => t.id === tournamentId);
     return tournament?.emertimi || "Unknown Tournament";
   };
 
   const getTeamName = (teamId) => {
+    // Resolves team label for table rendering from cached list.
     const team = teams.find((t) => t.id === teamId);
     return team?.emertimi || "Unknown Team";
   };
@@ -409,6 +413,7 @@ export default function Standings() {
     );
 
   // Filter standings based on search and tournament filter
+  // Filters standings by tournament/team names and selected tournament id.
   const filteredStandings = standings.filter((standing) => {
     const matchesTournament =
       !filterTournament || standing.turneu_id === parseInt(filterTournament);

@@ -6,19 +6,24 @@ const Login = () => {
   // State for form inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Holds user-facing error messages from failed login attempts.
   const [error, setError] = useState('');
+  // Disables submit UI while the login request is in progress.
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  // Uses shared auth context to call backend login logic.
   const { login } = useContext(AuthContext);
 
   // Handle form submission
   const handleSubmit = async (e) => {
+    // Prevents default browser form reload.
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       const data = await login(email, password);
 
+      // Redirects admins to dashboard and regular users to the home page.
       if (data?.userData?.is_admin || data?.user?.is_admin) {
         navigate('/dashboard');
       } else {
@@ -28,6 +33,7 @@ const Login = () => {
       setError("Invalid email or password");
       console.log(err.message);
     } finally {
+      // Re-enables submit button after request finishes.
       setLoading(false);
     }
   };

@@ -15,8 +15,10 @@ const initialFormData = {
 };
 
 export default function Referees() {
+    // Keeps the page restricted to authenticated admins from auth context.
     const {user} = useContext(AuthContext);
 
+    // Stores list data, modal state, selection, and current form values.
     const [referees, setReferees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -28,6 +30,7 @@ export default function Referees() {
     const [selectedReferee, setSelectedReferee] = useState(null);
     const [searchQuery, setSearchQuery ] = useState("");
     const [formData, setFormData] = useState(initialFormData);
+    // Loads referees once auth state is available and user is admin.
     useEffect(()=> {
         const loadReferees = async () => {
             if(!user?.is_admin){
@@ -118,6 +121,7 @@ export default function Referees() {
 
     };
     const buildPayload = () => ({
+        // Converts optional numeric inputs before sending to backend.
         ...formData,
        
         pervoja_vitesh: formData.pervoja_vitesh === "" ? null : Number(formData.pervoja_vitesh),
@@ -197,6 +201,7 @@ export default function Referees() {
             setAlert({type:"error", message: "Failed to delete referee"+err.message});
         }
     };
+    // Applies search filter across identity and category fields.
     const filteredReferees = referees.filter((referee)=>{
         const query = searchQuery.toLowerCase();
         return (

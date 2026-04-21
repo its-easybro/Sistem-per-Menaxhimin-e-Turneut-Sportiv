@@ -19,13 +19,17 @@ import {
 } from "lucide-react";
 
 const AdminRoute = () => {
+  // Reads auth/session state and logout action from the shared auth context.
   const { user, loading, logout } = useContext(AuthContext);
+  // Controls whether the left admin sidebar is visible.
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // Waits for auth bootstrap before deciding access.
   if (loading) {
     return <div>Loading...</div>;
   }
 
+  // Blocks non-admin users and redirects them to the login page.
   if (!user || (!user.is_admin && user.is_admin !== true)) {
     return <Navigate to="/login" />;
   }
@@ -42,6 +46,7 @@ const AdminRoute = () => {
               Admin Pages
             </h2>
             <button
+              // Collapses the sidebar in the current layout.
               onClick={() => setIsSidebarOpen(false)}
               className="text-gray-400 hover:text-gray-600 transition-colors p-1"
               aria-label="Close Sidebar"
@@ -153,6 +158,7 @@ const AdminRoute = () => {
             </div>
           </div>
           <button
+            // Ends session and clears local auth state via context.
             onClick={logout}
             className="flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-bold w-full px-2 py-2 rounded-lg hover:bg-red-50 transition-colors"
           >
@@ -167,6 +173,7 @@ const AdminRoute = () => {
         {!isSidebarOpen && (
           <div className="mb-4 shrink-0">
             <button
+              // Re-opens the sidebar when it is hidden.
               onClick={() => setIsSidebarOpen(true)}
               className="p-2.5 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
               aria-label="Open Sidebar"
@@ -176,6 +183,7 @@ const AdminRoute = () => {
           </div>
         )}
         <div className="flex-1">
+          {/* Renders child admin route content inside the protected layout. */}
           <Outlet />
         </div>
       </main>

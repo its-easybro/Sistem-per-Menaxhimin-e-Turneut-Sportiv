@@ -4,14 +4,18 @@ import { AUTH_API_URL } from '../config/api';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  // Holds the currently authenticated user object or null when signed out.
   const [user, setUser] = useState(null);
+  // Prevents rendering auth-dependent UI before initial session check completes.
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Restores an existing session from the server when the app first mounts.
     const checkLoggedIn = async () => {
       try {
         const response = await fetch(`${AUTH_API_URL}/me`, {
           method: 'GET',
+          // Sends HTTP-only auth cookies with the request.
           credentials: 'include',
         });
 
@@ -19,25 +23,30 @@ export const AuthProvider = ({ children }) => {
           const data = await response.json();
           setUser(data);
         } else {
+          // Treats any non-OK response as unauthenticated.
           setUser(null);
         }
       } catch (error) {
         console.error('Failed to fetch user', error);
+        // Fallback to signed-out state if session lookup fails.
         setUser(null);
       }
 
+      // Marks auth bootstrap as finished in both success and error paths.
       setLoading(false);
     };
 
     checkLoggedIn();
   }, []);
 
+  // Logs in with credentials and stores returned user info in context state.
   const login = async (email, password) => {
     const response = await fetch(`${AUTH_API_URL}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      // Required so cookie-based sessions are set by the backend.
       credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
@@ -52,6 +61,7 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  // Attempts server logout, then always clears local user state.
   const logout = async () => {
     try {
       await fetch(`${AUTH_API_URL}/Logout`, {

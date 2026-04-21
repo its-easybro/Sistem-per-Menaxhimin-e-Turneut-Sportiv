@@ -6,26 +6,35 @@ import axios from 'axios';
 import { AUTH_API_URL } from '../../config/api';
 
 const Register = () => {
+  // Captures registration form input values.
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Stores a user-friendly error when registration fails.
   const [error, setError] = useState('');
+  // Tracks submit lifecycle to support loading UI behavior.
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  // Reuses shared login action to sign in immediately after registration.
   const { login } = useContext(AuthContext);
 
+  // Submits registration, then auto-authenticates the new user.
   const handleSubmit = async (e) => {
+    // Prevents full-page reload on form submit.
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
+      // Creates the user account on the auth API.
       await axios.post(`${AUTH_API_URL}/register`, { username, email, password }, { withCredentials: true });
+      // Logs in right away so the user does not need to sign in manually.
       await login(email, password);
       navigate('/');
     } catch (err) {
       setError("Error occurred while registering");
       console.log(err.message);
     } finally {
+      // Marks request completion for UI state reset.
       setLoading(false);
     }
   };

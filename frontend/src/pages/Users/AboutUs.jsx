@@ -6,6 +6,7 @@ import ErikImg from "../../assets/team/Erik.png";
 const AboutUs = () => {
   return (
     <>
+      {/* Loads Poppins font styling for this page section. */}
       <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
             
@@ -13,6 +14,7 @@ const AboutUs = () => {
                     font-family: 'Poppins', sans-serif;
                 }
             `}</style>
+      {/* Intro heading and short project mission statement. */}
       <h1 className="text-3xl font-semibold text-center mx-auto mt-8">About us</h1>
       <p className="text-sm text-slate-500 text-center mt-2 max-w-md mx-auto">
         This Sports Tournament Management System was created to facilitate the organization and smooth running of sports activities.
@@ -24,6 +26,7 @@ const AboutUs = () => {
           alt=""
         />
         <div>
+          {/* Highlights the platform's core capabilities. */}
           <h1 className="text-3xl font-semibold">Core Features</h1>
           <p className="text-sm text-slate-500 mt-2">
             Provides an exceptional experience for organizers, players, and referees with advanced features.
@@ -60,6 +63,7 @@ const AboutUs = () => {
           </div>
         </div>
       </div>
+      {/* Team member cards with roles and profile links. */}
       <div className="flex flex-col items-center text-center gap-3 py-8">
         <h1 className="text-3xl md:text-4xl font-semibold mb-4 text-gray-800">
           Meet the Team

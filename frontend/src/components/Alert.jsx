@@ -1,27 +1,34 @@
 import { useEffect, useState } from 'react';
 
 export const Alert = ({ type = 'success', message, onClose, autoClose = true, duration = 3000 }) => {
+  // Controls whether the alert is rendered on screen.
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    // Auto-dismisses the alert after the configured duration.
     if (autoClose) {
       const timer = setTimeout(() => {
         setIsVisible(false);
+        // Notifies parent components that the alert has closed.
         onClose && onClose();
       }, duration);
 
+      // Prevents pending timers when props change or component unmounts.
       return () => clearTimeout(timer);
     }
   }, [autoClose, duration, onClose]);
 
+  // Stops rendering entirely once the alert is dismissed.
   if (!isVisible) return null;
 
+  // Switches visual theme between success and error variants.
   const isSuccess = type === 'success';
   const bgColor = isSuccess ? 'bg-green-100' : 'bg-red-100';
   const borderColor = isSuccess ? 'border-green-400' : 'border-red-400';
   const textColor = isSuccess ? 'text-green-700' : 'text-red-700';
   const buttonHoverBg = isSuccess ? 'hover:bg-green-200' : 'hover:bg-red-200';
 
+  // Handles manual close from the dismiss button.
   const handleClose = () => {
     setIsVisible(false);
     onClose && onClose();

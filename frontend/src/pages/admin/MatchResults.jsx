@@ -21,9 +21,11 @@ const formatDate = (isoDate) => {
 
 // State Variables
 export default function MatchResults() {
+  // Handles admin CRUD for match results and related participant metadata.
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  // Prevents auto-open behavior from running more than once per page load.
   const hasOpenedPreselectedModal = useRef(false);
   const [MatchResults, setMatchResults] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -48,7 +50,7 @@ export default function MatchResults() {
     mvp_id: "",
   });
 
-  // Fetch Match Result data from backend via API
+  // Loads results and all related entities used in winner/MVP/referee lookups.
   useEffect(() => {
     const loadMatchResults = async () => {
       if (!user?.is_admin) {
@@ -368,6 +370,7 @@ export default function MatchResults() {
 
   const preselectedMatchId = searchParams.get("matchId");
 
+  // Auto-opens create modal when arriving from Matches with ?matchId=<id>.
   useEffect(() => {
     if (!preselectedMatchId) return;
     if (loading || matches.length === 0) return;
@@ -397,7 +400,7 @@ export default function MatchResults() {
     }
   }, [preselectedMatchId, eligibleMatches, loading, matches.length, navigate]);
 
-  // Conditional rendering based on auth
+  // Blocks non-admin users from accessing result management.
   if (!user || (!user.is_admin && user.roli !== "admin")) {
     return <Navigate to="/" replace />;
   }
@@ -425,6 +428,7 @@ export default function MatchResults() {
     return <div className="p-8 text-center text-red-500">{error}</div>;
   }
 
+  // Filters result cards by home team, away team, or tournament name.
   const filteredMatches = MatchResults.filter(
     (match) =>
       (match.ekipi_shtepiak &&

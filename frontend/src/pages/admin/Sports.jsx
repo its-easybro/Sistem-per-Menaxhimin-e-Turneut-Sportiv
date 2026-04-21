@@ -14,6 +14,7 @@ const initialFormData = {
 const sportTypeOptions = ['Ekipor', 'Individual', 'I dyfishtë'];
 
 export default function SportsManagment() {
+  // Uses auth context for access control and initial auth-loading state.
   const { user, loading: authLoading } = useContext(AuthContext);
 
   // State variables
@@ -71,6 +72,7 @@ export default function SportsManagment() {
   };
 
   const buildSportPayload = () => ({
+    // Trims text fields and normalizes numeric player count.
     emertimi: formData.emertimi.trim(),
     pershkrimi: formData.pershkrimi.trim(),
     numri_lojtareve:
@@ -280,6 +282,7 @@ export default function SportsManagment() {
     </div>
   );
 
+  // Filters sports by name, description, or competition type.
   const filteredSports = sports.filter((sport) =>
     sport.emertimi?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
