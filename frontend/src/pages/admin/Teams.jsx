@@ -401,7 +401,7 @@ export default function Teams() {
                 <th className="px-4 py-3 text-left font-semibold">Contact</th>
                 <th className="px-4 py-3 text-left font-semibold">Email</th>
                 <th className="px-4 py-3 text-left font-semibold">City</th>
-                <th className="px-4 py-3 text-center font-semibold">Start Date</th>
+                <th className="px-4 py-3 text-center font-semibold">Founded Date</th>
                 <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 
               

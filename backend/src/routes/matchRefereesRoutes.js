@@ -3,7 +3,7 @@ import pool from "../config/db.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 const router = express.Router();
 
-// Rruge per te marre te gjithe referejte e ndeshjes. Kjo rruge eshte e mbrojtur.
+// Route for managing match referees. This route is protected and only admins can use it.
 router.get("/", protect, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM matchreferees ORDER BY id");
@@ -13,7 +13,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// Rruge per te marre nje referi specifik te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur.
+// Route for getting a specific match referee by its ID. This route is protected.
 router.get("/:id", protect, async (req, res) => {
   const { id } = req.params;
   try {
@@ -30,7 +30,7 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
-// Rruge per te krijuar nje referi te ri per nje ndeshje. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new match referee. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
   if (!ndeshja_id || !gjyqtari_id || !roli) {
@@ -49,7 +49,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te perditesuar nje referi ekzistues te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for updating an existing match referee by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
@@ -72,7 +72,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te fshire nje referi ekzistues te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing match referee by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
@@ -89,5 +89,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Export the router to be used in server.js
 export default router;

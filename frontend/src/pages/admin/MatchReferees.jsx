@@ -1,7 +1,8 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import { API_BASE_URL } from "../../config/api"
+import { Alert } from "../../components/Alert";
 
 export default function MatchReferees() {
   // Protects this management page behind authenticated admin context.
@@ -19,6 +20,7 @@ export default function MatchReferees() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState({
     ndeshja_id: "",
     gjyqtari_id: "",
@@ -133,10 +135,10 @@ export default function MatchReferees() {
         gjyqtari_id: "",
         roli: "Kryegjyqtar",
       });
-      alert("Referee assignment created successfully!");
+      setAlert({ type: "success", message: "Assignment created successfully!" });
     } catch (err) {
       console.error("Error creating assignment:", err);
-      alert("Error creating assignment: " + err.message);
+      setAlert({ type: "error", message: "Error creating assignment: " + err.message });
     }
   };
 
@@ -237,10 +239,10 @@ export default function MatchReferees() {
       );
       setShowEditModal(false);
       setSelectedAssignment(null);
-      alert("Assignment updated successfully!");
+      setAlert({ type: "success", message: "Assignment updated successfully!" });
     } catch (err) {
       console.error("Error updating assignment:", err);
-      alert("Error updating assignment: " + err.message);
+      setAlert({ type: "error", message: "Error updating assignment: " + err.message });
     }
   };
 
@@ -265,10 +267,10 @@ export default function MatchReferees() {
       setAssignments(assignments.filter((a) => a.id !== selectedAssignment.id));
       setSelectedAssignment(null);
       setShowDeleteModal(false);
-      alert("Assignment deleted successfully!");
+      setAlert({ type: "success", message: "Assignment deleted successfully!" });
     } catch (err) {
       console.error("Error deleting assignment:", err);
-      alert("Error deleting assignment: " + err.message);
+      setAlert({ type: "error", message: "Error deleting assignment: " + err.message });
     }
   };
 
@@ -359,6 +361,13 @@ export default function MatchReferees() {
 
   return (
     <div className="bg-gray-50 p-4">
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">

@@ -6,12 +6,14 @@ import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// Cookie options for JWT token
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict",
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 };
+// Helper function to generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
     {
@@ -25,6 +27,7 @@ const generateToken = (user) => {
   );
 };
 
+// Helper function to build user response object
 const buildUserResponse = (user) => ({
   id: user.id,
   email: user.email,
@@ -41,6 +44,7 @@ const buildUserResponse = (user) => ({
 //Register new user
 router.post("/register", async (req, res) => {
     try {
+        // Extract and validate input fields from the request body
         const { email, password, username, full_name, emri: rawEmri, mbiemri: rawMbiemri } = req.body;
         const emri = rawEmri?.trim() || username?.trim() || full_name?.trim()?.split(/\s+/)[0] || "";
         const mbiemri = rawMbiemri?.trim() || full_name?.trim()?.split(/\s+/).slice(1).join(" ") || "";
@@ -48,7 +52,7 @@ router.post("/register", async (req, res) => {
         if (!email || !password || !emri) {
             return res.status(400).json({ message: "Please provide email, password, and a name or username" });
         }
-
+        // Check if a user with the same email already exists in the database
         const userExists = await pool.query(
             "SELECT id FROM users WHERE email = $1",
             [email]
@@ -57,16 +61,16 @@ router.post("/register", async (req, res) => {
         if (userExists.rows.length > 0) {
             return res.status(400).json({ message: "Email already exists" });
         }
-
+        // Hash the password before storing it in the database
         const hashedPassword = await bcrypt.hash(password, 10);
-
+        // Insert new user into the database and return the created user data (excluding password)
         const newUser = await pool.query(
             `INSERT INTO users (emri, mbiemri, email, password, roli, statusi)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id, email, emri, mbiemri, roli, statusi, created_at`,
             [emri, mbiemri, email, hashedPassword, "user", "Aktiv"]
         );
-
+        // Generate JWT token and set it in the cookie
         const token = generateToken(newUser.rows[0]);
         res.cookie("token", token, cookieOptions);
 
@@ -81,12 +85,13 @@ router.post("/register", async (req, res) => {
 //Login
 router.post("/login", async(req, res) => {
     try{
+        // Extract and validate input fields from the request body
         const { email, password, requireAdmin = false } = req.body;
-        
+        // Check if email and password are provided
         if(!email || !password){
         return res.status(400).json({ message: "Please provide all required fields "});
         }
-
+        // Find the user in the database by email
         const user = await pool.query(
             `SELECT id, email, emri, mbiemri, password, roli, statusi, created_at
              FROM users
@@ -97,14 +102,14 @@ router.post("/login", async(req, res) => {
         if(user.rows.length === 0){
             return res.status(401).json({ message: "Invalid credentials" })
         }
-
+        // Compare the provided password with the hashed password stored in the database
         const userData = user.rows[0];
         const isMatch = await bcrypt.compare(password, userData.password);
 
         if (!isMatch){
             return res.status(403).json({ message: "Invalid credentials" });
         }
-
+        // Generate JWT token and set it in the cookie
         const token = generateToken(userData);
 
         res.cookie("token", token, cookieOptions);
@@ -140,6 +145,7 @@ router.get("/me", protect, async (req, res) => {
 
 //Logout
 router.post("/Logout", async(req, res) => {
+    // Clear the token cookie by setting it to an empty value and expiring it immediately
     res.cookie( "token", "" , { ...cookieOptions, maxAge: 1});
     res.json({ message: "Logged out successfully"});
 });

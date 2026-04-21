@@ -4,7 +4,7 @@ import pool from "../config/db.js";
 
 const router = express.Router();
 
-// Statuset e mundshme te regjistrimit ne turne
+// Posible registration statuses
 const registrationStatusOptions = [
   "Në Pritje",
   "Aprovuar",
@@ -12,7 +12,7 @@ const registrationStatusOptions = [
   "Anuluar",
 ];
 
-// Query baze per te marre te dhenat e regjistrimeve me emrat e turneve dhe ekipeve
+// Query base for fetching registration data with tournament and team names
 const registrationSelectQuery = `
   SELECT
     tr.id,
@@ -29,7 +29,7 @@ const registrationSelectQuery = `
   LEFT JOIN Teams tm ON tr.ekipi_id = tm.id
 `;
 
-// Funksione ndihmese per validimin dhe trajtimin e te dhenave
+// Functions to help with validation and handling of registration data
 function parsePositiveInteger(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -38,7 +38,7 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
-// Validon ID-n e regjistrimit nga parametri i rrugeve
+// Validates the registration ID from route parameters
 function validateRouteId(id) {
   const parsedId = parsePositiveInteger(id);
   if (!parsedId) {
@@ -48,20 +48,20 @@ function validateRouteId(id) {
   return { value: parsedId };
 }
 
-// Validon te dhenat e regjistrimit nga trupi i kerkese dhe i kthen ato ne formatin e duhur per bazen e te dhenave
+// Validates the registration data from the request body and converts it to the appropriate format for the database
 function validateRegistrationPayload(body) {
   const turneuId = parsePositiveInteger(body.turneu_id);
   if (!turneuId) {
     return { error: "Turneu eshte i pavlefshem." };
   }
 
-  // EkipiId mund te jete null per te lejuar regjistrime pa ekip, por nese eshte i dhene duhet te jete valid
+  // EkipiID can be null to allow registrations without a team, but if given it must be valid
   const ekipiId = parsePositiveInteger(body.ekipi_id);
   if (!ekipiId) {
     return { error: "Ekipi eshte i pavlefshem." };
   }
 
-  // Statusi mund te jete bosh (do te marre vleren default) ose nje nga opsionet e lejuara
+  // Status can be empty (will take default value) or one of the allowed options
   const rawStatus = typeof body.statusi === "string" ? body.statusi.trim() : "";
   const statusi = rawStatus || registrationStatusOptions[0];
   if (!registrationStatusOptions.includes(statusi)) {
@@ -70,7 +70,7 @@ function validateRegistrationPayload(body) {
     };
   }
 
-  // Tarifa e paguar mund te jete bosh (do te marre vleren 0) ose nje numer jo-negativ
+  // Paid fee can be empty (will take value 0) or a non-negative number
   const tarifaPaguar =
     body.tarifa_paguar === "" ||
     body.tarifa_paguar === null ||
@@ -82,7 +82,7 @@ function validateRegistrationPayload(body) {
     return { error: "Tarifa e paguar duhet te jete numer jo-negativ." };
   }
 
-  // Nese te gjitha validimet kalojne, kthe vlerat e formatuara per tu perdorur ne query
+  // If all validations pass, return the formatted values for use in the query
   return {
     value: {
       turneu_id: turneuId,
@@ -93,7 +93,7 @@ function validateRegistrationPayload(body) {
   };
 }
 
-// Funksion per te trajtuar gabimet e regjistrimit dhe per te kthyer pergjigje te pershtatshme ne baze te kodit te gabimit nga baza e te dhenave
+// Function to handle registration errors and return appropriate responses based on the database error code
 function handleRegistrationError(err, res) {
   if (err.code === "23505") {
     return res.status(409).json({
@@ -101,14 +101,14 @@ function handleRegistrationError(err, res) {
     });
   }
 
-  // Kode gabimi 23503 tregon se turneu_id ose ekipi_id i dhene nuk ekziston ne tabelat perkates
+  // Error code 23503 indicates that the given turneu_id or ekipi_id does not exist in the respective tables
   if (err.code === "23503") {
     return res.status(400).json({
       error: "Turneu ose ekipi i zgjedhur nuk ekziston.",
     });
   }
   
-  // Kode gabimi 23514 tregon se te dhenat e regjistrimit nuk kaluan rregullat e vlefshmerise te caktuara ne bazen e te dhenave (p.sh. statusi nuk eshte ne opsionet e lejuara)
+  // Error code 23502 indicates that a non-nullable field was given a null value, which should not happen with the current validation but is checked here as a safeguard
   if (err.code === "23514") {
     return res.status(400).json({
       error: "Te dhenat e regjistrimit nuk kaluan rregullat e vlefshmerise.",
@@ -122,7 +122,7 @@ async function fetchRegistrationById(id) {
   return pool.query(`${registrationSelectQuery} WHERE tr.id = $1`, [id]);
 }
 
-// Rruge per te marre te gjithe regjistrimet e turneve me emrat e turneve dhe ekipeve te bashkangjitur
+// Route for getting all tournament registrations with attached tournament and team names
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`${registrationSelectQuery} ORDER BY tr.id`);
@@ -132,7 +132,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Rruge per te marre nje regjistrim specifik ne baze te ID-se se tij
+// Route for getting a specific registration by its ID
 router.get("/:id", async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
@@ -150,7 +150,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Rruge per te krijuar nje regjistrim te ri ne turne. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new tournament registration. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const validation = validateRegistrationPayload(req.body);
   if (validation.error) {
@@ -174,7 +174,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te perditesuar nje regjistrim ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for updating an existing registration by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
@@ -209,7 +209,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
 });
 
 
-// Rruge per te fshire nje regjistrim ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing registration by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
@@ -236,5 +236,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Exporting the router to be used in server.js
 export default router;

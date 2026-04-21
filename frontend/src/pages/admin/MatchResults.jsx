@@ -584,6 +584,35 @@ export default function MatchResults() {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Match Referees Section */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Match Referees
+                  </label>
+                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                    {selectedMatchForForm &&
+                    getMatchReferees(selectedMatchForForm.id).length > 0 ? (
+                      <div className="space-y-2">
+                        {getMatchReferees(selectedMatchForForm.id).map(
+                          (ref, idx) => (
+                            <div key={idx} className="text-sm">
+                              <p className="font-medium text-gray-800">
+                                {ref.name}
+                              </p>
+                              <p className="text-gray-600 text-xs">
+                                {ref.role} • {ref.category}
+                              </p>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        No referees assigned
+                      </p>
+                    )}
+                  </div>
+                </div>
                 {/* Ndeshja ID */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -645,35 +674,7 @@ export default function MatchResults() {
                   />
                 </div>
 
-                {/* Match Referees Section */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Match Referees
-                  </label>
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-                    {selectedMatchForForm &&
-                    getMatchReferees(selectedMatchForForm.id).length > 0 ? (
-                      <div className="space-y-2">
-                        {getMatchReferees(selectedMatchForForm.id).map(
-                          (ref, idx) => (
-                            <div key={idx} className="text-sm">
-                              <p className="font-medium text-gray-800">
-                                {ref.name}
-                              </p>
-                              <p className="text-gray-600 text-xs">
-                                {ref.role} • {ref.category}
-                              </p>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-sm">
-                        No referees assigned
-                      </p>
-                    )}
-                  </div>
-                </div>
+                
 
                 {/* Fituesi id */}
                 <div>

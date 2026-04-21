@@ -3,7 +3,7 @@ import pool from "../config/db.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 const router = express.Router();
 
-// Rruge per te marre te gjithe klasifimet. Kjo rruge eshte e mbrojtur.
+// Route for getting all standings. This route is protected.
 router.get("/", protect, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM standings ORDER BY id");
@@ -13,7 +13,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// Rruge per te marre nje klasifikim specifik ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur.
+// Route for getting a specific standing by its ID. This route is protected.
 router.get("/:id", protect, async (req, res) => {
   const { id } = req.params;
   try {
@@ -29,7 +29,7 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
-// Rruge per te krijuar nje klasifikim te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new standing. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const {
     turneu_id,
@@ -63,7 +63,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te perditesuar nje klasifikim ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for updating an existing standing by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const {
@@ -102,7 +102,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te fshire nje klasifikim ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing standing by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
@@ -119,5 +119,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Export router for use in server.js
 export default router;

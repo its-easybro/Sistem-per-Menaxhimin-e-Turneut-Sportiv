@@ -4,7 +4,7 @@ import pool from "../config/db.js";
 
 const router = express.Router();
 
-// Tipet e mundshme te turneve
+// Posible types of tournaments
 const tournamentTypeOptions = [
     "Grup + Eliminim",
     "Vetëm Grup",
@@ -12,7 +12,7 @@ const tournamentTypeOptions = [
     "Liga",
 ];
 
-// Statuset e mundshme te turneve
+// Posible statuses of tournaments
 const tournamentStatusOptions = [
     "Regjistrimi",
     "Aktiv",
@@ -20,7 +20,7 @@ const tournamentStatusOptions = [
     "Anuluar",
 ];
 
-// Validizon te dhenat e turneut dhe i kthen ato ne formatin e duhur per bazen e te dhenave
+// Validates the tournament data and converts it to the appropriate format for the database
 function validateTournamentPayload(body) {
     const {
         emertimi,
@@ -55,7 +55,7 @@ function validateTournamentPayload(body) {
         return { error: "Data e fillimit dhe data e perfundimit jane te detyrueshme." };
     }
 
-    // Validizon datat dhe sigurohet qe data e perfundimit eshte pas dates se fillimit
+    // Validates the dates and ensures that the end date is after the start date
     const startDate = new Date(data_fillimit);
     const endDate = new Date(data_perfundimit);
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
@@ -66,7 +66,7 @@ function validateTournamentPayload(body) {
         return { error: "Data e perfundimit duhet te jete pas dates se fillimit." };
     }
 
-    // Normalizon cmimin e regjistrimit, vlera default eshte 0 nese nuk eshte dhene
+    // Validates the registration price, it can be empty (default to 0) but if given it must be a non-negative number
     const registrationPrice =
         cmimi_regjistrimit === "" || cmimi_regjistrimit === null || cmimi_regjistrimit === undefined
             ? 0
@@ -91,7 +91,7 @@ function validateTournamentPayload(body) {
     };
 }
 
-// Rruge per te marre te gjithe turnet
+// Route for getting all tournaments
 router.get("/", async (req, res) => {
     try{
         const result = await pool.query("SELECT * FROM tournaments ORDER BY id");
@@ -101,7 +101,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-// Rruge per te marre nje turne specifik ne baze te ID-se se tij
+// Route for getting a specific tournament by its ID
 router.get("/:id", async (req, res) => {
     const { id } = req.params;
     try{
@@ -115,7 +115,7 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-// Rruge per te krijuar nje turne te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new tournament. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
     const validation = validateTournamentPayload(req.body);
     if (validation.error) {
@@ -136,7 +136,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Rruge per te perditesuar nje turne ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for updating an existing tournament by its ID. This route is protected and only admins can use it.
 router.put("/:id",protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
     const validation = validateTournamentPayload(req.body);
@@ -159,7 +159,7 @@ router.put("/:id",protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Rruge per te fshire nje turne ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing tournament by its ID. This route is protected and only admins can use it.
 router.delete("/:id",protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
     try{
@@ -173,5 +173,5 @@ router.delete("/:id",protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Exporting the router to be used in server.js
 export default router;

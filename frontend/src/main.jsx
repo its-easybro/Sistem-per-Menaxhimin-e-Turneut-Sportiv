@@ -8,7 +8,7 @@ import App from './App.jsx'
 createRoot(document.getElementById('root')).render(
   // Enables extra development checks for unsafe React patterns.
   <StrictMode>
-    // Provides global auth state/actions to the full component tree.
+    {/* Provides global auth state/actions to the full component tree. */}
     <AuthProvider>
       <App />
     </AuthProvider>

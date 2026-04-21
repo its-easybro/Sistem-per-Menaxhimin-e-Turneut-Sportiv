@@ -5,7 +5,7 @@ import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Kolona te zgjedhura nga tabela e perdoruesve per te marre informacionin e pershtatshme
+// Selected columns from the users table to retrieve appropriate information for the API responses
 const userSelect = `
   id,
   email,
@@ -15,7 +15,7 @@ const userSelect = `
   created_at
 `;
 
-// Ndahe emer dhe mbiemer nga emri i plote ose perdor emrin e perdoruesit si fallback
+// Helper function to split a full name into first name and last name, or use the username as a fallback for the first name if the full name is not provided
 function splitName(fullName = "", fallbackUsername = "") {
   const normalizedFullName = typeof fullName === "string" ? fullName.trim().replace(/\s+/g, " ") : "";
   const normalizedUsername = typeof fallbackUsername === "string" ? fallbackUsername.trim() : "";
@@ -28,7 +28,7 @@ function splitName(fullName = "", fallbackUsername = "") {
   return { emri: normalizedUsername, mbiemri: "" };
 }
 
-// Rruge per te marre te gjithe perdoruesit. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for getting all users. This route is protected and only admins can use it.
 router.get("/", protect, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -42,7 +42,7 @@ router.get("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te krijuar nje perdorues te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new user. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const { email, username, full_name, password, is_admin } = req.body;
 
@@ -76,7 +76,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te perditesuar nje perdorues ekzistues ne baze te ID-se se tij. Vetem adminet ose vetë perdoruesi mund ta bejne.
+// Route for updating an existing user by their ID. This route is protected and only admins or the user themselves can use it.
 router.put("/:id", protect, async (req, res) => {
   const { id } = req.params;
   const { email, username, full_name, is_admin } = req.body;
@@ -109,7 +109,7 @@ router.put("/:id", protect, async (req, res) => {
   }
 });
 
-// Rruge per te fshire nje perdorues ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing user by their ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -134,5 +134,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Export the router to be used in server.js
 export default router;

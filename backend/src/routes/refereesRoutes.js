@@ -3,8 +3,7 @@ import express from "express";
 import pool from "../config/db.js";
 const router = express.Router();
 
-
-// Rruge per te marre te gjithe referejte
+// Route for getting all referees. This route is public.
 router.get("/", async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM referees ORDER BY id");
@@ -14,7 +13,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-// Rruge per te marre nje referi specifik ne baze te ID-se se tij
+// Route for getting a specific referee by their ID. This route is public.
 // GET /referees/:id
 router.get("/:id", async (req, res) => {
     const { id } = req.params;
@@ -30,7 +29,7 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-// Rruge per te krijuar nje referi te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new referee. This route is protected and only admins can use it.
 // POST /referees
 router.post("/", protect, requireAdmin, async (req, res) => {
     const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
@@ -47,7 +46,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Rruge per te perditesuar nje referi ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for updating an existing referee by their ID. This route is protected and only admins can use it.
 // PUT /referees/:id
 router.put("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
@@ -66,7 +65,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Rruge per te fshire nje referi ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing referee by their ID. This route is protected and only admins can use it.
 // DELETE /referees/:id\
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
@@ -83,5 +82,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Export router for use in server.js
 export default router;

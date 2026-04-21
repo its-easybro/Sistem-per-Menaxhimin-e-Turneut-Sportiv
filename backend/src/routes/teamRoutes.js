@@ -4,21 +4,21 @@ import pool from "../config/db.js";
 
 const router = express.Router();
 
-// Normalizon tekstin fakultativ duke larguar hapesirat dhe duke kthyer null nese vlera eshte bosh
+// Normalizes optional text fields by trimming whitespace and converting empty strings to null
 const normalizeOptionalText = (value) => {
     if (typeof value !== "string") return value ?? null;
     const trimmed = value.trim();
     return trimmed === "" ? null : trimmed;
 };
 
-// Normalizon daten fakultative duke larguar hapesirat dhe duke kthyer null nese vlera eshte bosh
+// Normalizes optional date fields by trimming whitespace and converting empty strings to null
 const normalizeOptionalDate = (value) => {
     if (typeof value !== "string") return value ?? null;
     const trimmed = value.trim();
     return trimmed === "" ? null : trimmed;
 };
 
-// Rruge per te marre te gjithe ekipet
+// Route for getting all teams
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM teams ORDER BY id");
@@ -28,7 +28,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Rruge per te marre nje ekip specifik ne baze te ID-se se tij
+// Route for getting a specific team by its ID
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -43,7 +43,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Rruge per te krijuar nje ekip te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new team. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const {
     emertimi,
@@ -92,7 +92,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te perditesuar nje ekip ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for updating an existing team by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const {
@@ -147,7 +147,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te fshire nje ekip ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing team by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -187,5 +187,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Export router for use in server.js
 export default router;

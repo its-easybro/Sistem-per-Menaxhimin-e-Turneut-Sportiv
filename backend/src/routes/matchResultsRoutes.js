@@ -4,7 +4,7 @@ import pool from "../config/db.js";
 
 const router = express.Router();
 
-// Rruge per te marre te gjithe rezultatet e ndeshjes me te dhenat e detajuara. Kjo rruge eshte e mbrojtur.
+// Route for getting all match results with detailed data. This route is protected.
 router.get("/", protect, async (req, res) => {
   try {
     const result = await pool.query(
@@ -42,7 +42,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// Rruge per te krijuar nje rezultat te ri te ndeshjes. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new match result. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const {
     ndeshja_id,
@@ -100,7 +100,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te perditesuar nje rezultat ekzistues te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for updating an existing match result by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const {
@@ -166,7 +166,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Rruge per te fshire nje rezultat ekzistues te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing match result by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
@@ -214,5 +214,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Export router for use in server.js
 export default router;

@@ -3,7 +3,7 @@ import express from "express";
 import pool from "../config/db.js";
 const router = express.Router();
 
-// Rruge per te marre te gjithe vendodhjet e mundshme te turneve
+// Route for getting all venues. This route is public.
 router.get("/", async (req, res) => {
     try{
         const result = await pool.query("SELECT * FROM venues ORDER BY id");
@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-// GET /venues/:id - Rruge per te marre nje venue specifike ne baze te ID-se se tij
+// GET /venues/:id - Route for getting a specific venue by its ID
 router.get("/:id", async (req, res) => {
     const { id } = req.params;
     try{
@@ -27,7 +27,7 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-// Rruge per te krijuar nje venue te re. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for creating a new venue. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
     const { emertimi, adresa, qyteti, kapaciteti, lloji_siperfaqes, ndricimi, statusi } = req.body;
     try{
@@ -41,7 +41,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Rruge per te perditesuar nje venue ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for updating an existing venue by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { emertimi, adresa, qyteti, kapaciteti, lloji_siperfaqes, ndricimi, statusi } = req.body;
@@ -59,7 +59,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Rruge per te fshire nje venue ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
+// Route for deleting an existing venue by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
     try{
@@ -73,5 +73,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     }
 });
 
-// Eksporto router-in per tu perdorur ne server.js
+// Export the router to be used in server.js
 export default router;
