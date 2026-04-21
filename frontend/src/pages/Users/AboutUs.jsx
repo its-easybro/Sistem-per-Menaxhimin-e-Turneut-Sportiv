@@ -2,6 +2,7 @@ import React from "react";
 import { TeamCard } from "../../components/TeamCard";
 import AlbionImg from "../../assets/team/Albion.png";
 import ErikImg from "../../assets/team/Erik.png";
+import ErmirImg from "../../assets/team/Ermir.png";
 
 const AboutUs = () => {
   return (
@@ -97,7 +98,7 @@ const AboutUs = () => {
           />
 
           <TeamCard
-            image=""
+            image={ErmirImg}
             name="Ermir Krosa"
             role="Developer"
             description="Project manager and support for the team."
