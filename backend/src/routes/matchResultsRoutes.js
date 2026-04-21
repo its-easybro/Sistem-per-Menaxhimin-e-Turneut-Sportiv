@@ -4,6 +4,7 @@ import pool from "../config/db.js";
 
 const router = express.Router();
 
+// Rruge per te marre te gjithe rezultatet e ndeshjes me te dhenat e detajuara. Kjo rruge eshte e mbrojtur.
 router.get("/", protect, async (req, res) => {
   try {
     const result = await pool.query(
@@ -41,6 +42,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
+// Rruge per te krijuar nje rezultat te ri te ndeshjes. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const {
     ndeshja_id,
@@ -98,6 +100,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te perditesuar nje rezultat ekzistues te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const {
@@ -163,6 +166,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te fshire nje rezultat ekzistues te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
@@ -210,4 +214,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;

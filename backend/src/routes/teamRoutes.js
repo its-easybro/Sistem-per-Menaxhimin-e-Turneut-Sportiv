@@ -4,18 +4,21 @@ import pool from "../config/db.js";
 
 const router = express.Router();
 
+// Normalizon tekstin fakultativ duke larguar hapesirat dhe duke kthyer null nese vlera eshte bosh
 const normalizeOptionalText = (value) => {
     if (typeof value !== "string") return value ?? null;
     const trimmed = value.trim();
     return trimmed === "" ? null : trimmed;
 };
 
+// Normalizon daten fakultative duke larguar hapesirat dhe duke kthyer null nese vlera eshte bosh
 const normalizeOptionalDate = (value) => {
     if (typeof value !== "string") return value ?? null;
     const trimmed = value.trim();
     return trimmed === "" ? null : trimmed;
 };
 
+// Rruge per te marre te gjithe ekipet
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM teams ORDER BY id");
@@ -25,6 +28,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Rruge per te marre nje ekip specifik ne baze te ID-se se tij
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -39,6 +43,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Rruge per te krijuar nje ekip te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const {
     emertimi,
@@ -87,6 +92,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te perditesuar nje ekip ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const {
@@ -141,6 +147,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te fshire nje ekip ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -180,4 +187,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;

@@ -4,6 +4,7 @@ import pool from "../config/db.js";
 const router = express.Router();
 
 
+// Rruge per te marre te gjithe referejte
 router.get("/", async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM referees ORDER BY id");
@@ -13,6 +14,7 @@ router.get("/", async (req, res) => {
     }
 });
 
+// Rruge per te marre nje referi specifik ne baze te ID-se se tij
 // GET /referees/:id
 router.get("/:id", async (req, res) => {
     const { id } = req.params;
@@ -28,6 +30,7 @@ router.get("/:id", async (req, res) => {
     }
 });
 
+// Rruge per te krijuar nje referi te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 // POST /referees
 router.post("/", protect, requireAdmin, async (req, res) => {
     const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
@@ -44,6 +47,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
     }
 });
 
+// Rruge per te perditesuar nje referi ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 // PUT /referees/:id
 router.put("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
@@ -62,6 +66,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
     }
 });
 
+// Rruge per te fshire nje referi ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 // DELETE /referees/:id\
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
@@ -78,4 +83,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;

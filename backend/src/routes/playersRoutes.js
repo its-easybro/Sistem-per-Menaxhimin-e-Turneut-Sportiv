@@ -5,6 +5,7 @@ import path from "path";
 
 const router = express.Router();
 
+// Rruge per te marre te gjithe lojtarit me informacionin e ekipit te bashkangjitur. Kjo rruge eshte e mbrojtur.
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
@@ -29,6 +30,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Rruge per te krijuar nje lojtar te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const {
     emri,
@@ -43,6 +45,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   } = req.body;
 
 
+  // Validizon fushat e detyrueshme
   if (!emri || !mbiemri || !data_lindjes || !pozicioni || !numri) {
     return res.status(400).json({
       error: "Fushat e detyrueshme: emri, mbiemri, data_lindjes, pozicioni, numri",
@@ -89,6 +92,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te perditesuar nje lojtar ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const {
@@ -146,6 +150,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te fshire nje lojtar ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
@@ -179,4 +184,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;

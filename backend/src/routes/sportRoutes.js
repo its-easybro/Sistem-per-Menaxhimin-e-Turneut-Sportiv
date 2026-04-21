@@ -2,8 +2,11 @@ import { protect, requireAdmin } from "../middleware/auth.js";
 import express from "express";
 import pool from "../config/db.js";
 const router = express.Router();
+
+// Tipet e mundshme te sporteve
 const sportTypeOptions = ["Ekipor", "Individual", "I dyfishtë"];
 
+// Normalizon llojin e sportit per te trajtuar varirime te njejtes vlere
 function normalizeSportType(value) {
   if (value === "I dyfishtÃ«" || value === "I dyfishte") {
     return "I dyfishtë";
@@ -12,6 +15,7 @@ function normalizeSportType(value) {
   return value;
 }
 
+// Validizon te dhenat e sportit dhe i kthen ato ne formatin e duhur per bazen e te dhenave
 function validateSportPayload(body) {
   const { emertimi, pershkrimi, numri_lojtareve, lloji } = body;
 
@@ -39,6 +43,7 @@ function validateSportPayload(body) {
   };
 }
 
+// Rruge per te marre te gjithe sportet
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM sports ORDER BY id");
@@ -48,7 +53,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /sports/:id
+// Rruge per te marre nje sport specifik ne baze te ID-se se tij
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -62,6 +67,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Rruge per te krijuar nje sport te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const validation = validateSportPayload(req.body);
   if (validation.error) {
@@ -82,6 +88,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te perditesuar nje sport ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const validation = validateSportPayload(req.body);
@@ -108,6 +115,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te fshire nje sport ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -127,4 +135,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;

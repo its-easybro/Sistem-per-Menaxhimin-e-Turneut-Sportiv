@@ -3,6 +3,7 @@ import pool from "../config/db.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 const router = express.Router();
 
+// Rruge per te marre te gjithe referejte e ndeshjes. Kjo rruge eshte e mbrojtur.
 router.get("/", protect, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM matchreferees ORDER BY id");
@@ -12,6 +13,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
+// Rruge per te marre nje referi specifik te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur.
 router.get("/:id", protect, async (req, res) => {
   const { id } = req.params;
   try {
@@ -28,6 +30,7 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
+// Rruge per te krijuar nje referi te ri per nje ndeshje. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
   if (!ndeshja_id || !gjyqtari_id || !roli) {
@@ -46,6 +49,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te perditesuar nje referi ekzistues te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
@@ -68,6 +72,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te fshire nje referi ekzistues te ndeshjes ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
@@ -84,4 +89,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;

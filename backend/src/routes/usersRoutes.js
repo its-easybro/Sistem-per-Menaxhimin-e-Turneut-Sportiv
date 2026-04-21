@@ -4,6 +4,8 @@ import pool from "../config/db.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
+
+// Kolona te zgjedhura nga tabela e perdoruesve per te marre informacionin e pershtatshme
 const userSelect = `
   id,
   email,
@@ -13,6 +15,7 @@ const userSelect = `
   created_at
 `;
 
+// Ndahe emer dhe mbiemer nga emri i plote ose perdor emrin e perdoruesit si fallback
 function splitName(fullName = "", fallbackUsername = "") {
   const normalizedFullName = typeof fullName === "string" ? fullName.trim().replace(/\s+/g, " ") : "";
   const normalizedUsername = typeof fallbackUsername === "string" ? fallbackUsername.trim() : "";
@@ -25,6 +28,7 @@ function splitName(fullName = "", fallbackUsername = "") {
   return { emri: normalizedUsername, mbiemri: "" };
 }
 
+// Rruge per te marre te gjithe perdoruesit. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.get("/", protect, requireAdmin, async (req, res) => {
   try {
     const result = await pool.query(
@@ -38,6 +42,7 @@ router.get("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te krijuar nje perdorues te ri. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const { email, username, full_name, password, is_admin } = req.body;
 
@@ -71,6 +76,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te perditesuar nje perdorues ekzistues ne baze te ID-se se tij. Vetem adminet ose vetë perdoruesi mund ta bejne.
 router.put("/:id", protect, async (req, res) => {
   const { id } = req.params;
   const { email, username, full_name, is_admin } = req.body;
@@ -103,6 +109,7 @@ router.put("/:id", protect, async (req, res) => {
   }
 });
 
+// Rruge per te fshire nje perdorues ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -127,4 +134,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;

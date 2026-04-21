@@ -4,6 +4,7 @@ import pool from "../config/db.js";
 
 const router = express.Router();
 
+// Statuset e mundshme te regjistrimit ne turne
 const registrationStatusOptions = [
   "Në Pritje",
   "Aprovuar",
@@ -11,6 +12,7 @@ const registrationStatusOptions = [
   "Anuluar",
 ];
 
+// Query baze per te marre te dhenat e regjistrimeve me emrat e turneve dhe ekipeve
 const registrationSelectQuery = `
   SELECT
     tr.id,
@@ -27,6 +29,7 @@ const registrationSelectQuery = `
   LEFT JOIN Teams tm ON tr.ekipi_id = tm.id
 `;
 
+// Funksione ndihmese per validimin dhe trajtimin e te dhenave
 function parsePositiveInteger(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -35,6 +38,7 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
+// Validon ID-n e regjistrimit nga parametri i rrugeve
 function validateRouteId(id) {
   const parsedId = parsePositiveInteger(id);
   if (!parsedId) {
@@ -44,17 +48,20 @@ function validateRouteId(id) {
   return { value: parsedId };
 }
 
+// Validon te dhenat e regjistrimit nga trupi i kerkese dhe i kthen ato ne formatin e duhur per bazen e te dhenave
 function validateRegistrationPayload(body) {
   const turneuId = parsePositiveInteger(body.turneu_id);
   if (!turneuId) {
     return { error: "Turneu eshte i pavlefshem." };
   }
 
+  // EkipiId mund te jete null per te lejuar regjistrime pa ekip, por nese eshte i dhene duhet te jete valid
   const ekipiId = parsePositiveInteger(body.ekipi_id);
   if (!ekipiId) {
     return { error: "Ekipi eshte i pavlefshem." };
   }
 
+  // Statusi mund te jete bosh (do te marre vleren default) ose nje nga opsionet e lejuara
   const rawStatus = typeof body.statusi === "string" ? body.statusi.trim() : "";
   const statusi = rawStatus || registrationStatusOptions[0];
   if (!registrationStatusOptions.includes(statusi)) {
@@ -63,6 +70,7 @@ function validateRegistrationPayload(body) {
     };
   }
 
+  // Tarifa e paguar mund te jete bosh (do te marre vleren 0) ose nje numer jo-negativ
   const tarifaPaguar =
     body.tarifa_paguar === "" ||
     body.tarifa_paguar === null ||
@@ -74,6 +82,7 @@ function validateRegistrationPayload(body) {
     return { error: "Tarifa e paguar duhet te jete numer jo-negativ." };
   }
 
+  // Nese te gjitha validimet kalojne, kthe vlerat e formatuara per tu perdorur ne query
   return {
     value: {
       turneu_id: turneuId,
@@ -84,6 +93,7 @@ function validateRegistrationPayload(body) {
   };
 }
 
+// Funksion per te trajtuar gabimet e regjistrimit dhe per te kthyer pergjigje te pershtatshme ne baze te kodit te gabimit nga baza e te dhenave
 function handleRegistrationError(err, res) {
   if (err.code === "23505") {
     return res.status(409).json({
@@ -91,12 +101,14 @@ function handleRegistrationError(err, res) {
     });
   }
 
+  // Kode gabimi 23503 tregon se turneu_id ose ekipi_id i dhene nuk ekziston ne tabelat perkates
   if (err.code === "23503") {
     return res.status(400).json({
       error: "Turneu ose ekipi i zgjedhur nuk ekziston.",
     });
   }
-
+  
+  // Kode gabimi 23514 tregon se te dhenat e regjistrimit nuk kaluan rregullat e vlefshmerise te caktuara ne bazen e te dhenave (p.sh. statusi nuk eshte ne opsionet e lejuara)
   if (err.code === "23514") {
     return res.status(400).json({
       error: "Te dhenat e regjistrimit nuk kaluan rregullat e vlefshmerise.",
@@ -110,6 +122,7 @@ async function fetchRegistrationById(id) {
   return pool.query(`${registrationSelectQuery} WHERE tr.id = $1`, [id]);
 }
 
+// Rruge per te marre te gjithe regjistrimet e turneve me emrat e turneve dhe ekipeve te bashkangjitur
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`${registrationSelectQuery} ORDER BY tr.id`);
@@ -119,6 +132,7 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Rruge per te marre nje regjistrim specifik ne baze te ID-se se tij
 router.get("/:id", async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
@@ -136,6 +150,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Rruge per te krijuar nje regjistrim te ri ne turne. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.post("/", protect, requireAdmin, async (req, res) => {
   const validation = validateRegistrationPayload(req.body);
   if (validation.error) {
@@ -159,6 +174,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Rruge per te perditesuar nje regjistrim ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
@@ -192,6 +208,8 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+
+// Rruge per te fshire nje regjistrim ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
@@ -218,4 +236,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
   }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;

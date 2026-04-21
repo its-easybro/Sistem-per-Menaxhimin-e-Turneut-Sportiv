@@ -3,6 +3,7 @@ import express from "express";
 import pool from "../config/db.js";
 const router = express.Router();
 
+// Rruge per te marre te gjithe vendodhjet e mundshme te turneve
 router.get("/", async (req, res) => {
     try{
         const result = await pool.query("SELECT * FROM venues ORDER BY id");
@@ -12,7 +13,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-// GET /venues/:id
+// GET /venues/:id - Rruge per te marre nje venue specifike ne baze te ID-se se tij
 router.get("/:id", async (req, res) => {
     const { id } = req.params;
     try{
@@ -26,6 +27,7 @@ router.get("/:id", async (req, res) => {
     }
 });
 
+// Rruge per te krijuar nje venue te re. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.post("/", protect, requireAdmin, async (req, res) => {
     const { emertimi, adresa, qyteti, kapaciteti, lloji_siperfaqes, ndricimi, statusi } = req.body;
     try{
@@ -39,6 +41,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
     }
 });
 
+// Rruge per te perditesuar nje venue ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.put("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { emertimi, adresa, qyteti, kapaciteti, lloji_siperfaqes, ndricimi, statusi } = req.body;
@@ -56,6 +59,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
     }
 });
 
+// Rruge per te fshire nje venue ekzistues ne baze te ID-se se tij. Kjo rruge eshte e mbrojtur dhe vetem adminet mund ta perdorin.
 router.delete("/:id", protect, requireAdmin, async (req, res) => {
     const { id } = req.params;
     try{
@@ -69,4 +73,5 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     }
 });
 
+// Eksporto router-in per tu perdorur ne server.js
 export default router;
