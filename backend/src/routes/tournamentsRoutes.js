@@ -35,35 +35,35 @@ function validateTournamentPayload(body) {
     } = body;
 
     if (!emertimi?.trim()) {
-        return { error: "Emertimi i turneut eshte i detyrueshem." };
+        return { error: "The tournament name is required." };
     }
 
     const sportId = Number(sporti_id);
     if (!Number.isInteger(sportId) || sportId <= 0) {
-        return { error: "Sporti i turneut eshte i pavlefshem." };
+        return { error: "The sport ID is invalid." };
     }
 
     if (!tournamentTypeOptions.includes(lloji)) {
-        return { error: `Lloji duhet te jete nje nga: ${tournamentTypeOptions.join(", ")}.` };
+        return { error: `The type must be one of: ${tournamentTypeOptions.join(", ")}.` };
     }
 
     if (!tournamentStatusOptions.includes(statusi)) {
-        return { error: `Statusi duhet te jete nje nga: ${tournamentStatusOptions.join(", ")}.` };
+        return { error: `The status must be one of: ${tournamentStatusOptions.join(", ")}.` };
     }
 
     if (!data_fillimit || !data_perfundimit) {
-        return { error: "Data e fillimit dhe data e perfundimit jane te detyrueshme." };
+        return { error: "The start date and end date are required." };
     }
 
     // Validates the dates and ensures that the end date is after the start date
     const startDate = new Date(data_fillimit);
     const endDate = new Date(data_perfundimit);
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-        return { error: "Datat e turneut nuk jane te vlefshme." };
+        return { error: "The tournament dates are invalid." };
     }
 
     if (endDate <= startDate) {
-        return { error: "Data e perfundimit duhet te jete pas dates se fillimit." };
+        return { error: "The end date must be after the start date." };
     }
 
     // Validates the registration price, it can be empty (default to 0) but if given it must be a non-negative number
@@ -73,7 +73,7 @@ function validateTournamentPayload(body) {
             : Number(cmimi_regjistrimit);
 
     if (!Number.isFinite(registrationPrice) || registrationPrice < 0) {
-        return { error: "Cmimi i regjistrimit duhet te jete numer jo-negativ." };
+        return { error: "The registration price must be a non-negative number." };
     }
 
     return {
@@ -107,7 +107,7 @@ router.get("/:id", async (req, res) => {
     try{
         const result = await pool.query("SELECT * FROM tournaments WHERE id = $1", [id]);
         if(result.rows.length === 0){
-            return res.status(404).json({ error: "Turneu nuk u gjet" });
+            return res.status(404).json({ error: "Tournament not found" });
         }
         res.json(result.rows[0]);
     }catch(err){
@@ -151,7 +151,7 @@ router.put("/:id",protect, requireAdmin, async (req, res) => {
             [emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, cmimi_regjistrimit, statusi, pershkrimi, id]
         );
         if(result.rows.length === 0){
-            return res.status(404).json({ error: "Turneu nuk u gjet" });
+            return res.status(404).json({ error: "Tournament not found" });
         }
         res.json(result.rows[0]);
     }catch(err){
@@ -165,9 +165,9 @@ router.delete("/:id",protect, requireAdmin, async (req, res) => {
     try{
         const result = await pool.query("DELETE FROM tournaments WHERE id = $1 RETURNING *", [id]);
         if(result.rows.length === 0){
-            return res.status(404).json({ error: "Turneu nuk u gjet" });
+            return res.status(404).json({ error: "Tournament not found" });
         }
-        res.json({ message: "Turneu u fshi me sukses", deletedTournament: result.rows[0] });
+        res.json({ message: "Tournament deleted successfully", deletedTournament: result.rows[0] });
     }catch(err){
         res.status(500).json({ error: err.message });
     }

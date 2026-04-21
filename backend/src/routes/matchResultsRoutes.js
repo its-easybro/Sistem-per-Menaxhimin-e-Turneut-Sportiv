@@ -55,7 +55,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 
   if (!ndeshja_id) {
     return res.status(400).json({
-      error: "Plotesoni fushat e detyrueshme.",
+      error: "The following fields are required: ndeshja_id",
     });
   }
 
@@ -206,9 +206,9 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
       [id],
     );
     if(result.rows.length === 0){
-        return res.status(404).json({ error: "Couldnt find Match"});
+        return res.status(404).json({ error: "Match result not found." });
     }
-    res.json({ message: "Match deleted successfully" });
+    res.json({ message: "Match result deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

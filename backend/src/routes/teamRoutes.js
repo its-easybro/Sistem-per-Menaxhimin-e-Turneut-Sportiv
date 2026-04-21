@@ -35,7 +35,7 @@ router.get("/:id", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM teams WHERE id = $1", [id]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Ekipi nuk u gjet" });
+      return res.status(404).json({ error: "Team not found" });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -57,7 +57,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 
   if (!emertimi?.trim()) {
     return res.status(400).json({
-      error: "Fusha e detyrueshme: emertimi",
+      error: "The team name is required.",
     });
   }
 
@@ -107,7 +107,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
 
   if (!emertimi?.trim()) {
     return res.status(400).json({
-      error: "Fusha e detyrueshme: emertimi",
+      error: "The team name is required.",
     });
   }
 
@@ -139,7 +139,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
       ],
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Ekipi nuk u gjet" });
+      return res.status(404).json({ error: "Team not found" });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -162,7 +162,7 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     if (teamInMatches.rows[0].total > 0) {
       return res.status(409).json({
         error:
-          "Ky ekip nuk mund te fshihet sepse eshte i lidhur me nje ose me shume ndeshje.",
+          "This team cannot be deleted because it is associated with one or more matches.",
       });
     }
 
@@ -173,14 +173,14 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
       [id],
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Ekipi nuk u gjet" });
+      return res.status(404).json({ error: "Team not found" });
     }
-    res.json({ message: "Ekipi u fshi me sukses", deleted: result.rows[0] });
+    res.json({ message: "Team deleted successfully", deleted: result.rows[0] });
   } catch (err) {
     if (err.code === "23503") {
       return res.status(409).json({
         error:
-          "Ky ekip nuk mund te fshihet sepse ka te dhena te lidhura ne sistem.",
+          "This team cannot be deleted because it has associated data in the system.",
       });
     }
     res.status(500).json({ error: err.message });

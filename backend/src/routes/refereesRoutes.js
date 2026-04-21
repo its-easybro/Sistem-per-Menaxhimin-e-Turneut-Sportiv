@@ -20,7 +20,7 @@ router.get("/:id", async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM referees WHERE id = $1", [id]);
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: "Referi nuk u gjet" });
+            return res.status(404).json({ error: "Referee not found" });
         }
         res.json(result.rows[0]);
 
@@ -57,7 +57,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
             [emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh, id]
         );
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: "Referi nuk u gjet" });
+            return res.status(404).json({ error: "Referee not found" });
         }
         res.json(result.rows[0]);
     } catch (err) {
@@ -72,11 +72,9 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     try {
         const result = await pool.query("DELETE FROM referees WHERE id = $1 RETURNING *", [id]);
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: "Referi nuk u gjet" });
-
+            return res.status(404).json({ error: "Referee not found" });
         }
-        res.json({ message: "Referi u fshi me sukses" });
-
+        res.json({ message: "Referee deleted successfully" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -100,7 +100,7 @@ router.put("/:id", protect, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Perdoruesi nuk u gjet" });
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.json(result.rows[0]);
@@ -122,11 +122,11 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Perdoruesi nuk u gjet" });
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.json({
-      message: "Perdoruesi u fshi me sukses",
+      message: "User deleted successfully",
       deleted: result.rows[0],
     });
   } catch (err) {

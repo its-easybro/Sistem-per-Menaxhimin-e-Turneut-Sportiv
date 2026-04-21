@@ -20,17 +20,17 @@ function validateSportPayload(body) {
   const { emertimi, pershkrimi, numri_lojtareve, lloji } = body;
 
   if (!emertimi?.trim()) {
-    return { error: "Emertimi i sportit eshte i detyrueshem." };
+    return { error: "The sport name is required." };
   }
 
   const playersCount = Number(numri_lojtareve);
   if (!Number.isInteger(playersCount) || playersCount <= 0) {
-    return { error: "Numri i lojtareve duhet te jete numer pozitiv." };
+    return { error: "The number of players must be a positive integer." };
   }
 
   const normalizedType = normalizeSportType(lloji);
   if (!sportTypeOptions.includes(normalizedType)) {
-    return { error: `Lloji duhet te jete nje nga: ${sportTypeOptions.join(", ")}.` };
+    return { error: `The type must be one of: ${sportTypeOptions.join(", ")}.` };
   }
 
   return {
@@ -59,7 +59,7 @@ router.get("/:id", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM sports WHERE id = $1", [id]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Sporti nuk u gjet" });
+      return res.status(404).json({ error: "Sport not found" });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -107,7 +107,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
       [emertimi, pershkrimi, numri_lojtareve, lloji, id],
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Sporti nuk u gjet" });
+      return res.status(404).json({ error: "Sport not found" });
     }
     res.json(result.rows[0]);
   } catch (err) {
@@ -127,9 +127,9 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
       [id],
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Sporti nuk u gjet" });
+      return res.status(404).json({ error: "Sport not found" });
     }
-    res.json({ message: "Sporti u fshi me sukses", deleted: result.rows[0] });
+    res.json({ message: "Sport deleted successfully", deleted: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

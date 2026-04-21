@@ -47,7 +47,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
   // Validates required fields
   if (!emri || !mbiemri || !data_lindjes || !pozicioni || !numri) {
     return res.status(400).json({
-      error: "Fushat e detyrueshme: emri, mbiemri, data_lindjes, pozicioni, numri",
+      error: "The following fields are required: emri, mbiemri, data_lindjes, pozicioni, numri",
     });
   }
 
@@ -122,7 +122,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
       ],
     );
     if (updated.rows.length === 0) {
-      return res.status(404).json({ error: "Lojtari nuk u gjet" });
+      return res.status(404).json({ error: "Player not found" });
     }
 
     const result = await pool.query(
@@ -175,9 +175,9 @@ router.delete("/:id", protect, requireAdmin, async (req, res) => {
       [id]
     );
     if (result.rows.length === 0){
-        return res.status(404).json({ error: "Lojtari nuk u gjet "});
+        return res.status(404).json({ error: "Player not found" });
     }
-    res.json({ message: "Lojtari u fshi me sukses", deleted: result.rows[0] });
+    res.json({ message: "Player deleted successfully", deleted: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
