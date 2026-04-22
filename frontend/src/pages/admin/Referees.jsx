@@ -1,224 +1,224 @@
-import {useContext, useEffect, useState } from "react";
-import {Navigate } from "react-router-dom";
+import { useContext, useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
 
 const initialFormData = {
-    emri: "",
-    mbiemri: "",
-    email: "",
-    telefoni: "",
-    nr_licences: "",
-    kategoria: "",
-    pervoja_vitesh: "",
+  emri: "",
+  mbiemri: "",
+  email: "",
+  telefoni: "",
+  nr_licences: "",
+  kategoria: "",
+  pervoja_vitesh: "",
 };
 
 export default function Referees() {
-    // Keeps the page restricted to authenticated admins from auth context.
-    const {user} = useContext(AuthContext);
+  // Keeps the page restricted to authenticated admins from auth context.
+  const { user } = useContext(AuthContext);
 
-    // Stores list data, modal state, selection, and current form values.
-    const [referees, setReferees] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [alert, setAlert] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const [showViewModal, setShowViewModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [selectedReferee, setSelectedReferee] = useState(null);
-    const [searchQuery, setSearchQuery ] = useState("");
-    const [formData, setFormData] = useState(initialFormData);
-    // Loads referees once auth state is available and user is admin.
-    useEffect(()=> {
-        const loadReferees = async () => {
-            if(!user?.is_admin){
-                setLoading(false);
-                
-                return;
-            }
-            try{
-                setLoading(true);
-                const response = await fetch(`${API_BASE_URL}/referees`,{
-                    credentials: "include",
+  // Stores list data, modal state, selection, and current form values.
+  const [referees, setReferees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [alert, setAlert] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedReferee, setSelectedReferee] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [formData, setFormData] = useState(initialFormData);
+  // Loads referees once auth state is available and user is admin.
+  useEffect(() => {
+    const loadReferees = async () => {
+      if (!user?.is_admin) {
+        setLoading(false);
 
-                });
-                if(!response.ok){
-                    throw new Error("Failed to fetch referees");
-                }
-                const data = await response.json();
-                setReferees(data);
+        return;
+      }
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/referees`, {
+          credentials: "include",
 
-            }catch(err){
-                setError(err.message);
-            }finally{
-                setLoading(false);
-            }
-        };
-        loadReferees();
-    }, [user]);
-
-    const resetForm = () => {
-        setFormData(initialFormData);
-    };
-
-    const handleCreate = () => {
-        resetForm();
-        setShowModal(true);
-
-    }
-    const handleInputChange = (e) => {
-        const {name, value, type, checked} = e.target;
-        setFormData((prev)=> ({
-            ...prev,
-            [name]: type ==="checkbox" ? checked : value,
-        }));
-    };
-    const handleCloseModal = () => {
-        resetForm();
-        setShowModal(false);
-    };
-
-    const handleCloseViewModal = () => {
-        setSelectedReferee(null);
-        setShowViewModal(false);
-    };
-    const handleCloseEditModal = () => {
-        resetForm();
-        setSelectedReferee(null);
-        setShowEditModal(false);
-    };
-    const handleCloseDeleteModal = () => {
-        setSelectedReferee(null);
-        setShowDeleteModal(false);
-
-    };
-    const handleView = (id) => {
-        const referee = referees.find((item) => item.id === id);
-        setSelectedReferee(referee);
-        setShowViewModal(true);
-    };
-    const handleEdit = (id) => {
-        const referee = referees.find((item)=> item.id===id);
-        if(!referee) return;
-        setSelectedReferee(referee);
-        setFormData({
-            emri: referee.emri || "",
-            mbiemri: referee.mbiemri || "",
-            email: referee.email || "",
-            telefoni: referee.telefoni || "",
-            nr_licences: referee.nr_licences || "",
-            kategoria: referee.kategoria || "",
-            pervoja_vitesh: referee.pervoja_vitesh ?? "",
         });
-        setShowEditModal(true);
-    };
-    const handleDelete = (id)=> {
-        const referee= referees.find((item)=> item.id === id);
-        setSelectedReferee(referee);
-        setShowDeleteModal(true);
+        if (!response.ok) {
+          throw new Error("Failed to fetch referees");
+        }
+        const data = await response.json();
+        setReferees(data);
 
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     };
-    const buildPayload = () => ({
-        // Converts optional numeric inputs before sending to backend.
-        ...formData,
-       
-        pervoja_vitesh: formData.pervoja_vitesh === "" ? null : Number(formData.pervoja_vitesh),
-        telefoni: formData.telefoni === "" ? null : Number(formData.telefoni),
+    loadReferees();
+  }, [user]);
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+  };
+
+  const handleCreate = () => {
+    resetForm();
+    setShowModal(true);
+
+  }
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+  const handleCloseModal = () => {
+    resetForm();
+    setShowModal(false);
+  };
+
+  const handleCloseViewModal = () => {
+    setSelectedReferee(null);
+    setShowViewModal(false);
+  };
+  const handleCloseEditModal = () => {
+    resetForm();
+    setSelectedReferee(null);
+    setShowEditModal(false);
+  };
+  const handleCloseDeleteModal = () => {
+    setSelectedReferee(null);
+    setShowDeleteModal(false);
+
+  };
+  const handleView = (id) => {
+    const referee = referees.find((item) => item.id === id);
+    setSelectedReferee(referee);
+    setShowViewModal(true);
+  };
+  const handleEdit = (id) => {
+    const referee = referees.find((item) => item.id === id);
+    if (!referee) return;
+    setSelectedReferee(referee);
+    setFormData({
+      emri: referee.emri || "",
+      mbiemri: referee.mbiemri || "",
+      email: referee.email || "",
+      telefoni: referee.telefoni || "",
+      nr_licences: referee.nr_licences || "",
+      kategoria: referee.kategoria || "",
+      pervoja_vitesh: referee.pervoja_vitesh ?? "",
     });
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    setShowEditModal(true);
+  };
+  const handleDelete = (id) => {
+    const referee = referees.find((item) => item.id === id);
+    setSelectedReferee(referee);
+    setShowDeleteModal(true);
 
-        try{
-            const response = await fetch(`${API_BASE_URL}/referees`,{
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                
-                },
-                credentials: "include",
-                body: JSON.stringify(buildPayload()),
-            });
-            const data = await response.json();
-            if(!response.ok){
-                throw new Error(data.error || "Failed to create referee");
-            }
-            setReferees((prev)=> [...prev, data]);
-            handleCloseModal();
-            setAlert({ type: "success", message: "Referee created successfully" });
+  };
+  const buildPayload = () => ({
+    // Converts optional numeric inputs before sending to backend.
+    ...formData,
 
-        }catch(err){
-            setAlert({type: "error", message: "Failed to create referee: " + err.message});
-        }
-    };
+    pervoja_vitesh: formData.pervoja_vitesh === "" ? null : Number(formData.pervoja_vitesh),
+    telefoni: formData.telefoni === "" ? null : Number(formData.telefoni),
+  });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    const handleEditSubmit = async (e)=> {
-        e.preventDefault();
+    try {
+      const response = await fetch(`${API_BASE_URL}/referees`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
 
-        if(!selectedReferee) return;
+        },
+        credentials: "include",
+        body: JSON.stringify(buildPayload()),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create referee");
+      }
+      setReferees((prev) => [...prev, data]);
+      handleCloseModal();
+      setAlert({ type: "success", message: "Referee created successfully" });
 
-        try{
-            const response = await fetch (`${API_BASE_URL}/referees/${selectedReferee.id}`,{
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify(buildPayload()),
-            });
-
-            const data = await response.json();
-
-            if(!response.ok){
-                throw new Error(data.error || "Failed to update referee");
-
-            }
-            setReferees((prev)=> prev.map((item)=> (item.id === data.id ? data : item)));
-            handleCloseEditModal();
-            setAlert({type: "success", message: "Referee updated successfully"});
-
-        }catch(err){
-            setAlert({type:"error", message: "Failed to update referee" + err.message});
-        }
-    };
-    const handleDeleteConfirm = async () => {
-        if(!selectedReferee) return;
-        try{
-            const response = await fetch(`${API_BASE_URL}/referees/${selectedReferee.id}`,{
-                method: "DELETE",
-                credentials: "include",
-            });
-            const data = await response.json();
-
-            if(!response.ok){
-                throw new Error(data.error || "Failed to delete referee");
-            }
-            setReferees((prev)=> prev.filter((item)=> item.id !== selectedReferee.id));
-            handleCloseDeleteModal();
-            setAlert({type: "success", message: "Referee deleted successfully"});
-        }catch(err){
-            setAlert({type:"error", message: "Failed to delete referee"+err.message});
-        }
-    };
-    // Applies search filter across identity and category fields.
-    const filteredReferees = referees.filter((referee)=>{
-        const query = searchQuery.toLowerCase();
-        return (
-            
-            referee.emri?.toLowerCase().includes(query) ||
-            referee.mbiemri?.toLowerCase().includes(query) ||
-            referee.email?.toLowerCase().includes(query) ||
-            referee.kategoria?.toLowerCase().includes(query)
-
-        );
-    });
-
-    if (!user || !user.is_admin){
-        return <Navigate to="/login" />;
+    } catch (err) {
+      setAlert({ type: "error", message: "Failed to create referee: " + err.message });
     }
+  };
 
-function renderSkeleton() {
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!selectedReferee) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/referees/${selectedReferee.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(buildPayload()),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update referee");
+
+      }
+      setReferees((prev) => prev.map((item) => (item.id === data.id ? data : item)));
+      handleCloseEditModal();
+      setAlert({ type: "success", message: "Referee updated successfully" });
+
+    } catch (err) {
+      setAlert({ type: "error", message: "Failed to update referee" + err.message });
+    }
+  };
+  const handleDeleteConfirm = async () => {
+    if (!selectedReferee) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/referees/${selectedReferee.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete referee");
+      }
+      setReferees((prev) => prev.filter((item) => item.id !== selectedReferee.id));
+      handleCloseDeleteModal();
+      setAlert({ type: "success", message: "Referee deleted successfully" });
+    } catch (err) {
+      setAlert({ type: "error", message: "Failed to delete referee" + err.message });
+    }
+  };
+  // Applies search filter across identity and category fields.
+  const filteredReferees = referees.filter((referee) => {
+    const query = searchQuery.toLowerCase();
+    return (
+
+      referee.emri?.toLowerCase().includes(query) ||
+      referee.mbiemri?.toLowerCase().includes(query) ||
+      referee.email?.toLowerCase().includes(query) ||
+      referee.kategoria?.toLowerCase().includes(query)
+
+    );
+  });
+
+  if (!user || !user.is_admin) {
+    return <Navigate to="/login" />;
+  }
+
+  function renderSkeleton() {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-6xl mx-auto animate-pulse">
@@ -274,8 +274,8 @@ function renderSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       {alert && (
-        <Alert 
-          type={alert.type} 
+        <Alert
+          type={alert.type}
           message={alert.message}
           onClose={() => setAlert(null)}
         />
@@ -432,8 +432,8 @@ function renderSkeleton() {
                   label="Category"
                   value={selectedReferee.kategoria || "-"}
                 />
-               
-                
+
+
                 <RefereeDetail
                   label="Created At"
                   value={
@@ -592,32 +592,32 @@ function RefereeForm({ formData, onChange }) {
           <option value="UEFA">UEFA</option>
           <option value="Kombëtar">Kombëtar</option>
           <option value="Rajonal">Rajonal</option>
-         
+
         </select>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Nr of License *</label>
-        <input          type="text"
+        <input type="text"
           name="nr_licences"
           value={formData.nr_licences}
           onChange={onChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           required
-       /> 
-          
+        />
+
       </div>
 
-       <div>
+      <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience *</label>
-        <input          type="number"
+        <input type="number"
           name="pervoja_vitesh"
           value={formData.pervoja_vitesh}
           onChange={onChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           required
-       /> 
-          
+        />
+
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import { TeamCard } from "../../components/TeamCard";
 import AlbionImg from "../../assets/team/Albion.png";
+import AmirImg from "../../assets/team/Amir.png";
 import ErikImg from "../../assets/team/Erik.png";
 import ErmirImg from "../../assets/team/Ermir.png";
 
@@ -82,7 +83,7 @@ const AboutUs = () => {
           />
 
           <TeamCard
-            image=""
+            image={AmirImg}
             name="Amir Bejta"
             role="Developer"
             description="Responsible for interface and user experience."
