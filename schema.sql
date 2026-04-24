@@ -38,7 +38,7 @@ CREATE TABLE Users (
     mbiemri     TEXT        NOT NULL,
     email       TEXT        NOT NULL UNIQUE,
     password    TEXT        NOT NULL,
-    roli        TEXT        NOT NULL DEFAULT 'user' CHECK (roli IN ('admin', 'user')),
+    roli        TEXT        NOT NULL DEFAULT 'user' CHECK (roli IN ('admin', 'organizator', 'gjyqtar', 'user')),
     statusi     TEXT        NOT NULL DEFAULT 'Aktiv' CHECK (statusi IN ('Aktiv', 'Pezulluar', 'Joaktiv')),
     created_at  TIMESTAMP   DEFAULT NOW()
 );

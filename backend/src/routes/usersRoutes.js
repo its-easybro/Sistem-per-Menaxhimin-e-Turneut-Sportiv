@@ -11,7 +11,10 @@ const userSelect = `
   email,
   emri AS username,
   CONCAT_WS(' ', emri, mbiemri) AS full_name,
+  roli,
   (roli = 'admin') AS is_admin,
+  (roli = 'organizator') AS is_organizer,
+  (roli = 'gjyqtar') AS is_referee,
   created_at
 `;
 
@@ -44,7 +47,7 @@ router.get("/", protect, requireAdmin, async (req, res) => {
 
 // Route for creating a new user. This route is protected and only admins can use it.
 router.post("/", protect, requireAdmin, async (req, res) => {
-  const { email, username, full_name, password, is_admin } = req.body;
+  const { email, username, full_name, password, roli } = req.body;
 
   try {
     if (!email || !username || !password) {
@@ -62,12 +65,15 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const { emri, mbiemri } = splitName(full_name, username);
+    // Validate role, default to 'user' if not provided
+    const validRoles = ['admin', 'organizator', 'gjyqtar', 'user'];
+    const userRole = validRoles.includes(roli) ? roli : 'user';
 
     const result = await pool.query(
       `INSERT INTO users (email, emri, mbiemri, password, roli, statusi)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING ${userSelect}`,
-      [email, emri, mbiemri, hashedPassword, is_admin ? "admin" : "user", "Aktiv"]
+      [email, emri, mbiemri, hashedPassword, userRole, "Aktiv"]
     );
 
     res.status(201).json(result.rows[0]);
@@ -79,7 +85,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 // Route for updating an existing user by their ID. This route is protected and only admins or the user themselves can use it.
 router.put("/:id", protect, async (req, res) => {
   const { id } = req.params;
-  const { email, username, full_name, is_admin } = req.body;
+  const { email, username, full_name, roli } = req.body;
 
   if (!req.user.is_admin && req.user.id !== Number(id)) {
     return res.status(403).json({ error: "Forbidden" });
@@ -87,6 +93,9 @@ router.put("/:id", protect, async (req, res) => {
 
   try {
     const { emri, mbiemri } = splitName(full_name, username);
+    // Validate role, if not provided use 'user'
+    const validRoles = ['admin', 'organizator', 'gjyqtar', 'user'];
+    const userRole = validRoles.includes(roli) ? roli : 'user';
 
     const result = await pool.query(
       `UPDATE users
@@ -96,7 +105,7 @@ router.put("/:id", protect, async (req, res) => {
            roli = $4
        WHERE id = $5
        RETURNING ${userSelect}`,
-      [email, emri, mbiemri, is_admin ? "admin" : "user", id]
+      [email, emri, mbiemri, userRole, id]
     );
 
     if (result.rows.length === 0) {

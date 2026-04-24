@@ -22,7 +22,7 @@ export const protect = async (req, res, next) => {
     if(!user.rows[0]){
       return res.status(401).json({ message: "Not authorized, user not found" });
     }
-    // Attaching the user's details to the request object, including a computed property `is_admin` for easy role checking in subsequent middleware or route handlers.
+    // Attaching the user's details to the request object, including computed properties for each role for easy role checking in subsequent middleware or route handlers.
     req.user = {
       id: user.rows[0].id,
       email: user.rows[0].email,
@@ -34,6 +34,8 @@ export const protect = async (req, res, next) => {
       username: user.rows[0].emri,
       full_name: [user.rows[0].emri, user.rows[0].mbiemri].filter(Boolean).join(" ") || null,
       is_admin: user.rows[0].roli === "admin",
+      is_organizer: user.rows[0].roli === "organizator",
+      is_referee: user.rows[0].roli === "gjyqtar",
     };
     next();
 

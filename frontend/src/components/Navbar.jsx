@@ -43,6 +43,14 @@ const Navbar = () => {
   const { user, logout } = useContext(AuthContext)
   const navigate = useNavigate()
 
+  const rolePanel = user?.is_admin
+    ? { label: 'Admin Panel', to: '/dashboard' }
+    : user?.is_organizer
+      ? { label: 'Organizer Panel', to: '/organizer/dashboard' }
+      : user?.is_referee
+        ? { label: 'Referee Panel', to: '/referee/dashboard' }
+        : null
+
   // Logs out the user, closes mobile UI state, then returns to home.
   const handleLogout = async () => {
     await logout()
@@ -134,19 +142,17 @@ const Navbar = () => {
             <Link to="/login" className="text-sm/6 font-semibold text-white">
               Log in <span aria-hidden="true">→</span>
             </Link>
-          ) : user.is_admin ? (
+          ) : (
             <div className="flex items-center gap-4">
-              <Link to="/dashboard" className="text-sm/6 font-semibold text-white">
-                Admin Panel
-              </Link>
+              {rolePanel && (
+                <Link to={rolePanel.to} className="text-sm/6 font-semibold text-white">
+                  {rolePanel.label}
+                </Link>
+              )}
               <button onClick={handleLogout} className="text-sm/6 font-semibold text-white">
                 Logout
               </button>
             </div>
-          ) : (
-            <button onClick={handleLogout} className="text-sm/6 font-semibold text-white">
-              Logout
-            </button>
           )}
         </div>
       </nav>
@@ -222,29 +228,17 @@ const Navbar = () => {
                   >
                     Log in <span aria-hidden="true">→</span>
                   </Link>
-                ) : user.is_admin ? (
+                ) : (
                   <>
-                    <Link
-                      to="/dashboard"
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Admin Panel
-                    </Link>
-                    <Link
-                      to="/users"
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Users
-                    </Link>
-                    <Link
-                      to="/tournaments"
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Tournaments
-                    </Link>
+                    {rolePanel && (
+                      <Link
+                        to={rolePanel.to}
+                        className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {rolePanel.label}
+                      </Link>
+                    )}
                     <button
                       type="button"
                       onClick={handleLogout}
@@ -253,14 +247,6 @@ const Navbar = () => {
                       Logout
                     </button>
                   </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
-                  >
-                    Logout
-                  </button>
                 )}
               </div>
             </div>

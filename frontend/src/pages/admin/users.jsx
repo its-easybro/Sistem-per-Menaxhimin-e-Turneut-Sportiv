@@ -22,7 +22,7 @@ export default function Users() {
     username: "",
     full_name: "",
     password: "",
-    is_admin: false,
+    roli: "user",
   });
 
   // Loads all users after confirming the current user is an admin.
@@ -70,7 +70,7 @@ export default function Users() {
       username: "",
       full_name: "",
       password: "",
-      is_admin: false,
+      roli: "user",
     });
   };
 
@@ -86,7 +86,7 @@ export default function Users() {
       username: selected.username || "",
       full_name: selected.full_name || "",
       password: "",
-      is_admin: Boolean(selected.is_admin),
+      roli: selected.roli || "user",
     });
     setShowEditModal(true);
   };
@@ -241,7 +241,7 @@ export default function Users() {
                   <th className="px-6 py-4"><div className="h-4 bg-gray-600 rounded w-32"></div></th>
                   <th className="px-6 py-4"><div className="h-4 bg-gray-600 rounded w-24"></div></th>
                   <th className="px-6 py-4"><div className="h-4 bg-gray-600 rounded w-32"></div></th>
-                  <th className="px-6 py-4"><div className="h-4 bg-gray-600 rounded w-12"></div></th>
+                  <th className="px-6 py-4"><div className="h-4 bg-gray-600 rounded w-20"></div></th>
                   <th className="px-6 py-4"><div className="h-4 bg-gray-600 rounded w-32"></div></th>
                   <th className="px-6 py-4"><div className="h-4 bg-gray-600 rounded w-20 mx-auto"></div></th>
                 </tr>
@@ -253,7 +253,7 @@ export default function Users() {
                     <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-40"></div></td>
                     <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
                     <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-8"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
                     <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
@@ -336,7 +336,7 @@ export default function Users() {
                 <th className="px-6 py-4 text-left font-semibold">Email</th>
                 <th className="px-6 py-4 text-left font-semibold">Username</th>
                 <th className="px-6 py-4 text-left font-semibold">Full Name</th>
-                <th className="px-6 py-4 text-left font-semibold">Admin</th>
+                <th className="px-6 py-4 text-center font-semibold">Role</th>
                 <th className="px-6 py-4 text-left font-semibold">Created At</th>
                 <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
@@ -350,7 +350,19 @@ export default function Users() {
                     <td className="px-6 py-4 text-gray-700">{item.email}</td>
                     <td className="px-6 py-4 text-gray-800 font-semibold">{item.username}</td>
                     <td className="px-6 py-4 text-gray-700 font-semibold">{item.full_name || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 text-center">{item.is_admin ? "Yes" : "No"}</td>
+                    <td className="px-6 py-4 text-gray-800 text-center">
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        item.roli === 'admin' ? 'bg-red-100 text-red-800' :
+                        item.roli === 'organizator' ? 'bg-blue-100 text-blue-800' :
+                        item.roli === 'gjyqtar' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.roli === 'admin' ? 'Admin' :
+                         item.roli === 'organizator' ? 'Organizer' :
+                         item.roli === 'gjyqtar' ? 'Referee' :
+                         'User'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-gray-700 text-center">
                       {item.created_at ? new Date(item.created_at).toLocaleString() : "-"}
                     </td>
@@ -446,18 +458,19 @@ export default function Users() {
                   />
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <input
-                    id="create-is-admin"
-                    type="checkbox"
-                    name="is_admin"
-                    checked={formData.is_admin}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                  <select
+                    name="roli"
+                    value={formData.roli}
                     onChange={handleInputChange}
-                    className="h-4 w-4"
-                  />
-                  <label htmlFor="create-is-admin" className="text-sm font-medium text-gray-700">
-                    Is Admin
-                  </label>
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="organizator">Organizer</option>
+                    <option value="gjyqtar">Referee</option>
+                  </select>
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -529,18 +542,19 @@ export default function Users() {
                   />
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <input
-                    id="edit-is-admin"
-                    type="checkbox"
-                    name="is_admin"
-                    checked={formData.is_admin}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                  <select
+                    name="roli"
+                    value={formData.roli}
                     onChange={handleInputChange}
-                    className="h-4 w-4"
-                  />
-                  <label htmlFor="edit-is-admin" className="text-sm font-medium text-gray-700">
-                    Is Admin
-                  </label>
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="organizator">Organizer</option>
+                    <option value="gjyqtar">Referee</option>
+                  </select>
                 </div>
 
                 <div className="flex gap-4 pt-4">

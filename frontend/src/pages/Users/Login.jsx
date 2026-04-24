@@ -26,6 +26,10 @@ const Login = () => {
       // Redirects admins to dashboard and regular users to the home page.
       if (data?.userData?.is_admin || data?.user?.is_admin) {
         navigate('/dashboard');
+      } else if (data?.userData?.is_organizer || data?.user?.is_organizer) {
+        navigate('/organizer/dashboard');
+      } else if (data?.userData?.is_referee || data?.user?.is_referee) {
+        navigate('/referee/dashboard');
       } else {
         navigate('/');
       }

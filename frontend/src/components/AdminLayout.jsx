@@ -20,19 +20,9 @@ import {
 
 const AdminRoute = () => {
   // Reads auth/session state and logout action from the shared auth context.
-  const { user, loading, logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   // Controls whether the left admin sidebar is visible.
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  // Waits for auth bootstrap before deciding access.
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  // Blocks non-admin users and redirects them to the login page.
-  if (!user || (!user.is_admin && user.is_admin !== true)) {
-    return <Navigate to="/login" />;
-  }
 
   return (
     <div className="flex h-screen md:h-[calc(100vh-80px)] bg-gray-100 overflow-hidden">

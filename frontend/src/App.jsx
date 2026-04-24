@@ -2,9 +2,14 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useContext } from "react";
 import AuthContext from "./context/AuthContext";
 
+// Route Protection
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminLayout";
+import OrganizerLayout from "./components/OrganizerLayout";
+import RefereeLayout from "./components/RefereeLayout";
+
 // Importing Admin Pages
 import Sports from "./pages/admin/Sports";
-import AdminRoute from "./components/AdminRoute";
 import Matches from "./pages/admin/matches";
 import Teams from "./pages/admin/Teams";
 import Home from "./pages/Users/Home";
@@ -17,6 +22,8 @@ import MatchReferees from "./pages/admin/MatchReferees";
 import Tournaments from "./pages/admin/Tournaments";
 import Referees from "./pages/admin/Referees";
 import Standings from "./pages/admin/Standings";
+import OrganizerDashboard from "./pages/organizator/Dashboard";
+import RefereeDashboard from "./pages/gjyqtar/Dashboard";
 
 // Importing User Pages
 import Navbar from "./components/Navbar";
@@ -41,30 +48,43 @@ function App() {
       {/* Shared top navigation shown on all routes. */}
       <Navbar />
       <Routes>
-        {/* Public routes accessible without admin privileges. */}
+        {/* Public routes. */}
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/contact-us" element={<ContactUs />} />
-        {/* Wraps all nested routes with admin access protection + admin layout. */}
-        <Route element={<AdminRoute />}>
-          {/* Admin-only pages rendered inside AdminRoute's <Outlet />. */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* ADMIN ROUTES */}
+        <Route element={<ProtectedRoute requiredRoles={["is_admin"]} Layout={AdminRoute} />}>
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/players" element={<Players />} />
           <Route path="/sports" element={<Sports />} />
           <Route path="/users" element={<Users />} />
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/venues" element={<Venues />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/teams" element={<Teams />} />
-
           <Route path="/match-results" element={<MatchResults />} />
           <Route path="/match-referees" element={<MatchReferees />} />
           <Route path="/tournaments" element={<Tournaments />} />
           <Route path="/referees" element={<Referees />} />
           <Route path="/standings" element={<Standings />} />
         </Route>
-        {/* Public auth pages for signing in and creating an account. */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+
+        {/* ORGANIZER ROUTES */}
+        <Route element={<ProtectedRoute requiredRoles={["is_organizer"]} Layout={OrganizerLayout} />}>
+          <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+          <Route path="/organizer/tournaments" element={<Tournaments />} />
+          <Route path="/organizer/matches" element={<Matches />} />
+          <Route path="/organizer/standings" element={<Standings />} />
+        </Route>
+
+        {/* REFEREE ROUTES */}
+        <Route element={<ProtectedRoute requiredRoles={["is_referee"]} Layout={RefereeLayout} />}>
+          <Route path="/referee/dashboard" element={<RefereeDashboard />} />
+          <Route path="/referee/matches" element={<Matches />} />
+          <Route path="/referee/match-results" element={<MatchResults />} />
+        </Route>
       </Routes>
       {/* Shared footer shown on all routes. */}
       <Footer />

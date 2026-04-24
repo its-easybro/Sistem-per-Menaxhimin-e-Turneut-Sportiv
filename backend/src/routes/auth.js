@@ -21,6 +21,8 @@ const generateToken = (user) => {
       email: user.email,
       roli: user.roli,
       is_admin: user.roli === "admin",
+      is_organizer: user.roli === "organizator",
+      is_referee: user.roli === "gjyqtar",
     },
     process.env.JWT_SECRET,
     { expiresIn: "30d" },
@@ -39,6 +41,8 @@ const buildUserResponse = (user) => ({
   username: user.emri,
   full_name: [user.emri, user.mbiemri].filter(Boolean).join(" ") || null,
   is_admin: user.roli === "admin",
+  is_organizer: user.roli === "organizator",
+  is_referee: user.roli === "gjyqtar",
 });
 
 //Register new user
