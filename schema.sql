@@ -218,3 +218,8 @@ CREATE TABLE Standings (
 
     UNIQUE (turneu_id, ekipi_id)  -- one row per team per tournament
 );
+
+/* Changes during production: */
+
+ALTER TABLE users DROP CONSTRAINT users_roli_check;
+ALTER TABLE users ADD CONSTRAINT users_roli_check CHECK (roli IN ('admin', 'organizator', 'gjyqtar', 'user'));
