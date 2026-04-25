@@ -1,4 +1,4 @@
-import { protect, requireAdmin } from "../middleware/auth.js";
+import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import pool from "../config/db.js";
 
@@ -123,7 +123,7 @@ async function fetchRegistrationById(id) {
 }
 
 // Route for getting all tournament registrations with attached tournament and team names
-router.get("/", async (req, res) => {
+router.get("/", protect, async (req, res) => {
   try {
     const result = await pool.query(`${registrationSelectQuery} ORDER BY tr.id`);
     res.json(result.rows);
@@ -133,7 +133,7 @@ router.get("/", async (req, res) => {
 });
 
 // Route for getting a specific registration by its ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", protect, async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
     return res.status(400).json({ error: idValidation.error });
@@ -151,7 +151,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Route for creating a new tournament registration. This route is protected and only admins can use it.
-router.post("/", protect, requireAdmin, async (req, res) => {
+router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   const validation = validateRegistrationPayload(req.body);
   if (validation.error) {
     return res.status(400).json({ error: validation.error });
@@ -175,7 +175,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 });
 
 // Route for updating an existing registration by its ID. This route is protected and only admins can use it.
-router.put("/:id", protect, requireAdmin, async (req, res) => {
+router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
     return res.status(400).json({ error: idValidation.error });
@@ -210,7 +210,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
 
 
 // Route for deleting an existing registration by its ID. This route is protected and only admins can use it.
-router.delete("/:id", protect, requireAdmin, async (req, res) => {
+router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
     return res.status(400).json({ error: idValidation.error });

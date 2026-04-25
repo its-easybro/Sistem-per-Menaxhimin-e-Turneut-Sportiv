@@ -1,7 +1,7 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import pool from "../config/db.js";
-import { protect, requireAdmin } from "../middleware/auth.js";
+import { protect, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -32,7 +32,7 @@ function splitName(fullName = "", fallbackUsername = "") {
 }
 
 // Route for getting all users. This route is protected and only admins can use it.
-router.get("/", protect, requireAdmin, async (req, res) => {
+router.get("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT ${userSelect}
@@ -46,7 +46,7 @@ router.get("/", protect, requireAdmin, async (req, res) => {
 });
 
 // Route for creating a new user. This route is protected and only admins can use it.
-router.post("/", protect, requireAdmin, async (req, res) => {
+router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   const { email, username, full_name, password, roli } = req.body;
 
   try {
@@ -83,7 +83,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 });
 
 // Route for updating an existing user by their ID. This route is protected and only admins or the user themselves can use it.
-router.put("/:id", protect, async (req, res) => {
+router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
   const { email, username, full_name, roli } = req.body;
 
@@ -119,7 +119,7 @@ router.put("/:id", protect, async (req, res) => {
 });
 
 // Route for deleting an existing user by their ID. This route is protected and only admins can use it.
-router.delete("/:id", protect, requireAdmin, async (req, res) => {
+router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
 
   try {

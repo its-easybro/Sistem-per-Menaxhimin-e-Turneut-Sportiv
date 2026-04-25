@@ -1,10 +1,10 @@
-import { protect, requireAdmin } from "../middleware/auth.js";
+import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import pool from "../config/db.js";
 const router = express.Router();
 
 // Route for getting all referees. This route is public.
-router.get("/", async (req, res) => {
+router.get("/", protect,async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM referees ORDER BY id");
         res.send(result.rows);
@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
 
 // Route for getting a specific referee by their ID. This route is public.
 // GET /referees/:id
-router.get("/:id", async (req, res) => {
+router.get("/:id", protect, async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query("SELECT * FROM referees WHERE id = $1", [id]);
@@ -31,7 +31,7 @@ router.get("/:id", async (req, res) => {
 
 // Route for creating a new referee. This route is protected and only admins can use it.
 // POST /referees
-router.post("/", protect, requireAdmin, async (req, res) => {
+router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
 
     try {
@@ -48,7 +48,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 
 // Route for updating an existing referee by their ID. This route is protected and only admins can use it.
 // PUT /referees/:id
-router.put("/:id", protect, requireAdmin, async (req, res) => {
+router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     const { id } = req.params;
     const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
     try {
@@ -67,7 +67,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
 
 // Route for deleting an existing referee by their ID. This route is protected and only admins can use it.
 // DELETE /referees/:id\
-router.delete("/:id", protect, requireAdmin, async (req, res) => {
+router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
     const { id } = req.params;
     try {
         const result = await pool.query("DELETE FROM referees WHERE id = $1 RETURNING *", [id]);

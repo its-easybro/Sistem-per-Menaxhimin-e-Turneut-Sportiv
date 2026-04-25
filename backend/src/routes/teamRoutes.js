@@ -1,4 +1,4 @@
-import { protect, requireAdmin } from "../middleware/auth.js";
+import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import pool from "../config/db.js";
 
@@ -19,7 +19,7 @@ const normalizeOptionalDate = (value) => {
 };
 
 // Route for getting all teams
-router.get("/", async (req, res) => {
+router.get("/", protect, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM teams ORDER BY id");
     res.json(result.rows);
@@ -29,7 +29,7 @@ router.get("/", async (req, res) => {
 });
 
 // Route for getting a specific team by its ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", protect, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -44,7 +44,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Route for creating a new team. This route is protected and only admins can use it.
-router.post("/", protect, requireAdmin, async (req, res) => {
+router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   const {
     emertimi,
     logoja,
@@ -93,7 +93,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 });
 
 // Route for updating an existing team by its ID. This route is protected and only admins can use it.
-router.put("/:id", protect, requireAdmin, async (req, res) => {
+router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
   const {
     emertimi,
@@ -148,7 +148,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
 });
 
 // Route for deleting an existing team by its ID. This route is protected and only admins can use it.
-router.delete("/:id", protect, requireAdmin, async (req, res) => {
+router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
 
   try {

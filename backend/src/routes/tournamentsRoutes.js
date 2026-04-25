@@ -1,4 +1,4 @@
-import { protect, requireAdmin } from "../middleware/auth.js";
+import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import pool from "../config/db.js";
 
@@ -92,7 +92,7 @@ function validateTournamentPayload(body) {
 }
 
 // Route for getting all tournaments
-router.get("/", async (req, res) => {
+router.get("/", protect, async (req, res) => {
     try{
         const result = await pool.query("SELECT * FROM tournaments ORDER BY id");
         res.send(result.rows);   
@@ -102,7 +102,7 @@ router.get("/", async (req, res) => {
 });
 
 // Route for getting a specific tournament by its ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", protect, async (req, res) => {
     const { id } = req.params;
     try{
         const result = await pool.query("SELECT * FROM tournaments WHERE id = $1", [id]);
@@ -116,7 +116,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Route for creating a new tournament. This route is protected and only admins can use it.
-router.post("/", protect, requireAdmin, async (req, res) => {
+router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     const validation = validateTournamentPayload(req.body);
     if (validation.error) {
         return res.status(400).json({ error: validation.error });
@@ -137,7 +137,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 });
 
 // Route for updating an existing tournament by its ID. This route is protected and only admins can use it.
-router.put("/:id",protect, requireAdmin, async (req, res) => {
+router.put("/:id",protect, requireRole("is_admin"), async (req, res) => {
     const { id } = req.params;
     const validation = validateTournamentPayload(req.body);
     if (validation.error) {
@@ -160,7 +160,7 @@ router.put("/:id",protect, requireAdmin, async (req, res) => {
 });
 
 // Route for deleting an existing tournament by its ID. This route is protected and only admins can use it.
-router.delete("/:id",protect, requireAdmin, async (req, res) => {
+router.delete("/:id",protect, requireRole("is_admin"), async (req, res) => {
     const { id } = req.params;
     try{
         const result = await pool.query("DELETE FROM tournaments WHERE id = $1 RETURNING *", [id]);

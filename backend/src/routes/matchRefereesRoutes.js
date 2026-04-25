@@ -1,6 +1,6 @@
 import express from "express";
 import pool from "../config/db.js";
-import { protect, requireAdmin } from "../middleware/auth.js";
+import { protect, requireRole } from "../middleware/auth.js";
 const router = express.Router();
 
 // Route for managing match referees. This route is protected and only admins can use it.
@@ -31,7 +31,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new match referee. This route is protected and only admins can use it.
-router.post("/", protect, requireAdmin, async (req, res) => {
+router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
   if (!ndeshja_id || !gjyqtari_id || !roli) {
     return res.status(400).json({
@@ -50,7 +50,7 @@ router.post("/", protect, requireAdmin, async (req, res) => {
 });
 
 // Route for updating an existing match referee by its ID. This route is protected and only admins can use it.
-router.put("/:id", protect, requireAdmin, async (req, res) => {
+router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
   if (!ndeshja_id || !gjyqtari_id || !roli) {
@@ -73,7 +73,7 @@ router.put("/:id", protect, requireAdmin, async (req, res) => {
 });
 
 // Route for deleting an existing match referee by its ID. This route is protected and only admins can use it.
-router.delete("/:id", protect, requireAdmin, async (req, res) => {
+router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(

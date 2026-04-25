@@ -44,10 +44,12 @@ export const protect = async (req, res, next) => {
     res.status(401).json({ message: "Not authorized, token failed" });
   }
 }
-// Middleware to check if the authenticated user has admin privileges. It checks the `is_admin` property of the `req.user` object, which is set by the `protect` middleware. If the user is not an admin, it returns a 403 Forbidden response.
-export function requireAdmin(req, res, next) {
-  if (!req.user || (!req.user.is_admin && req.user.roli !== "admin")) {
-    return res.status(403).json({ error: 'Forbidden' });
+
+// Middleware to restrict access to certain routes based on user roles. It checks if the authenticated user has at least one of the specified roles and allows access if they do, otherwise it returns a 403 Forbidden response.
+export const requireRole = (...roles) => (req, res, next) => {
+  const hasRole = roles.some(role => req.user?.[role] === true);
+  if (!hasRole){
+    return res.status(403).json({ error: "Forbidden" });
   }
   next();
 }
