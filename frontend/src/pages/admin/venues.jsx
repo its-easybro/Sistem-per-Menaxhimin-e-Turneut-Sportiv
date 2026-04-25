@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
 const initialFormData = {
@@ -40,15 +40,9 @@ export default function Venues() {
 
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/venues`, {
-          credentials: "include",
-        });
+        const response = await api.get(`/venues`)
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch venues");
-        }
-
-        const data = await response.json();
+        const data = response.data;
         setVenues(data);
       } catch (err) {
         setError(err.message);
@@ -139,20 +133,9 @@ export default function Venues() {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${API_BASE_URL}/venues`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(buildPayload()),
-      });
+      const response = await api.post(`/venues`, buildPayload())
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create venue");
-      }
+      const data = response.data;
 
       setVenues((prev) => [...prev, data]);
       handleCloseModal();
@@ -168,20 +151,9 @@ export default function Venues() {
     if (!selectedVenue) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/venues/${selectedVenue.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(buildPayload()),
-      });
+      const response = await api.put(`/venues/${selectedVenue.id}`, buildPayload())
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update venue");
-      }
+      const data = response.data;
 
       setVenues((prev) => prev.map((item) => (item.id === data.id ? data : item)));
       handleCloseEditModal();
@@ -195,16 +167,7 @@ export default function Venues() {
     if (!selectedVenue) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/venues/${selectedVenue.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete venue");
-      }
+      await api.delete(`/venues/${selectedVenue.id}`)
 
       setVenues((prev) => prev.filter((item) => item.id !== selectedVenue.id));
       handleCloseDeleteModal();

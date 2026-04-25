@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
-import { API_BASE_URL } from '../../config/api';
+import api from '../../config/axiosInstance';
 import { Alert } from '../../components/Alert';
 
 const initialFormData = {
@@ -40,13 +40,9 @@ export default function SportsManagment() {
 
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/sports`, {
-          credentials: 'include', // Send cookies along with the request
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch sports');
-        }
-        const data = await response.json();
+        const response = await api.get(`/sports`)
+
+        const data = response.data;
         setSports(data);
       } catch (err) {
         setError(err.message);
@@ -80,30 +76,12 @@ export default function SportsManagment() {
     lloji: formData.lloji,
   });
 
-  const getErrorMessage = async (response, fallbackMessage) => {
-    try {
-      const data = await response.json();
-      return data.error || fallbackMessage;
-    } catch {
-      return fallbackMessage;
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${API_BASE_URL}/sports`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(buildSportPayload())
-      });
-      if (!response.ok) {
-        throw new Error(await getErrorMessage(response, 'Failed to create sport'));
-      }
-      const newSport = await response.json();
+      const response = await api.post(`/sports`, buildSportPayload())
+
+      const newSport = response.data;
       setSports((prev) => [...prev, newSport]);
       setFormData(initialFormData);
       setShowModal(false);
@@ -166,18 +144,9 @@ export default function SportsManagment() {
     if (!selectedSport) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/sports/${selectedSport.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(buildSportPayload())
-      });
-      if (!response.ok) {
-        throw new Error(await getErrorMessage(response, 'Failed to update sport'));
-      }
-      const updatedSport = await response.json();
+      const response = await api.put(`/sports/${selectedSport.id}`, buildSportPayload())
+
+      const updatedSport = response.data;
       setSports((prev) => prev.map((s) => (s.id === updatedSport.id ? updatedSport : s)));
       setFormData(initialFormData);
       setSelectedSport(null);
@@ -192,14 +161,8 @@ export default function SportsManagment() {
     if (!selectedSport) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/sports/${selectedSport.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
+      await api.delete(`/sports/${selectedSport.id}`)
 
-      if (!response.ok) {
-        throw new Error(await getErrorMessage(response, 'Failed to delete sport'));
-      }
       setSports((prev) => prev.filter((s) => s.id !== selectedSport.id));
       setSelectedSport(null);
       setShowDeleteModal(false);

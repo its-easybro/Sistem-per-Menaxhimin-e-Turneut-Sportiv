@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
 const formatDate = (isoDate) => {
@@ -58,30 +58,14 @@ export default function Standings() {
         setLoading(true);
         const [standingsResponse, tournamentsResponse, teamsResponse] =
           await Promise.all([
-            fetch(`${API_BASE_URL}/standings`, {
-              credentials: "include",
-            }),
-            fetch(`${API_BASE_URL}/tournaments`, {
-              credentials: "include",
-            }),
-            fetch(`${API_BASE_URL}/teams`, {
-              credentials: "include",
-            }),
+            api.get(`/standings`),
+            api.get(`/tournaments`),
+            api.get(`teams`)
           ]);
 
-        if (!standingsResponse.ok) {
-          throw new Error("Failed to fetch standings");
-        }
-        if (!tournamentsResponse.ok) {
-          throw new Error("Failed to fetch tournaments");
-        }
-        if (!teamsResponse.ok) {
-          throw new Error("Failed to fetch teams");
-        }
-
-        const standingsData = await standingsResponse.json();
-        const tournamentsData = await tournamentsResponse.json();
-        const teamsData = await teamsResponse.json();
+        const standingsData = standingsResponse.data;
+        const tournamentsData =  tournamentsResponse.data;
+        const teamsData = teamsResponse.data;
 
         setStandings(Array.isArray(standingsData) ? standingsData : []);
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
@@ -154,21 +138,9 @@ export default function Standings() {
         piket: parseInt(formData.piket) || 0,
       };
 
-      const response = await fetch(`${API_BASE_URL}/standings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
+      const response = await api.post(`/standings`, payload())
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || "Failed to create standing");
-      }
-
-      const newStanding = await response.json();
+      const newStanding = response.data;
       setStandings([...standings, newStanding]);
       setFormData({
         turneu_id: "",
@@ -285,24 +257,9 @@ export default function Standings() {
         piket: parseInt(formData.piket) || 0,
       };
 
-      const response = await fetch(
-        `${API_BASE_URL}/standings/${selectedStanding.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        },
-      );
+      const response = await api.put(`/standings/${selectedStanding.id}`, payload())
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || "Failed to update standing");
-      }
-
-      const updatedStanding = await response.json();
+      const updatedStanding = response.data;
       setStandings(
         standings.map((s) =>
           s.id === updatedStanding.id ? updatedStanding : s,
@@ -333,18 +290,7 @@ export default function Standings() {
   const handleDeleteConfirm = async () => {
     if (!selectedStanding) return;
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/standings/${selectedStanding.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || "Failed to delete standing");
-      }
+      await api.delete(`/standings/${selectedStanding.id}`)
 
       setStandings(standings.filter((s) => s.id !== selectedStanding.id));
       setSelectedStanding(null);

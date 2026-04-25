@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
 const initialFormData = {
@@ -40,15 +40,13 @@ export default function Referees() {
       }
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/referees`, {
-          credentials: "include",
-
-        });
-        if (!response.ok) {
-          throw new Error("Failed to fetch referees");
-        }
-        const data = await response.json();
-        setReferees(data);
+        const response = await api.get(`/referees`);
+        const normalizedReferees = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
+        setReferees(normalizedReferees);
 
       } catch (err) {
         setError(err.message);
@@ -125,25 +123,16 @@ export default function Referees() {
     ...formData,
 
     pervoja_vitesh: formData.pervoja_vitesh === "" ? null : Number(formData.pervoja_vitesh),
-    telefoni: formData.telefoni === "" ? null : Number(formData.telefoni),
+    telefoni: formData.telefoni?.trim() === "" ? null : formData.telefoni.trim(),
   });
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${API_BASE_URL}/referees`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await api.post(`/referees`, buildPayload())
 
-        },
-        credentials: "include",
-        body: JSON.stringify(buildPayload()),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create referee");
-      }
+      const data = response.data;
+
       setReferees((prev) => [...prev, data]);
       handleCloseModal();
       setAlert({ type: "success", message: "Referee created successfully" });
@@ -159,21 +148,10 @@ export default function Referees() {
     if (!selectedReferee) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/referees/${selectedReferee.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(buildPayload()),
-      });
+      const response = await api.put(`/referees/${selectedReferee.id}`, buildPayload())
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update referee");
-
-      }
       setReferees((prev) => prev.map((item) => (item.id === data.id ? data : item)));
       handleCloseEditModal();
       setAlert({ type: "success", message: "Referee updated successfully" });
@@ -185,15 +163,8 @@ export default function Referees() {
   const handleDeleteConfirm = async () => {
     if (!selectedReferee) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/referees/${selectedReferee.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      const data = await response.json();
+      await api.delete(`/referees/${selectedReferee.id}`)
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete referee");
-      }
       setReferees((prev) => prev.filter((item) => item.id !== selectedReferee.id));
       handleCloseDeleteModal();
       setAlert({ type: "success", message: "Referee deleted successfully" });
@@ -202,7 +173,7 @@ export default function Referees() {
     }
   };
   // Applies search filter across identity and category fields.
-  const filteredReferees = referees.filter((referee) => {
+  const filteredReferees = (Array.isArray(referees) ? referees : []).filter((referee) => {
     const query = searchQuery.toLowerCase();
     return (
 
@@ -574,7 +545,7 @@ function RefereeForm({ formData, onChange }) {
           onChange={onChange}
           pattern="^\+383 \d{2} \d{3} \d{3}$"
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-          placeholder="+383 123 456"
+          placeholder="+383 12 345 678"
           required
         />
       </div>

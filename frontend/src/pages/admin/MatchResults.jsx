@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
 import { Award, Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { Alert } from "../../components/Alert";
@@ -67,51 +67,20 @@ export default function MatchResults() {
           matchRefereesResponse,
           refereesResponse,
         ] = await Promise.all([
-          fetch(`${API_BASE_URL}/match-results`, {
-            credentials: "include",
-          }),
-          fetch(`${API_BASE_URL}/matches`, {
-            credentials: "include",
-          }),
-          fetch(`${API_BASE_URL}/teams`, {
-            credentials: "include",
-          }),
-          fetch(`${API_BASE_URL}/players`, {
-            credentials: "include",
-          }),
-          fetch(`${API_BASE_URL}/match-referees`, {
-            credentials: "include",
-          }),
-          fetch(`${API_BASE_URL}/referees`, {
-            credentials: "include",
-          }),
+          api.get(`/match-results`),
+          api.get(`/matches`),
+          api.get(`/teams`),
+          api.get(`/players`),
+          api.get(`/match-referees`),
+          api.get(`/referees`)
         ]);
 
-        if (!matchResultsResponse.ok) {
-          throw new Error("Failed to fetch Match Results");
-        }
-        if (!matchesResponse.ok) {
-          throw new Error("Failed to fetch matches");
-        }
-        if (!teamsResponse.ok) {
-          throw new Error("Failed to fetch teams");
-        }
-        if (!playersResponse.ok) {
-          throw new Error("Failed to fetch players");
-        }
-        if (!matchRefereesResponse.ok) {
-          throw new Error("Failed to fetch match referees");
-        }
-        if (!refereesResponse.ok) {
-          throw new Error("Failed to fetch referees");
-        }
-
-        const MatchResultData = await matchResultsResponse.json();
-        const matchesData = await matchesResponse.json();
-        const teamsData = await teamsResponse.json();
-        const playersData = await playersResponse.json();
-        const matchRefereesData = await matchRefereesResponse.json();
-        const refereesData = await refereesResponse.json();
+        const MatchResultData = matchResultsResponse.data;
+        const matchesData = matchesResponse.data;
+        const teamsData = teamsResponse.data;
+        const playersData = playersResponse.data;
+        const matchRefereesData = matchRefereesResponse.data;
+        const refereesData = refereesResponse.data;
 
         setMatchResults(MatchResultData);
         setMatches(matchesData);
@@ -172,17 +141,9 @@ export default function MatchResults() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${API_BASE_URL}/match-results`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(buildMatchResultPayload()),
-      });
-      if (!response.ok) throw new Error("Failed to create Match");
+      const response = await api.post(`/match-results`, buildMatchResultPayload());
 
-      const newMatch = await response.json();
+      const newMatch = response.data;
 
       setMatchResults([...MatchResults, newMatch]);
 
@@ -261,20 +222,9 @@ export default function MatchResults() {
     if (!selectedMatchResult) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/match-results/${selectedMatchResult.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(buildMatchResultPayload()),
-        },
-      );
-      if (!response.ok) throw new Error("Failed to update match");
+      const response = await api.put(`/match-results/${selectedMatchResult.id}`, buildMatchResultPayload())
 
-      const updatedMatch = await response.json();
+      const updatedMatch = response.data;
 
       setMatchResults(
         MatchResults.map((e) => (e.id === updatedMatch.id ? updatedMatch : e)),
@@ -301,16 +251,8 @@ export default function MatchResults() {
   const handleDeleteConfirm = async () => {
     if (!selectedMatchResult) return;
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/match-results/${selectedMatchResult.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) throw new Error("Failed to delete match");
-
+      await api.delete(`/match-results/${selectedMatchResult.id}`);
+      
       setMatchResults(
         MatchResults.filter((e) => e.id !== selectedMatchResult.id),
       );

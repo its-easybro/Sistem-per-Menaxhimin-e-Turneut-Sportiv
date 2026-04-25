@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
@@ -64,29 +64,16 @@ export default function Matches() {
           teamsResponse,
           venuesResponse,
         ] = await Promise.all([
-          fetch(`${API_BASE_URL}/matches`, { credentials: "include" }),
-          fetch(`${API_BASE_URL}/tournaments`, { credentials: "include" }),
-          fetch(`${API_BASE_URL}/teams`, { credentials: "include" }),
-          fetch(`${API_BASE_URL}/venues`, { credentials: "include" }),
+          api.get(`/matches`),
+          api.get(`tournaments`),
+          api.get(`teams`),
+          api.get(`/venues`)
         ]);
 
-        if (!matchesResponse.ok) {
-          throw new Error("Failed to fetch matches");
-        }
-        if (!tournamentsResponse.ok) {
-          throw new Error("Failed to fetch tournaments");
-        }
-        if (!teamsResponse.ok) {
-          throw new Error("Failed to fetch teams");
-        }
-        if (!venuesResponse.ok) {
-          throw new Error("Failed to fetch venues");
-        }
-
-        const matchesData = await matchesResponse.json();
-        const tournamentsData = await tournamentsResponse.json();
-        const teamsData = await teamsResponse.json();
-        const venuesData = await venuesResponse.json();
+        const matchesData = matchesResponse.data;
+        const tournamentsData = tournamentsResponse.data;
+        const teamsData =  teamsResponse.data;
+        const venuesData = venuesResponse.data;
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
         setMatches(Array.isArray(matchesData) ? matchesData : []);
         setTeams(Array.isArray(teamsData) ? teamsData : []);
@@ -147,21 +134,9 @@ export default function Matches() {
         fusha_id: formData.fusha_id ? parseInt(formData.fusha_id) : null,
       };
 
-      const response = await fetch(`${API_BASE_URL}/matches`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(dataToSend),
-      });
+      const response = await api.post(`/matches`, dataToSend)
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create match");
-      }
-
-      const newMatch = await response.json();
+      const newMatch = response.data;
       setMatches([...matches, newMatch]);
       setShowModal(false);
       setFormData({
@@ -281,24 +256,8 @@ export default function Matches() {
         fusha_id: formData.fusha_id ? parseInt(formData.fusha_id) : null,
       };
 
-      const response = await fetch(
-        `${API_BASE_URL}/matches/${selectedMatch.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(dataToSend),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update match");
-      }
-
-      const updatedMatch = await response.json();
+      const response = await api.put(`/matches/${selectedMatch.id}`, dataToSend)
+      const updatedMatch = response.data;
       setMatches(
         matches.map((m) => (m.id === updatedMatch.id ? updatedMatch : m)),
       );
@@ -316,18 +275,7 @@ export default function Matches() {
     if (!selectedMatch) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/matches/${selectedMatch.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete match");
-      }
+      await api.delete(`/matches/${selectedMatch.id}`);
 
       setMatches(matches.filter((m) => m.id !== selectedMatch.id));
       setSelectedMatch(null);

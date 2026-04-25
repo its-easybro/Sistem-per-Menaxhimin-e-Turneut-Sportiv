@@ -1,7 +1,7 @@
 import {useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
 const formatDate = (isoDate) => {
@@ -52,16 +52,9 @@ export default function Teams() {
         }
         try{
             setLoading(true);
-            const [teamsResponse] = await Promise.all([
-                fetch(`${API_BASE_URL}/teams`,{
-                    credentials: "include",
-
-                }),
-            ]);
-            if (!teamsResponse.ok) {
-                throw new Error("Failed to fetch teams");
-        }
-        const teamsData = await teamsResponse.json();
+            const teamsResponse = await api.get("/teams");
+  
+        const teamsData = teamsResponse.data;
         setTeams(teamsData);
     }  catch(err){
         setError(err.message);
@@ -89,19 +82,10 @@ export default function Teams() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try{
-            const response = await fetch(`${API_BASE_URL}/teams`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify(formData),
-            });
-            if(!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.error || "Failed to create team");
-            }
-            const newTeam = await response.json();
+             
+            const response = await api.post(`/teams`, formData)
+            
+            const newTeam = response.data;
             setTeams([...teams, newTeam]);
 
             setFormData({
@@ -190,20 +174,9 @@ export default function Teams() {
         e.preventDefault();
         if(!selectedTeam) return;
         try{
-            const response = await fetch(`${API_BASE_URL}/teams/${selectedTeam.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify(formData),
-            });
-            if(!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.error || "Failed to update team");
-            }
+          const response = await api.put(`teams/${selectedTeam.id}`, formData)
 
-            const updatedTeam = await response.json();
+            const updatedTeam = response.data;
 
             setTeams(teams.map((t) => (t.id === updatedTeam.id ? updatedTeam : t)));
             setFormData({
@@ -227,14 +200,7 @@ export default function Teams() {
     const handleDeleteConfirm = async () => {
         if(!selectedTeam) return;
         try{
-            const response = await fetch(`${API_BASE_URL}/teams/${selectedTeam.id}`, {
-                method: "DELETE",
-                credentials: "include",
-            });
-            if(!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.error || "Failed to delete team");
-            }
+          await api.delete(`teams/${selectedTeam.id}`)
 
             setTeams(teams.filter((t) => t.id !== selectedTeam.id));
 
@@ -541,7 +507,7 @@ export default function Teams() {
                       value={formData.kontakti}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="+383 123 456"
+                      placeholder="+383 12 345 678"
                       pattern="^\+383 \d{2} \d{3} \d{3}$"
                       required
                     />

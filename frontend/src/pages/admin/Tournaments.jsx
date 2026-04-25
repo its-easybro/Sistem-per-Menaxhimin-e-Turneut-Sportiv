@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
 const initialFormData = {
@@ -287,24 +287,12 @@ export default function Tournaments() {
         setError("");
 
         const [tournamentsRes, sportsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/tournaments`, {
-            credentials: "include",
-          }),
-          fetch(`${API_BASE_URL}/sports`, {
-            credentials: "include",
-          }),
+          api.get(`/tournaments`),
+          api.get(`/sports`)
         ]);
 
-        if (!tournamentsRes.ok) {
-          throw new Error("Failed to fetch tournaments");
-        }
-
-        if (!sportsRes.ok) {
-          throw new Error("Failed to fetch sports");
-        }
-
-        const tournamentsData = await tournamentsRes.json();
-        const sportsData = await sportsRes.json();
+        const tournamentsData = tournamentsRes.data;
+        const sportsData = sportsRes.data;
 
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
         setSports(Array.isArray(sportsData) ? sportsData : []);
@@ -407,20 +395,8 @@ export default function Tournaments() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/tournaments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(buildPayload()),
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create tournament");
-      }
+      const response = await api.post(`/tournaments`, buildPayload());
+      const data = response.data || {};
 
       setTournaments((prev) => [...prev, data]);
       handleCloseModal();
@@ -442,23 +418,8 @@ export default function Tournaments() {
         return;
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/tournaments/${selectedTournament.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(buildPayload()),
-        },
-      );
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update tournament");
-      }
+      const response = await api.put(`/tournaments/${selectedTournament.id}`,  buildPayload());
+      const data = response.data || {};
 
       setTournaments((prev) =>
         prev.map((item) => (item.id === data.id ? data : item)),
@@ -475,19 +436,7 @@ export default function Tournaments() {
     if (!selectedTournament) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/tournaments/${selectedTournament.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete tournament");
-      }
+      await api.delete(`/tournaments/${selectedTournament.id}`);
 
       setTournaments((prev) =>
         prev.filter((item) => item.id !== selectedTournament.id),
@@ -531,6 +480,16 @@ export default function Tournaments() {
       <div className="flex min-h-[50vh] items-center justify-center bg-gray-50 px-4">
         <div className="rounded-xl bg-white px-6 py-4 text-sm font-medium text-gray-700 shadow-sm">
           Loading tournaments...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center bg-gray-50 px-4">
+        <div className="rounded-xl bg-white px-6 py-4 text-sm font-medium text-red-600 shadow-sm">
+          Error loading tournaments: {error}
         </div>
       </div>
     );

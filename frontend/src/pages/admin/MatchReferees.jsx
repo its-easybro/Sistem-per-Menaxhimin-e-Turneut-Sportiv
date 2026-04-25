@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api"
+import api from "../../config/axiosInstance"
 import { Alert } from "../../components/Alert";
 
 export default function MatchReferees() {
@@ -48,24 +48,14 @@ export default function MatchReferees() {
         setError("");
         const [assignmentsResponse, matchesResponse, refereesResponse] =
           await Promise.all([
-            fetch(`${API_BASE_URL}/match-referees`, { credentials: "include" }),
-            fetch(`${API_BASE_URL}/matches`, { credentials: "include" }),
-            fetch(`${API_BASE_URL}/referees`, { credentials: "include" }),
+            api.get(`/match-referees`),
+            api.get(`/matches`),
+            api.get(`/referees`)
           ]);
 
-        if (!assignmentsResponse.ok) {
-          throw new Error("Failed to fetch referee assignments");
-        }
-        if (!matchesResponse.ok) {
-          throw new Error("Failed to fetch matches");
-        }
-        if (!refereesResponse.ok) {
-          throw new Error("Failed to fetch referees");
-        }
-
-        const assignmentsData = await assignmentsResponse.json();
-        const matchesData = await matchesResponse.json();
-        const refereesData = await refereesResponse.json();
+        const assignmentsData = assignmentsResponse.data;
+        const matchesData = matchesResponse.data;
+        const refereesData = refereesResponse.data;
 
         setAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
         setMatches(Array.isArray(matchesData) ? matchesData : []);
@@ -103,7 +93,7 @@ export default function MatchReferees() {
     e.preventDefault();
     try {
       if (!formData.ndeshja_id || !formData.gjyqtari_id || !formData.roli) {
-        alert("Please fill in all required fields");
+        setAlert({ type: "error", message: "Please fill in all required fields" });
         return;
       }
 
@@ -113,21 +103,9 @@ export default function MatchReferees() {
         roli: formData.roli,
       };
 
-      const response = await fetch(`${API_BASE_URL}/match-referees`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(dataToSend),
-      });
+      const response = await api.post(`/match-referees`, dataToSend);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create assignment");
-      }
-
-      const newAssignment = await response.json();
+      const newAssignment = response.data;
       setAssignments([...assignments, newAssignment]);
       setShowModal(false);
       setFormData({
@@ -204,7 +182,7 @@ export default function MatchReferees() {
 
     try {
       if (!formData.ndeshja_id || !formData.gjyqtari_id || !formData.roli) {
-        alert("Please fill in all required fields");
+        setAlert("Please fill in all required fields");
         return;
       }
 
@@ -213,25 +191,9 @@ export default function MatchReferees() {
         gjyqtari_id: parseInt(formData.gjyqtari_id),
         roli: formData.roli,
       };
+      const response = await api.put(`/match-referees/${selectedAssignment.id}`, dataToSend);
 
-      const response = await fetch(
-        `${API_BASE_URL}/match-referees/${selectedAssignment.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(dataToSend),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update assignment");
-      }
-
-      const updatedAssignment = await response.json();
+      const updatedAssignment = response.data;
       setAssignments(
         assignments.map((a) =>
           a.id === updatedAssignment.id ? updatedAssignment : a,
@@ -251,18 +213,7 @@ export default function MatchReferees() {
     if (!selectedAssignment) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/match-referees/${selectedAssignment.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete assignment");
-      }
+      await api.delete(`/match-referees/${selectedAssignment.id}`)
 
       setAssignments(assignments.filter((a) => a.id !== selectedAssignment.id));
       setSelectedAssignment(null);

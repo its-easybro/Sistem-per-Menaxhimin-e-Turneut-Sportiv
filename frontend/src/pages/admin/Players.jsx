@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
@@ -56,23 +56,12 @@ export default function Players() {
       try {
         setLoading(true);
         const [playersResponse, teamsResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/players`, {
-            credentials: "include",
-          }),
-          fetch(`${API_BASE_URL}/teams`, {
-            credentials: "include",
-          }),
+          api.get(`/players`),
+          api.get(`/teams`)
         ]);
 
-        if (!playersResponse.ok) {
-          throw new Error("Failed to fetch players");
-        }
-        if (!teamsResponse.ok) {
-          throw new Error("Failed to fetch teams");
-        }
-
-        const playersData = await playersResponse.json();
-        const teamsData = await teamsResponse.json();
+        const playersData = playersResponse.data;
+        const teamsData = teamsResponse.data;
 
         setPlayers(playersData);
         setTeams(teamsData);
@@ -120,17 +109,9 @@ export default function Players() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${API_BASE_URL}/players`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(buildPlayerPayload()),
-      });
-      if (!response.ok) throw new Error("Failed to create player");
+      const response = await api.post(`/players`, buildPlayerPayload());
 
-      const newPlayer = await response.json();
+      const newPlayer = response.data;
 
       setPlayers([...players, newPlayer]);
 
@@ -206,6 +187,7 @@ export default function Players() {
 
   const handleEdit = (id) => {
     const player = players.find((e) => e.id === id);
+    if (!player) return;
     setSelectedPlayer(player);
 
     setFormData({
@@ -236,20 +218,9 @@ export default function Players() {
     if (!selectedPlayer) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/players/${selectedPlayer.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(buildPlayerPayload()),
-        },
-      );
-      if (!response.ok) throw new Error("Failed to update player");
+      const response = await api.put(`/players/${selectedPlayer.id}`, buildPlayerPayload());
 
-      const updatedPlayer = await response.json();
+      const updatedPlayer = response.data;
 
       setPlayers(
         players.map((e) => (e.id === updatedPlayer.id ? updatedPlayer : e)),
@@ -280,15 +251,7 @@ export default function Players() {
     if (!selectedPlayer) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/players/${selectedPlayer.id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) throw new Error("Failed to delete player");
+      await api.delete(`/players/${selectedPlayer.id}`);
 
       setPlayers(players.filter((e) => e.id !== selectedPlayer.id));
 
@@ -304,7 +267,7 @@ export default function Players() {
 
   // Redirects unauthorized users away from admin-only pages.
   if (!user || !user.is_admin) {
-    return <Navigate to=" /login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   function renderSkeleton() {

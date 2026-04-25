@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
 export default function Users() {
@@ -35,15 +35,9 @@ export default function Users() {
 
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/users`, {
-          credentials: "include",
-        });
+        const response = await api.get(`/users`);
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch users");
-        }
-
-        const data = await response.json();
+        const data = response.data;
         setUsers(data);
       } catch (err) {
         setError(err.message);
@@ -116,20 +110,9 @@ export default function Users() {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
+      const response = await api.post(`/users`, formData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create user");
-      }
+      const data = response.data;
 
       setUsers((prev) => [...prev, data]);
       setAlert({ type: 'success', message: 'User created successfully!' });
@@ -145,20 +128,9 @@ export default function Users() {
     if (!selectedUser) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
+      const response = await api.put(`/users/${selectedUser.id}`, formData)
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update user");
-      }
+      const data = response.data;
 
       setUsers((prev) => prev.map((item) => (item.id === data.id ? data : item)));
       setAlert({ type: 'success', message: 'User updated successfully!' });
@@ -172,16 +144,7 @@ export default function Users() {
     if (!selectedUser) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${selectedUser.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete user");
-      }
+      await api.delete(`users/${selectedUser.id}`)
 
       setUsers((prev) => prev.filter((item) => item.id !== selectedUser.id));
       setAlert({ type: 'success', message: 'User deleted successfully!' });

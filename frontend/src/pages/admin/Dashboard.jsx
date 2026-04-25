@@ -1,8 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import AuthContext from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import api from "../../config/axiosInstance";
 import { Users, Trophy, Activity } from 'lucide-react';
-import axios from 'axios';
 
 const Dashboard = () => {
   // Uses authenticated admin info for personalized dashboard content.
@@ -18,8 +17,8 @@ const Dashboard = () => {
     const fetchStats = async () => {
       try {
         const [usersRes, sportsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/users`, { withCredentials: true }),
-          axios.get(`${API_BASE_URL}/sports`, { withCredentials: true })
+          api.get(`/users`),
+          api.get(`/sports`)
         ]);
         
         const usersData = usersRes.data;
