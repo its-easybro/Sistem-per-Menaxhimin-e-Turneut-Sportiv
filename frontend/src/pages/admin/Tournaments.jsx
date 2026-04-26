@@ -11,6 +11,7 @@ const initialFormData = {
   data_fillimit: "",
   data_perfundimit: "",
   lokacioni: "",
+  organizatori_id: "",
   cmimi_regjistrimit: "0.00",
   statusi: "Regjistrimi",
   pershkrimi: "",
@@ -125,10 +126,15 @@ function formatCurrency(value) {
   const amount = Number(value);
   return Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
 }
+//NEW 
+function getOrganizerName(users, organizerId) {
+  const organizer = users.find ((item) => item.id === organizerId);
+  return organizer?.full_name || organizer?.username || "N/A";
+}
 
 
 
-function TournamentFormFields({ formData, sports, onChange }) {
+function TournamentFormFields({ formData, sports, users, onChange, canAssignOrganizer }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <label className="flex flex-col gap-2">
@@ -230,6 +236,25 @@ function TournamentFormFields({ formData, sports, onChange }) {
         />
       </label>
 
+      {canAssignOrganizer && (
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-gray-700">Assign Organizer</span>
+          <select
+            name="organizatori_id"
+            value={formData.organizatori_id}
+            onChange={onChange}
+            className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          >
+            <option value="">No organizer</option>
+            {users.map((organizer) => (
+              <option key={organizer.id} value={organizer.id}>
+                {organizer.full_name || organizer.username} ({organizer.email})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       <label className="flex flex-col gap-2">
         <span className="text-sm font-medium text-gray-700">Registration Price</span>
         <input
@@ -260,9 +285,14 @@ function TournamentFormFields({ formData, sports, onChange }) {
 export default function Tournaments() {
   // Admin page for tournament CRUD with supporting sport lookups.
   const { user } = useContext(AuthContext);
+  // Reuses the same page for admins and organizers.
+  // The organizer only receives their own tournaments from the backend.
+  const canManageTournaments = user?.is_admin || user?.is_organizer;
+  const isAdmin = user?.is_admin;
   // Stores tournament/sport datasets plus modal, selection, and form UI state.
   const [tournaments, setTournaments] = useState([]);
   const [sports, setSports] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -277,7 +307,8 @@ export default function Tournaments() {
   // Loads tournaments and sports in parallel for table and form dropdowns.
   useEffect(() => {
     const loadTournaments = async () => {
-      if (!user?.is_admin) {
+      // Blocks users without admin/organizer roles from loading tournament data.
+      if (!canManageTournaments) {
         setLoading(false);
         return;
       }
@@ -286,16 +317,25 @@ export default function Tournaments() {
         setLoading(true);
         setError("");
 
-        const [tournamentsRes, sportsRes] = await Promise.all([
+        const requests = [
           api.get(`/tournaments`),
-          api.get(`/sports`)
-        ]);
+          api.get(`/sports`),
+        ];
+
+        if (isAdmin) {
+          requests.push(api.get(`/users`));
+        }
+
+        // For organizers, `/tournaments` is already filtered in the backend
+        // so this page receives only the tournament(s) assigned to them.
+        const [tournamentsRes, sportsRes, usersRes] = await Promise.all(requests);
 
         const tournamentsData = tournamentsRes.data;
         const sportsData = sportsRes.data;
 
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
         setSports(Array.isArray(sportsData) ? sportsData : []);
+        setUsers(Array.isArray(usersRes?.data) ? usersRes.data : []);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -304,7 +344,7 @@ export default function Tournaments() {
     };
 
     loadTournaments();
-  }, [user]);
+  }, [canManageTournaments, isAdmin]);
 
   const resetForm = () => {
     setFormData(initialFormData);
@@ -340,6 +380,7 @@ export default function Tournaments() {
       data_fillimit: toDateInputValue(tournament.data_fillimit),
       data_perfundimit: toDateInputValue(tournament.data_perfundimit),
       lokacioni: tournament.lokacioni || "",
+      organizatori_id: tournament.organizatori_id ? String(tournament.organizatori_id) : "",
       cmimi_regjistrimit: String(tournament.cmimi_regjistrimit ?? "0.00"),
       statusi: tournament.statusi || "Regjistrimi",
       pershkrimi: tournament.pershkrimi || "",
@@ -379,6 +420,10 @@ export default function Tournaments() {
   const buildPayload = () => ({
     ...normalizeTournamentForm(formData),
     sporti_id: Number(formData.sporti_id),
+    organizatori_id:
+      formData.organizatori_id === ""
+        ? null
+        : Number(formData.organizatori_id),
     cmimi_regjistrimit:
       formData.cmimi_regjistrimit === ""
         ? 0
@@ -471,7 +516,8 @@ export default function Tournaments() {
     );
   });
 
-  if (!user || !user.is_admin) {
+  // Organizers can open this page too, but only for their assigned tournament data.
+  if (!user || !canManageTournaments) {
     return <Navigate to="/login" replace />;
   }
 
@@ -511,12 +557,15 @@ export default function Tournaments() {
               Tournament Management
             </h2>
 
-            <button
-              onClick={handleCreate}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
-            >
-              + Add Tournament
-            </button>
+            {/* Only admins can create tournaments or assign organizers. */}
+            {isAdmin && (
+              <button
+                onClick={handleCreate}
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
+              >
+                + Add Tournament
+              </button>
+            )}
           </div>
 
           <div className="relative">
@@ -554,6 +603,8 @@ export default function Tournaments() {
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">Tournament</th>
                   <th className="px-4 py-3 text-left font-semibold">Sport</th>
+                  {/* Organizer column is admin-only because organizers do not manage other organizers. */}
+                  {isAdmin && <th className="px-4 py-3 text-left font-semibold">Organizer</th>}
                   <th className="px-4 py-3 text-left font-semibold">Format</th>
                   <th className="px-4 py-3 text-center font-semibold">Dates</th>
                   <th className="px-4 py-3 text-left font-semibold">Status</th>
@@ -575,6 +626,11 @@ export default function Tournaments() {
                     <td className="px-4 py-3 text-gray-700 font-semibold">
                       {getSportName(tournament.sporti_id)}
                     </td>
+                    {isAdmin && (
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {getOrganizerName(users, tournament.organizatori_id)}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-sm text-gray-700">
                       <span
                         className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getFormatBadgeClasses(tournament.lloji)}`}
@@ -606,18 +662,23 @@ export default function Tournaments() {
                         >
                           View
                         </button>
-                        <button
-                          onClick={() => handleEdit(tournament.id)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(tournament.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
-                        >
-                          Delete
-                        </button>
+                        {/* Organizers can view their own tournament here, but edit/delete stays admin-only. */}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleEdit(tournament.id)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(tournament.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -642,7 +703,9 @@ export default function Tournaments() {
               <TournamentFormFields
                 formData={formData}
                 sports={sports}
+                users={users}
                 onChange={handleInputChange}
+                canAssignOrganizer={isAdmin}
               />
               <div className="flex gap-4 pt-4">
                 <button
@@ -687,6 +750,14 @@ export default function Tournaments() {
                   {getSportName(selectedTournament.sporti_id)}
                 </p>
               </div>
+              {isAdmin && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Organizer</label>
+                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                    {getOrganizerName(users, selectedTournament.organizatori_id)}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
                 <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
@@ -743,7 +814,7 @@ export default function Tournaments() {
         </div>
       )}
 
-      {showEditModal && selectedTournament && (
+      {isAdmin && showEditModal && selectedTournament && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseEditModal}
@@ -757,7 +828,9 @@ export default function Tournaments() {
               <TournamentFormFields
                 formData={formData}
                 sports={sports}
+                users={users}
                 onChange={handleInputChange}
+                canAssignOrganizer={isAdmin}
               />
               <div className="flex gap-4 pt-4">
                 <button
@@ -779,7 +852,7 @@ export default function Tournaments() {
         </div>
       )}
 
-      {showDeleteModal && selectedTournament && (
+      {isAdmin && showDeleteModal && selectedTournament && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseDeleteModal}

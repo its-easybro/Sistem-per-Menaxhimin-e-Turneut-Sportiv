@@ -122,10 +122,50 @@ async function fetchRegistrationById(id) {
   return pool.query(`${registrationSelectQuery} WHERE tr.id = $1`, [id]);
 }
 
+// Checks that the organizer owns the tournament where teams are being registered.
+async function organizerOwnsTournament(tournamentId, organizerId) {
+  const result = await pool.query(
+    "SELECT id FROM tournaments WHERE id = $1 AND organizatori_id = $2",
+    [tournamentId, organizerId],
+  );
+
+  return result.rows.length > 0;
+}
+
+
+// Checks that an existing registration belongs to one of the organizer's tournaments.
+
+async function organizerOwnsRegistrationByTeam(registrationId, organizerId) {
+  const result = await pool.query(
+    `SELECT tr.id
+    FROM TournamentRegistrations tr
+    INNER JOIN Tournaments t ON t.id = tr.turneu_id
+    WHERE tr.id = $1 AND t.organizatori_id = $2`,
+    [registrationId, organizerId],
+  );
+
+  return result.rows.length > 0;
+}
+
 // Route for getting all tournament registrations with attached tournament and team names
 router.get("/", protect, async (req, res) => {
   try {
-    const result = await pool.query(`${registrationSelectQuery} ORDER BY tr.id`);
+    let result;
+
+    if (req.user.is_admin) {
+      result = await pool.query(`${registrationSelectQuery} ORDER BY tr.id`);
+    } else if (req.user.is_organizer) {
+      // Organizers only see team registrations for tournaments assigned to them.
+      result = await pool.query(
+        `${registrationSelectQuery}
+         WHERE t.organizatori_id = $1
+         ORDER BY tr.id`,
+        [req.user.id],
+      );
+    } else {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -140,6 +180,14 @@ router.get("/:id", protect, async (req, res) => {
   }
 
   try {
+    if (req.user.is_organizer) {
+      // Protects direct access by id so organizers cannot inspect another tournament's registration.
+      const ownsRegistration = await organizerOwnsRegistration(idValidation.value, req.user.id);
+      if (!ownsRegistration) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
     const result = await fetchRegistrationById(idValidation.value);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Registration not found" });
@@ -150,8 +198,8 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
-// Route for creating a new tournament registration. This route is protected and only admins can use it.
-router.post("/", protect, requireRole("is_admin"), async (req, res) => {
+// Route for creating a new tournament registration. This route is protected and available to admins or the assigned organizer.
+router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const validation = validateRegistrationPayload(req.body);
   if (validation.error) {
     return res.status(400).json({ error: validation.error });
@@ -160,6 +208,14 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   const { turneu_id, ekipi_id, statusi, tarifa_paguar } = validation.value;
 
   try {
+    if (req.user.is_organizer) {
+      // Organizers can add teams only inside their own tournaments.
+      const ownsTournament = await organizerOwnsTournament(turneu_id, req.user.id);
+      if (!ownsTournament) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
     const created = await pool.query(
       `INSERT INTO TournamentRegistrations (turneu_id, ekipi_id, statusi, tarifa_paguar)
        VALUES ($1, $2, $3, $4)
@@ -174,8 +230,8 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   }
 });
 
-// Route for updating an existing registration by its ID. This route is protected and only admins can use it.
-router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
+// Route for updating an existing registration by its ID. This route is protected and available to admins or the assigned organizer.
+router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
     return res.status(400).json({ error: idValidation.error });
@@ -189,6 +245,16 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { turneu_id, ekipi_id, statusi, tarifa_paguar } = validation.value;
 
   try {
+    if (req.user.is_organizer) {
+      // Organizers can edit only registrations that belong to their own tournament space.
+      const ownsRegistration = await organizerOwnsRegistration(idValidation.value, req.user.id);
+      const ownsTournament = await organizerOwnsTournament(turneu_id, req.user.id);
+
+      if (!ownsRegistration || !ownsTournament) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
     const updated = await pool.query(
       `UPDATE TournamentRegistrations
        SET turneu_id = $1, ekipi_id = $2, statusi = $3, tarifa_paguar = $4
@@ -209,14 +275,22 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 
-// Route for deleting an existing registration by its ID. This route is protected and only admins can use it.
-router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
+// Route for deleting an existing registration by its ID. This route is protected and available to admins or the assigned organizer.
+router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const idValidation = validateRouteId(req.params.id);
   if (idValidation.error) {
     return res.status(400).json({ error: idValidation.error });
   }
 
   try {
+    if (req.user.is_organizer) {
+      // Organizers can remove only team registrations from their own tournaments.
+      const ownsRegistration = await organizerOwnsRegistration(idValidation.value, req.user.id);
+      if (!ownsRegistration) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
     const result = await fetchRegistrationById(idValidation.value);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Registration not found" });

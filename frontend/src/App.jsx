@@ -23,6 +23,8 @@ import Tournaments from "./pages/admin/Tournaments";
 import Referees from "./pages/admin/Referees";
 import Standings from "./pages/admin/Standings";
 import OrganizerDashboard from "./pages/organizator/Dashboard";
+import OrganizerMatches from "./pages/organizator/Matches";
+import OrganizerTeams from "./pages/organizator/Teams";
 import RefereeDashboard from "./pages/gjyqtar/Dashboard";
 
 // Importing User Pages
@@ -74,8 +76,11 @@ function App() {
         {/* ORGANIZER ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_organizer"]} Layout={OrganizerLayout} />}>
           <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+          {/* Organizer reuses tournament page but now gets only assigned tournaments from the backend. */}
           <Route path="/organizer/tournaments" element={<Tournaments />} />
-          <Route path="/organizer/matches" element={<Matches />} />
+          {/* Dedicated organizer pages for match scheduling and team registration inside owned tournaments. */}
+          <Route path="/organizer/matches" element={<OrganizerMatches />} />
+          <Route path="/organizer/teams" element={<OrganizerTeams />} />
           <Route path="/organizer/standings" element={<Standings />} />
         </Route>
 

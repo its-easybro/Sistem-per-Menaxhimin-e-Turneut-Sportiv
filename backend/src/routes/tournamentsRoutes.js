@@ -29,6 +29,7 @@ function validateTournamentPayload(body) {
         data_fillimit,
         data_perfundimit,
         lokacioni,
+        organizatori_id,
         cmimi_regjistrimit,
         statusi = "Regjistrimi",
         pershkrimi,
@@ -76,6 +77,16 @@ function validateTournamentPayload(body) {
         return { error: "The registration price must be a non-negative number." };
     }
 
+    // Allows admins to optionally assign a specific user as the organizer of the tournament.
+    let organizerId = null;
+    if (organizatori_id !== "" && organizatori_id !== null && organizatori_id !== undefined) {
+        organizerId = Number(organizatori_id);
+
+        if (!Number.isInteger(organizerId) || organizerId <= 0) {
+            return { error: "The organizer ID is invalid." };
+        }
+    }
+
     return {
         value: {
             emertimi: emertimi.trim(),
@@ -84,17 +95,51 @@ function validateTournamentPayload(body) {
             data_fillimit,
             data_perfundimit,
             lokacioni: lokacioni?.trim() || null,
+            organizatori_id: organizerId,
             cmimi_regjistrimit: registrationPrice,
             statusi,
             pershkrimi: pershkrimi?.trim() || null,
         },
     };
 }
-
+// Promotes the selected user to organizer when a tournament is assigned to them.
+async function ensureOrganizerUser(userId) {
+    if(!userId){
+        return null;
+    }
+    const userResult = await pool.query(
+        "SELECT id, roli FROM users WHERE id = $1",
+        [userId],
+    );
+    if (userResult.rows.length === 0) {
+        throw new Error("Organizer not found");
+    }
+    if (userResult.rows[0].roli !== "organizator") {
+        await pool.query(
+            "UPDATE users SET roli = 'organizator' WHERE id = $1",
+            [userId],
+        );
+    }
+    return userResult.rows[0];
+}
+ 
 // Route for getting all tournaments
 router.get("/", protect, async (req, res) => {
     try{
-        const result = await pool.query("SELECT * FROM tournaments ORDER BY id");
+        let result;
+
+        if (req.user.is_admin) {
+            result = await pool.query("SELECT * FROM tournaments ORDER BY id");
+        } else if (req.user.is_organizer) {
+            // Organizers only receive tournaments that are explicitly assigned to them.
+            result = await pool.query(
+                "SELECT * FROM tournaments WHERE organizatori_id = $1 ORDER BY id",
+                [req.user.id],
+            );
+        } else {
+            return res.status(403).json({ error: "Forbidden" });
+        }
+
         res.send(result.rows);   
     }catch(err){
         res.status(500).json({ error: err.message });
@@ -105,7 +150,20 @@ router.get("/", protect, async (req, res) => {
 router.get("/:id", protect, async (req, res) => {
     const { id } = req.params;
     try{
-        const result = await pool.query("SELECT * FROM tournaments WHERE id = $1", [id]);
+        let result;
+
+        if (req.user.is_admin) {
+            result = await pool.query("SELECT * FROM tournaments WHERE id = $1", [id]);
+        } else if (req.user.is_organizer) {
+            // Prevents an organizer from opening another organizer's tournament by id.
+            result = await pool.query(
+                "SELECT * FROM tournaments WHERE id = $1 AND organizatori_id = $2",
+                [id, req.user.id],
+            );
+        } else {
+            return res.status(403).json({ error: "Forbidden" });
+        }
+
         if(result.rows.length === 0){
             return res.status(404).json({ error: "Tournament not found" });
         }
@@ -122,15 +180,24 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
         return res.status(400).json({ error: validation.error });
     }
 
-    const { emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, cmimi_regjistrimit, statusi, pershkrimi } = validation.value;
-    const organizatori_id = req.user.id; // Assuming the user ID is stored in req.user after authentication
+    const { emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, organizatori_id, cmimi_regjistrimit, statusi, pershkrimi } = validation.value;
     try{
+        // When a tournament is assigned, the chosen user automatically becomes an organizer.
+        if(organizatori_id){
+            await ensureOrganizerUser(organizatori_id);
+        }
+       
+
         const result = await pool.query(`
             INSERT INTO tournaments (emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, organizatori_id, cmimi_regjistrimit, statusi, pershkrimi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`, 
             [emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, organizatori_id, cmimi_regjistrimit, statusi, pershkrimi]
         );
         res.status(201).json(result.rows[0]);
     }catch(err){
+        if (err.message === "Organizer not found") {
+            return res.status(400).json({ error: err.message });
+        }
+
         res.status(500).json({ error: err.message });
 
     }
@@ -144,17 +211,26 @@ router.put("/:id",protect, requireRole("is_admin"), async (req, res) => {
         return res.status(400).json({ error: validation.error });
     }
 
-    const { emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, cmimi_regjistrimit, statusi, pershkrimi } = validation.value;
+    const { emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, organizatori_id, cmimi_regjistrimit, statusi, pershkrimi } = validation.value;
     try{
+        // Keeps the assigned user and organizer role in sync during tournament edits too.
+        if (organizatori_id) {
+            await ensureOrganizerUser(organizatori_id);
+        }
+
         const result = await pool.query(`
-            UPDATE tournaments SET emertimi = $1, sporti_id = $2, lloji = $3, data_fillimit = $4, data_perfundimit = $5, lokacioni = $6, cmimi_regjistrimit = $7, statusi = $8, pershkrimi = $9 WHERE id = $10 RETURNING *`, 
-            [emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, cmimi_regjistrimit, statusi, pershkrimi, id]
+            UPDATE tournaments SET emertimi = $1, sporti_id = $2, lloji = $3, data_fillimit = $4, data_perfundimit = $5, lokacioni = $6, organizatori_id = $7, cmimi_regjistrimit = $8, statusi = $9, pershkrimi = $10 WHERE id = $11 RETURNING *`, 
+            [emertimi, sporti_id, lloji, data_fillimit, data_perfundimit, lokacioni, organizatori_id, cmimi_regjistrimit, statusi, pershkrimi, id]
         );
         if(result.rows.length === 0){
             return res.status(404).json({ error: "Tournament not found" });
         }
         res.json(result.rows[0]);
     }catch(err){
+        if (err.message === "Organizer not found") {
+            return res.status(400).json({ error: err.message });
+        }
+
         res.status(500).json({ error: err.message });
     }
 });
