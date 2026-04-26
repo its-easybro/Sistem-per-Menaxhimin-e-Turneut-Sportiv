@@ -114,6 +114,9 @@ async function ensureOrganizerUser(userId) {
     if (userResult.rows.length === 0) {
         throw new Error("Organizer not found");
     }
+    if (!["user", "organizator"].includes(userResult.rows[0].roli)) {
+        throw new Error("Only users or organizers can be assigned to a tournament");
+    }
     if (userResult.rows[0].roli !== "organizator") {
         await pool.query(
             "UPDATE users SET roli = 'organizator' WHERE id = $1",
@@ -194,7 +197,10 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
         );
         res.status(201).json(result.rows[0]);
     }catch(err){
-        if (err.message === "Organizer not found") {
+        if (
+            err.message === "Organizer not found" ||
+            err.message === "Only users or organizers can be assigned to a tournament"
+        ) {
             return res.status(400).json({ error: err.message });
         }
 
@@ -227,7 +233,10 @@ router.put("/:id",protect, requireRole("is_admin"), async (req, res) => {
         }
         res.json(result.rows[0]);
     }catch(err){
-        if (err.message === "Organizer not found") {
+        if (
+            err.message === "Organizer not found" ||
+            err.message === "Only users or organizers can be assigned to a tournament"
+        ) {
             return res.status(400).json({ error: err.message });
         }
 

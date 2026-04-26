@@ -132,7 +132,9 @@ function getOrganizerName(users, organizerId) {
   return organizer?.full_name || organizer?.username || "N/A";
 }
 
-
+function isEligibleOrganizerUser(user) {
+  return user?.roli === "user" || user?.roli === "organizator";
+}
 
 function TournamentFormFields({ formData, sports, users, onChange, canAssignOrganizer }) {
   return (
@@ -303,6 +305,7 @@ export default function Tournaments() {
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const assignableUsers = users.filter(isEligibleOrganizerUser);
 
   // Loads tournaments and sports in parallel for table and form dropdowns.
   useEffect(() => {
@@ -430,6 +433,21 @@ export default function Tournaments() {
         : Number(formData.cmimi_regjistrimit),
   });
 
+  const validateOrganizerAssignment = () => {
+    if (!formData.organizatori_id) {
+      return null;
+    }
+
+    const organizerId = Number(formData.organizatori_id);
+    const organizer = assignableUsers.find((item) => item.id === organizerId);
+
+    if (!organizer) {
+      return "Only users with role user or organizer can be assigned to a tournament.";
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -437,6 +455,12 @@ export default function Tournaments() {
       const validationError = validateTournamentForm(formData);
       if (validationError) {
         alert(validationError);
+        return;
+      }
+
+      const organizerValidationError = validateOrganizerAssignment();
+      if (organizerValidationError) {
+        alert(organizerValidationError);
         return;
       }
 
@@ -460,6 +484,12 @@ export default function Tournaments() {
       const validationError = validateTournamentForm(formData);
       if (validationError) {
         alert(validationError);
+        return;
+      }
+
+      const organizerValidationError = validateOrganizerAssignment();
+      if (organizerValidationError) {
+        alert(organizerValidationError);
         return;
       }
 
@@ -703,7 +733,7 @@ export default function Tournaments() {
               <TournamentFormFields
                 formData={formData}
                 sports={sports}
-                users={users}
+                users={assignableUsers}
                 onChange={handleInputChange}
                 canAssignOrganizer={isAdmin}
               />
@@ -828,7 +858,7 @@ export default function Tournaments() {
               <TournamentFormFields
                 formData={formData}
                 sports={sports}
-                users={users}
+                users={assignableUsers}
                 onChange={handleInputChange}
                 canAssignOrganizer={isAdmin}
               />
