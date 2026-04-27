@@ -454,13 +454,13 @@ export default function Tournaments() {
     try {
       const validationError = validateTournamentForm(formData);
       if (validationError) {
-        alert(validationError);
+        setAlert({ type: "error", message: validationError });
         return;
       }
 
       const organizerValidationError = validateOrganizerAssignment();
       if (organizerValidationError) {
-        alert(organizerValidationError);
+        setAlert({ type: "error", message: organizerValidationError });
         return;
       }
 
@@ -483,13 +483,13 @@ export default function Tournaments() {
     try {
       const validationError = validateTournamentForm(formData);
       if (validationError) {
-        alert(validationError);
+        setAlert({ type: "error", message: validationError });
         return;
       }
 
       const organizerValidationError = validateOrganizerAssignment();
       if (organizerValidationError) {
-        alert(organizerValidationError);
+        setAlert({ type: "error", message: organizerValidationError });
         return;
       }
 

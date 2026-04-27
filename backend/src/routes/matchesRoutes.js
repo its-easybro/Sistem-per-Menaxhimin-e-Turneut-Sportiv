@@ -1,5 +1,5 @@
 import express from "express";
-import pool from "../config/db.js";
+import pool from "../lib/prismaPool.js";
 import { protect, requireRole  } from "../middleware/auth.js";
 const router = express.Router();
 
@@ -16,7 +16,7 @@ async function organizerOwnsTournament(tournamentId, organizerId){
 // Checks that an existing match belongs to one of the organizer's tournaments.
 
 
-async function organizerOwnsmatch(matchId, organizerId){
+async function organizerOwnsMatch(matchId, organizerId){
   const result = await pool.query(
     `SELECT m.id
     FROM matches m

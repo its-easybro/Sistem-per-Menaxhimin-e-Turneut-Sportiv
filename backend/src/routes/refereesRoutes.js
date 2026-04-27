@@ -1,13 +1,24 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
-import pool from "../config/db.js";
+import prisma from "../lib/prisma.js";
 const router = express.Router();
+
+function parsePositiveInt(value) {
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
 
 // Route for getting all referees. This route is public.
 router.get("/", protect,async (req, res) => {
     try {
-        const result = await pool.query("SELECT * FROM referees ORDER BY id");
-        res.send(result.rows);
+        const referees = await prisma.referees.findMany({
+            orderBy: { id: "asc" },
+        });
+        res.json(referees);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -16,13 +27,18 @@ router.get("/", protect,async (req, res) => {
 // Route for getting a specific referee by their ID. This route is public.
 // GET /referees/:id
 router.get("/:id", protect, async (req, res) => {
-    const { id } = req.params;
+    const refereeId = parsePositiveInt(req.params.id);
+    if (!refereeId) {
+        return res.status(400).json({ error: "Invalid referee id" });
+    }
     try {
-        const result = await pool.query("SELECT * FROM referees WHERE id = $1", [id]);
-        if (result.rows.length === 0) {
+        const referee = await prisma.referees.findUnique({
+            where: { id: refereeId },
+        });
+        if (!referee) {
             return res.status(404).json({ error: "Referee not found" });
         }
-        res.json(result.rows[0]);
+        res.json(referee);
 
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -35,12 +51,18 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
 
     try {
-        const result = await pool.query(`
-        INSERT INTO referees (emri,mbiemri,email,telefoni,nr_licences,kategoria,pervoja_vitesh) VALUES ($1, $2 , $3, $4, $5, $6, $7)RETURNING *`,
-            [emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh]
-        );
-        res.status(201).json(result.rows[0]);
-
+        const referee = await prisma.referees.create({
+            data: {
+                emri,
+                mbiemri,
+                email,
+                telefoni,
+                nr_licences,
+                kategoria,
+                pervoja_vitesh,
+            },
+        });
+        res.status(201).json(referee);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -49,17 +71,32 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 // Route for updating an existing referee by their ID. This route is protected and only admins can use it.
 // PUT /referees/:id
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
-    const { id } = req.params;
+    const refereeId = parsePositiveInt(req.params.id);
+    if (!refereeId) {
+        return res.status(400).json({ error: "Invalid referee id" });
+    }
     const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
     try {
-        const result = await pool.query(`
-        UPDATE referees SET emri=$1,mbiemri=$2,email=$3,telefoni=$4,nr_licences=$5,kategoria=$6,pervoja_vitesh =$7  WHERE id = $8 RETURNING *`,
-            [emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh, id]
-        );
-        if (result.rows.length === 0) {
+        const existingReferee = await prisma.referees.findUnique({
+            where: { id: refereeId },
+        });
+        if (!existingReferee) {
             return res.status(404).json({ error: "Referee not found" });
         }
-        res.json(result.rows[0]);
+
+        const referee = await prisma.referees.update({
+            where: { id: refereeId },
+            data: {
+                emri,
+                mbiemri,
+                email,
+                telefoni,
+                nr_licences,
+                kategoria,
+                pervoja_vitesh,
+            },
+        });
+        res.json(referee);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -68,13 +105,22 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 // Route for deleting an existing referee by their ID. This route is protected and only admins can use it.
 // DELETE /referees/:id\
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
-    const { id } = req.params;
+    const refereeId = parsePositiveInt(req.params.id);
+    if (!refereeId) {
+        return res.status(400).json({ error: "Invalid referee id" });
+    }
     try {
-        const result = await pool.query("DELETE FROM referees WHERE id = $1 RETURNING *", [id]);
-        if (result.rows.length === 0) {
+        const existingReferee = await prisma.referees.findUnique({
+            where: { id: refereeId },
+        });
+        if (!existingReferee) {
             return res.status(404).json({ error: "Referee not found" });
         }
-        res.json({ message: "Referee deleted successfully" });
+
+        const referee = await prisma.referees.delete({
+            where: { id: refereeId },
+        });
+        res.json({ message: "Referee deleted successfully", deletedReferee: referee });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

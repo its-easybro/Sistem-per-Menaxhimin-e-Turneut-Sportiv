@@ -1,29 +1,43 @@
 import express from "express";
-import pool from "../config/db.js";
+import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";
 const router = express.Router();
 
+function parsePositiveInt(value) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
 // Route for getting all standings. This route is protected.
 router.get("/", protect, async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM standings ORDER BY id");
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        const standings = await prisma.standings.findMany({
+            orderBy: { id: "asc" },
+        });
+        res.json(standings);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Route for getting a specific standing by its ID. This route is protected.
 router.get("/:id", protect, async (req, res) => {
-  const { id } = req.params;
+  const standingId = parsePositiveInt(req.params.id);
+  if (!standingId) {
+    return res.status(400).json({ error: "Invalid standing id" });
+  }
   try {
-    const result = await pool.query("SELECT * FROM standings WHERE id = $1", [
-      id,
-    ]);
-    if (result.rows.length === 0) {
+    const standing = await prisma.standings.findUnique({
+      where: { id: standingId },
+    });
+    if (!standing) {
       return res.status(404).json({ error: "The standing was not found" });
     }
-    res.json(result.rows[0]);
+    res.json(standing);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -43,9 +57,8 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     piket,
   } = req.body;
   try {
-    const result = await pool.query(
-      "INSERT INTO standings (turneu_id, ekipi_id, ndeshjet_luajtura, fitoret, barazimet, humbjet, golat_shenuar, golat_pranuar, piket) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
-      [
+    const standing = await prisma.standings.create({
+      data: {
         turneu_id,
         ekipi_id,
         ndeshjet_luajtura,
@@ -55,9 +68,9 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
         golat_shenuar,
         golat_pranuar,
         piket,
-      ],
-    );
-    res.status(201).json(result.rows[0]);
+      },
+    });
+    res.status(201).json(standing);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -65,7 +78,10 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 
 // Route for updating an existing standing by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const { id } = req.params;
+  const standingId = parsePositiveInt(req.params.id);
+  if (!standingId) {
+    return res.status(400).json({ error: "Invalid standing id" });
+  }
   const {
     turneu_id,
     ekipi_id,
@@ -78,9 +94,16 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     piket,
   } = req.body;
   try {
-    const result = await pool.query(
-      "UPDATE standings SET turneu_id = $1, ekipi_id = $2, ndeshjet_luajtura = $3, fitoret = $4, barazimet = $5, humbjet = $6, golat_shenuar = $7, golat_pranuar = $8, piket = $9 WHERE id = $10 RETURNING *",
-      [
+    const existingStanding = await prisma.standings.findUnique({
+      where: { id: standingId },
+    });
+    if (!existingStanding) {
+      return res.status(404).json({ error: "The standing was not found" });
+    }
+
+    const standing = await prisma.standings.update({
+      where: { id: standingId },
+      data: {
         turneu_id,
         ekipi_id,
         ndeshjet_luajtura,
@@ -90,29 +113,31 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
         golat_shenuar,
         golat_pranuar,
         piket,
-        id,
-      ],
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "The standing was not found" });
-    }
-    res.json(result.rows[0]);
+      },
+    });
+    res.json(standing);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
 // Route for deleting an existing standing by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const { id } = req.params;
+  const standingId = parsePositiveInt(req.params.id);
+  if (!standingId) {
+    return res.status(400).json({ error: "Invalid standing id" });
+  }
   try {
-    const result = await pool.query(
-      "DELETE FROM standings WHERE id = $1 RETURNING *",
-      [id],
-    );
-    if (result.rows.length === 0) {
+    const existingStanding = await prisma.standings.findUnique({
+      where: { id: standingId },
+    });
+    if (!existingStanding) {
       return res.status(404).json({ error: "The standing was not found" });
     }
+
+    await prisma.standings.delete({
+      where: { id: standingId },
+    });
+
     res.json({ message: "The standing was deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });

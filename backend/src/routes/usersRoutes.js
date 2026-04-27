@@ -1,22 +1,32 @@
 import express from "express";
 import bcrypt from "bcrypt";
-import pool from "../config/db.js";
+import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Selected columns from the users table to retrieve appropriate information for the API responses
-const userSelect = `
-  id,
-  email,
-  emri AS username,
-  CONCAT_WS(' ', emri, mbiemri) AS full_name,
-  roli,
-  (roli = 'admin') AS is_admin,
-  (roli = 'organizator') AS is_organizer,
-  (roli = 'gjyqtar') AS is_referee,
-  created_at
-`;
+function parsePositiveInt(value) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
+function formatUserResponse(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    username: user.emri,
+    full_name: [user.emri, user.mbiemri].filter(Boolean).join(" ") || null,
+    roli: user.roli,
+    is_admin: user.roli === "admin",
+    is_organizer: user.roli === "organizator",
+    is_referee: user.roli === "gjyqtar",
+    created_at: user.createdAt ?? null,
+  };
+}
 
 // Helper function to split a full name into first name and last name, or use the username as a fallback for the first name if the full name is not provided
 function splitName(fullName = "", fallbackUsername = "") {
@@ -34,12 +44,10 @@ function splitName(fullName = "", fallbackUsername = "") {
 // Route for getting all users. This route is protected and only admins can use it.
 router.get("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT ${userSelect}
-       FROM users
-       ORDER BY id`
-    );
-    res.json(result.rows);
+    const users = await prisma.user.findMany({
+      orderBy: { id: "asc" },
+    });
+    res.json(users.map(formatUserResponse));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -54,12 +62,11 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(400).json({ error: "Email, username and password are required" });
     }
 
-    const userExists = await pool.query(
-      "SELECT id FROM users WHERE email = $1",
-      [email]
-    );
-
-    if (userExists.rows.length > 0) {
+    const userExists = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (userExists) {
       return res.status(400).json({ error: "Email already exists" });
     }
 
@@ -69,25 +76,36 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     const validRoles = ['admin', 'organizator', 'gjyqtar', 'user'];
     const userRole = validRoles.includes(roli) ? roli : 'user';
 
-    const result = await pool.query(
-      `INSERT INTO users (email, emri, mbiemri, password, roli, statusi)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING ${userSelect}`,
-      [email, emri, mbiemri, hashedPassword, userRole, "Aktiv"]
-    );
+    const createdUser = await prisma.user.create({
+      data: {
+        email,
+        emri,
+        mbiemri,
+        password: hashedPassword,
+        roli: userRole,
+        statusi: "Aktiv",
+      },
+    });
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(formatUserResponse(createdUser));
   } catch (err) {
+    if (err?.code === "P2002") {
+      return res.status(400).json({ error: "Email already exists" });
+    }
     res.status(500).json({ error: err.message });
   }
 });
 
 // Route for updating an existing user by their ID. This route is protected and only admins or the user themselves can use it.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const { id } = req.params;
+  const userId = parsePositiveInt(req.params.id);
+  if (!userId) {
+    return res.status(400).json({ error: "Invalid user id" });
+  }
+
   const { email, username, full_name, roli } = req.body;
 
-  if (!req.user.is_admin && req.user.id !== Number(id)) {
+  if (!req.user.is_admin && req.user.id !== userId) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
@@ -97,46 +115,55 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     const validRoles = ['admin', 'organizator', 'gjyqtar', 'user'];
     const userRole = validRoles.includes(roli) ? roli : 'user';
 
-    const result = await pool.query(
-      `UPDATE users
-       SET email = $1,
-           emri = $2,
-           mbiemri = $3,
-           roli = $4
-       WHERE id = $5
-       RETURNING ${userSelect}`,
-      [email, emri, mbiemri, userRole, id]
-    );
-
-    if (result.rows.length === 0) {
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!existingUser) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(result.rows[0]);
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        email,
+        emri,
+        mbiemri,
+        roli: userRole,
+      },
+    });
+
+    res.json(formatUserResponse(updatedUser));
   } catch (err) {
+    if (err?.code === "P2002") {
+      return res.status(400).json({ error: "Email already exists" });
+    }
     res.status(500).json({ error: err.message });
   }
 });
 
 // Route for deleting an existing user by their ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const { id } = req.params;
+  const userId = parsePositiveInt(req.params.id);
+  if (!userId) {
+    return res.status(400).json({ error: "Invalid user id" });
+  }
 
   try {
-    const result = await pool.query(
-      `DELETE FROM users
-       WHERE id = $1
-       RETURNING ${userSelect}`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!existingUser) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    const deletedUser = await prisma.user.delete({
+      where: { id: userId },
+    });
+
     res.json({
       message: "User deleted successfully",
-      deleted: result.rows[0],
+      deleted: formatUserResponse(deletedUser),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

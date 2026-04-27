@@ -138,7 +138,7 @@ export default function Standings() {
         piket: parseInt(formData.piket) || 0,
       };
 
-      const response = await api.post(`/standings`, payload())
+      const response = await api.post(`/standings`, payload)
 
       const newStanding = response.data;
       setStandings([...standings, newStanding]);
@@ -257,7 +257,7 @@ export default function Standings() {
         piket: parseInt(formData.piket) || 0,
       };
 
-      const response = await api.put(`/standings/${selectedStanding.id}`, payload())
+      const response = await api.put(`/standings/${selectedStanding.id}`, payload)
 
       const updatedStanding = response.data;
       setStandings(
