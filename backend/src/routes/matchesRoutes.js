@@ -1,5 +1,5 @@
 import express from "express";
-import pool from "../lib/prismaPool.js";
+import pool from "../config/db.js";
 import { protect, requireRole  } from "../middleware/auth.js";
 const router = express.Router();
 
