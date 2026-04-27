@@ -1,6 +1,6 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
-import pool from "../config/db.js";
+import prisma from "../lib/prisma.js";
 const router = express.Router();
 
 // Posible sport types
@@ -43,11 +43,22 @@ function validateSportPayload(body) {
   };
 }
 
+function parsePositiveInt(value) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
 // Route for getting all sports. This route is public.
 router.get("/", protect, async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM sports ORDER BY id");
-    res.send(result.rows);
+    const sports = await prisma.sports.findMany({
+      orderBy: { id: "asc" },
+    });
+    res.send(sports);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -55,13 +66,19 @@ router.get("/", protect, async (req, res) => {
 
 // Route for getting a specific sport by its ID. This route is public.
 router.get("/:id", protect, async (req, res) => {
-  const { id } = req.params;
+  const sportId = parsePositiveInt(req.params.id);
+  if (!sportId) {
+    return res.status(400).json({ error: "Invalid sport id" });
+  }
+
   try {
-    const result = await pool.query("SELECT * FROM sports WHERE id = $1", [id]);
-    if (result.rows.length === 0) {
+    const sport = await prisma.sports.findUnique({
+      where: { id: sportId },
+    });
+    if (!sport) {
       return res.status(404).json({ error: "Sport not found" });
     }
-    res.json(result.rows[0]);
+    res.json(sport);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -76,13 +93,15 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 
   const { emertimi, pershkrimi, numri_lojtareve, lloji } = validation.value;
   try {
-    const result = await pool.query(
-      `INSERT INTO sports (emertimi, pershkrimi, numri_lojtareve, lloji)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [emertimi, pershkrimi, numri_lojtareve, lloji],
-    );
-    res.status(201).json(result.rows[0]);
+    const sport = await prisma.sports.create({
+      data: {
+        emertimi,
+        pershkrimi,
+        numri_lojtareve,
+        lloji,
+      },
+    });
+    res.status(201).json(sport);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -90,7 +109,11 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 
 // Route for updating an existing sport by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const { id } = req.params;
+  const sportId = parsePositiveInt(req.params.id);
+  if (!sportId) {
+    return res.status(400).json({ error: "Invalid sport id" });
+  }
+
   const validation = validateSportPayload(req.body);
   if (validation.error) {
     return res.status(400).json({ error: validation.error });
@@ -99,17 +122,23 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { emertimi, pershkrimi, numri_lojtareve, lloji } = validation.value;
 
   try {
-    const result = await pool.query(
-      `UPDATE sports
-       SET emertimi = $1, pershkrimi = $2, numri_lojtareve = $3, lloji = $4
-       WHERE id = $5
-       RETURNING *`,
-      [emertimi, pershkrimi, numri_lojtareve, lloji, id],
-    );
-    if (result.rows.length === 0) {
+    const existingSport = await prisma.sports.findUnique({
+      where: { id: sportId },
+    });
+    if (!existingSport) {
       return res.status(404).json({ error: "Sport not found" });
     }
-    res.json(result.rows[0]);
+
+    const sport = await prisma.sports.update({
+      where: { id: sportId },
+      data: {
+        emertimi,
+        pershkrimi,
+        numri_lojtareve,
+        lloji,
+      },
+    });
+    res.json(sport);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -117,19 +146,23 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 
 // Route for deleting an existing sport by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const { id } = req.params;
+  const sportId = parsePositiveInt(req.params.id);
+  if (!sportId) {
+    return res.status(400).json({ error: "Invalid sport id" });
+  }
 
   try {
-    const result = await pool.query(
-      `DELETE FROM sports
-       WHERE id = $1
-       RETURNING *`,
-      [id],
-    );
-    if (result.rows.length === 0) {
+    const existingSport = await prisma.sports.findUnique({
+      where: { id: sportId },
+    });
+    if (!existingSport) {
       return res.status(404).json({ error: "Sport not found" });
     }
-    res.json({ message: "Sport deleted successfully", deleted: result.rows[0] });
+
+    const deletedSport = await prisma.sports.delete({
+      where: { id: sportId },
+    });
+    res.json({ message: "Sport deleted successfully", deleted: deletedSport });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

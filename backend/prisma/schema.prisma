@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int           @id @default(autoincrement())
+  emri        String
+  mbiemri     String
+  email       String        @unique
+  password    String
+  roli        String        @default("user")
+  statusi     String        @default("Aktiv")
+  createdAt   DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
+  tournaments tournaments[]
+
+  @@map("users")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model matches {
+  id                                     Int             @id @default(autoincrement())
+  turneu_id                              Int
+  ekipi_shtepiak_id                      Int
+  ekipi_mysafir_id                       Int
+  data_ndeshjes                          DateTime        @db.Date
+  ora_fillimit                           DateTime?       @db.Time(6)
+  fusha_id                               Int?
+  statusi                                String          @default("Planifikuar")
+  faza                                   String?
+  created_at                             DateTime?       @default(now()) @db.Timestamp(6)
+  teams_matches_ekipi_mysafir_idToteams  teams           @relation("matches_ekipi_mysafir_idToteams", fields: [ekipi_mysafir_id], references: [id], onUpdate: NoAction)
+  teams_matches_ekipi_shtepiak_idToteams teams           @relation("matches_ekipi_shtepiak_idToteams", fields: [ekipi_shtepiak_id], references: [id], onUpdate: NoAction)
+  venues                                 venues?         @relation(fields: [fusha_id], references: [id], onUpdate: NoAction)
+  tournaments                            tournaments     @relation(fields: [turneu_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  matchreferees                          matchreferees[]
+  matchresults                           matchresults?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model matchreferees {
+  id          Int       @id @default(autoincrement())
+  ndeshja_id  Int
+  gjyqtari_id Int
+  roli        String
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  referees    referees  @relation(fields: [gjyqtari_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  matches     matches   @relation(fields: [ndeshja_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([ndeshja_id, gjyqtari_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model matchresults {
+  id             Int       @id @default(autoincrement())
+  ndeshja_id     Int       @unique
+  golat_shtepiak Int       @default(0)
+  golat_mysafir  Int       @default(0)
+  fitues_id      Int?
+  shenime        String?
+  mvp_id         Int?
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  teams          teams?    @relation(fields: [fitues_id], references: [id], onUpdate: NoAction)
+  players        players?  @relation(fields: [mvp_id], references: [id], onUpdate: NoAction)
+  matches        matches   @relation(fields: [ndeshja_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model players {
+  id           Int            @id @default(autoincrement())
+  emri         String
+  mbiemri      String
+  data_lindjes DateTime?      @db.Date
+  ekipi_id     Int?
+  pozicioni    String?
+  numri        Int?
+  gjatesia     Decimal?       @db.Decimal(5, 2)
+  pesha        Decimal?       @db.Decimal(5, 2)
+  kombesia     String?
+  created_at   DateTime?      @default(now()) @db.Timestamp(6)
+  matchresults matchresults[]
+  teams        teams?         @relation(fields: [ekipi_id], references: [id], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model referees {
+  id             Int             @id @default(autoincrement())
+  emri           String
+  mbiemri        String
+  email          String?         @unique
+  telefoni       String?
+  nr_licences    String?         @unique
+  kategoria      String?
+  pervoja_vitesh Int?
+  created_at     DateTime?       @default(now()) @db.Timestamp(6)
+  matchreferees  matchreferees[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model sports {
+  id              Int           @id @default(autoincrement())
+  emertimi        String
+  pershkrimi      String?
+  numri_lojtareve Int
+  lloji           String
+  created_at      DateTime?     @default(now()) @db.Timestamp(6)
+  tournaments     tournaments[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model standings {
+  id                Int         @id @default(autoincrement())
+  turneu_id         Int
+  ekipi_id          Int
+  ndeshjet_luajtura Int         @default(0)
+  fitoret           Int         @default(0)
+  barazimet         Int         @default(0)
+  humbjet           Int         @default(0)
+  golat_shenuar     Int         @default(0)
+  golat_pranuar     Int         @default(0)
+  piket             Int         @default(0)
+  created_at        DateTime?   @default(now()) @db.Timestamp(6)
+  teams             teams       @relation(fields: [ekipi_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tournaments       tournaments @relation(fields: [turneu_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([turneu_id, ekipi_id])
+}
+
+model teams {
+  id                                       Int                       @id @default(autoincrement())
+  emertimi                                 String
+  logoja                                   String?
+  trajneri                                 String?
+  kontakti                                 String?
+  email                                    String?                   @unique
+  qyteti                                   String?
+  data_themelimit                          DateTime?                 @db.Date
+  created_at                               DateTime?                 @default(now()) @db.Timestamp(6)
+  matches_matches_ekipi_mysafir_idToteams  matches[]                 @relation("matches_ekipi_mysafir_idToteams")
+  matches_matches_ekipi_shtepiak_idToteams matches[]                 @relation("matches_ekipi_shtepiak_idToteams")
+  matchresults                             matchresults[]
+  players                                  players[]
+  standings                                standings[]
+  tournamentregistrations                  tournamentregistrations[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tournamentregistrations {
+  id                Int         @id @default(autoincrement())
+  turneu_id         Int
+  ekipi_id          Int
+  data_regjistrimit DateTime?   @default(now()) @db.Timestamp(6)
+  statusi           String      @default("Në Pritje")
+  tarifa_paguar     Decimal?    @default(0.00) @db.Decimal(10, 2)
+  created_at        DateTime?   @default(now()) @db.Timestamp(6)
+  teams             teams       @relation(fields: [ekipi_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tournaments       tournaments @relation(fields: [turneu_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([turneu_id, ekipi_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tournaments {
+  id                      Int                       @id @default(autoincrement())
+  emertimi                String
+  sporti_id               Int
+  lloji                   String
+  data_fillimit           DateTime                  @db.Date
+  data_perfundimit        DateTime                  @db.Date
+  lokacioni               String?
+  organizatori_id         Int?
+  cmimi_regjistrimit      Decimal?                  @default(0.00) @db.Decimal(10, 2)
+  statusi                 String                    @default("Regjistrimi")
+  pershkrimi              String?
+  created_at              DateTime?                 @default(now()) @db.Timestamp(6)
+  matches                 matches[]
+  standings               standings[]
+  tournamentregistrations tournamentregistrations[]
+  users                   User?                     @relation(fields: [organizatori_id], references: [id], onUpdate: NoAction)
+  sports                  sports                    @relation(fields: [sporti_id], references: [id], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model venues {
+  id               Int       @id @default(autoincrement())
+  emertimi         String
+  adresa           String?
+  qyteti           String
+  kapaciteti       Int?
+  lloji_siperfaqes String?
+  ndricimi         Boolean?  @default(false)
+  statusi          String    @default("Aktiv")
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  matches          matches[]
+}
