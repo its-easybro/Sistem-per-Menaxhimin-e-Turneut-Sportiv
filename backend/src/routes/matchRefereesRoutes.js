@@ -1,13 +1,46 @@
 import express from "express";
-import pool from "../config/db.js";
+import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";
+
 const router = express.Router();
+
+function parsePositiveInteger(value) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
 
 // Route for managing match referees. This route is protected and only admins can use it.
 router.get("/", protect, async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM matchreferees ORDER BY id");
-    res.json(result.rows);
+    let result;
+
+    if (req.user.is_admin) {
+      result = await prisma.matchreferees.findMany({
+        orderBy: { id: "asc" },
+      });
+    } else if (req.user.is_referee) {
+      // Gjej referee rekordin nga tabela referees duke përdorur user_id
+      const refereeRecord = await prisma.referees.findFirst({
+        where: { user_id: req.user.id },
+      });
+
+      if (!refereeRecord) {
+        return res.status(404).json({ error: "Referee profile not found for this user" });
+      }
+
+      // Tani përdor ID e referee (jo user ID) për të gjetur ndeshjet
+      result = await prisma.matchreferees.findMany({
+        where: { gjyqtari_id: refereeRecord.id },
+        orderBy: { id: "asc" },
+      });
+    } else {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -15,16 +48,44 @@ router.get("/", protect, async (req, res) => {
 
 // Route for getting a specific match referee by its ID. This route is protected.
 router.get("/:id", protect, async (req, res) => {
-  const { id } = req.params;
+  const matchesRefereesId = parsePositiveInteger(req.params.id);
+  if (!matchesRefereesId) {
+    return res.status(400).json({ error: "The match referee ID is invalid." });
+  }
+
   try {
-    const result = await pool.query(
-      "SELECT * FROM matchreferees WHERE id = $1",
-      [id],
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Referee not found" });
+    let result;
+
+    if (req.user.is_admin) {
+      result = await prisma.matchreferees.findUnique({
+        where: { id: matchesRefereesId },
+      });
+    } else if (req.user.is_referee) {
+      // Gjej referee rekordin nga tabela referees
+      const refereeRecord = await prisma.referees.findFirst({
+        where: { user_id: req.user.id },
+      });
+
+      if (!refereeRecord) {
+        return res.status(404).json({ error: "Referee profile not found for this user" });
+      }
+
+      // Lejon aksess vetëm nëse ky matchreferee i përket këtij gjyqtari
+      result = await prisma.matchreferees.findFirst({
+        where: {
+          id: matchesRefereesId,
+          gjyqtari_id: refereeRecord.id,
+        },
+      });
+    } else {
+      return res.status(403).json({ error: "Forbidden" });
     }
-    res.json(result.rows[0]);
+
+    if (!result) {
+      return res.status(404).json({ error: "Match referee not found" });
+    }
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -39,11 +100,14 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     });
   }
   try {
-    const result = await pool.query(
-      "INSERT INTO matchreferees (ndeshja_id, gjyqtari_id, roli) VALUES ($1, $2, $3) RETURNING *",
-      [ndeshja_id, gjyqtari_id, roli],
-    );
-    res.status(201).json(result.rows[0]);
+    const result = await prisma.matchreferees.create({
+      data: {
+        ndeshja_id,
+        gjyqtari_id,
+        roli,
+      },
+    });
+    res.status(201).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -59,15 +123,19 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     });
   }
   try {
-    const result = await pool.query(
-      "UPDATE matchreferees SET ndeshja_id = $1, gjyqtari_id = $2, roli = $3 WHERE id = $4 RETURNING *",
-      [ndeshja_id, gjyqtari_id, roli, id],
-    );
-    if (result.rows.length === 0) {
+    const result = await prisma.matchreferees.update({
+      where: { id: parseInt(id) },
+      data: {
+        ndeshja_id,
+        gjyqtari_id,
+        roli,
+      },
+    });
+    res.json(result);
+  } catch (err) {
+    if (err.code === "P2025") {
       return res.status(404).json({ error: "Referee not found" });
     }
-    res.json(result.rows[0]);
-  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
@@ -76,15 +144,14 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query(
-      "DELETE FROM matchreferees WHERE id = $1 RETURNING *",
-      [id],
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Referee not found" });
-    }
+    await prisma.matchreferees.delete({
+      where: { id: parseInt(id) },
+    });
     res.json({ message: "Referee deleted successfully" });
   } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Referee not found" });
+    }
     res.status(500).json({ error: err.message });
   }
 });

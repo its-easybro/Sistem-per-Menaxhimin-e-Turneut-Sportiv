@@ -1,38 +1,67 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
-import { protect, requireRole  } from "../middleware/auth.js";
+import { protect, requireRole } from "../middleware/auth.js";
+
 const router = express.Router();
 
-// Checks that an organizer is trying to manage only a tournament they own.
+function parsePositiveInt(value) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
 
-async function organizerOwnsTournament(tournamentId, organizerId){
+function toMatchTimeValue(value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+
+  const normalizedValue =
+    typeof value === "string" && value.length === 5 ? `${value}:00` : value;
+
+  return new Date(`1970-01-01T${normalizedValue}`);
+}
+
+async function organizerOwnsTournament(tournamentId, organizerId) {
+  const parsedTournamentId = parsePositiveInt(tournamentId);
+  const parsedOrganizerId = parsePositiveInt(organizerId);
+
+  if (!parsedTournamentId || !parsedOrganizerId) {
+    return false;
+  }
+
   const tournament = await prisma.tournaments.findFirst({
     where: {
-      id: tournamentId,
-      organizatori_id: organizerId,
+      id: parsedTournamentId,
+      organizatori_id: parsedOrganizerId,
     },
     select: { id: true },
   });
 
-  return !!tournament;
+  return Boolean(tournament);
 }
-// Checks that an existing match belongs to one of the organizer's tournaments.
 
+async function organizerOwnsMatch(matchId, organizerId) {
+  const parsedMatchId = parsePositiveInt(matchId);
+  const parsedOrganizerId = parsePositiveInt(organizerId);
 
-async function organizerOwnsMatch(matchId, organizerId){
+  if (!parsedMatchId || !parsedOrganizerId) {
+    return false;
+  }
+
   const match = await prisma.matches.findFirst({
     where: {
-      id: matchId,
+      id: parsedMatchId,
       tournaments: {
-        organizatori_id: organizerId,
+        organizatori_id: parsedOrganizerId,
       },
     },
     select: { id: true },
   });
-  return !!match;
+
+  return Boolean(match);
 }
 
-// Route for getting matches. This route is protected.
 router.get("/", protect, async (req, res) => {
   try {
     let matches;
@@ -42,11 +71,23 @@ router.get("/", protect, async (req, res) => {
         orderBy: { id: "asc" },
       });
     } else if (req.user.is_organizer) {
-      // Organizers can only list matches from tournaments assigned to them.
       matches = await prisma.matches.findMany({
         where: {
           tournaments: {
             organizatori_id: req.user.id,
+          },
+        },
+        orderBy: { id: "asc" },
+      });
+    } else if (req.user.is_referee) {
+      matches = await prisma.matches.findMany({
+        where: {
+          matchreferees: {
+            some: {
+              referees: {
+                user_id: req.user.id,
+              },
+            },
           },
         },
         orderBy: { id: "asc" },
@@ -61,23 +102,38 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// Route for getting a specific match by its ID. This route is protected.
 router.get("/:id", protect, async (req, res) => {
-  const { id } = req.params;
+  const matchId = parsePositiveInt(req.params.id);
+  if (!matchId) {
+    return res.status(400).json({ error: "Invalid match id" });
+  }
+
   try {
     let match;
 
     if (req.user.is_admin) {
       match = await prisma.matches.findUnique({
-        where: { id: Number(id) },
+        where: { id: matchId },
       });
     } else if (req.user.is_organizer) {
-      // Organizers can only open match details for their own tournament space.
       match = await prisma.matches.findFirst({
         where: {
-          id: Number(id),
+          id: matchId,
           tournaments: {
             organizatori_id: req.user.id,
+          },
+        },
+      });
+    } else if (req.user.is_referee) {
+      match = await prisma.matches.findFirst({
+        where: {
+          id: matchId,
+          matchreferees: {
+            some: {
+              referees: {
+                user_id: req.user.id,
+              },
+            },
           },
         },
       });
@@ -88,13 +144,13 @@ router.get("/:id", protect, async (req, res) => {
     if (!match) {
       return res.status(404).json({ error: "The match was not found" });
     }
+
     res.json(match);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Route for creating a new match. This route is protected and available to admins or the assigned organizer.
 router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const {
     turneu_id,
@@ -106,18 +162,20 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
     statusi,
     faza,
   } = req.body;
+
   if (!turneu_id || !ekipi_shtepiak_id || !ekipi_mysafir_id || !data_ndeshjes) {
     return res.status(400).json({
       error:
         "Fields required: turneu_id, ekipi_shtepiak_id, ekipi_mysafir_id, data_ndeshjes",
     });
   }
-  if (ekipi_shtepiak_id === ekipi_mysafir_id) {
+
+  if (Number(ekipi_shtepiak_id) === Number(ekipi_mysafir_id)) {
     return res.status(400).json({ error: "The teams cannot be the same" });
   }
+
   try {
     if (req.user.is_organizer) {
-      // Blocks organizers from creating matches in tournaments they do not own.
       const ownsTournament = await organizerOwnsTournament(turneu_id, req.user.id);
       if (!ownsTournament) {
         return res.status(403).json({ error: "Forbidden" });
@@ -126,25 +184,29 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
 
     const created = await prisma.matches.create({
       data: {
-        turneu_id,
-        ekipi_shtepiak_id,
-        ekipi_mysafir_id,
+        turneu_id: Number(turneu_id),
+        ekipi_shtepiak_id: Number(ekipi_shtepiak_id),
+        ekipi_mysafir_id: Number(ekipi_mysafir_id),
         data_ndeshjes: new Date(data_ndeshjes),
-        ora_fillimit: ora_fillimit ? new Date(`1970-01-01T${ora_fillimit}`) : null,
-        fusha_id: fusha_id ?? null,
+        ora_fillimit: toMatchTimeValue(ora_fillimit),
+        fusha_id: fusha_id ? Number(fusha_id) : null,
         statusi: statusi || "Planifikuar",
-        faza: faza ?? null,
+        faza: faza || null,
       },
     });
+
     res.status(201).json(created);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Route for updating an existing match by its ID. This route is protected and available to admins or the assigned organizer.
 router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
-  const { id } = req.params;
+  const matchId = parsePositiveInt(req.params.id);
+  if (!matchId) {
+    return res.status(400).json({ error: "Invalid match id" });
+  }
+
   const {
     turneu_id,
     ekipi_shtepiak_id,
@@ -155,17 +217,18 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
     statusi,
     faza,
   } = req.body;
+
   if (
     ekipi_shtepiak_id &&
     ekipi_mysafir_id &&
-    ekipi_shtepiak_id === ekipi_mysafir_id
+    Number(ekipi_shtepiak_id) === Number(ekipi_mysafir_id)
   ) {
     return res.status(400).json({ error: "The teams cannot be the same" });
   }
+
   try {
     if (req.user.is_organizer) {
-      // An organizer must own both the current match and the destination tournament during updates.
-      const ownsCurrentMatch = await organizerOwnsMatch(Number(id), req.user.id);
+      const ownsCurrentMatch = await organizerOwnsMatch(matchId, req.user.id);
       const ownsTargetTournament = await organizerOwnsTournament(turneu_id, req.user.id);
 
       if (!ownsCurrentMatch || !ownsTargetTournament) {
@@ -174,7 +237,7 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
     }
 
     const existing = await prisma.matches.findUnique({
-      where: { id: Number(id) },
+      where: { id: matchId },
       select: { id: true },
     });
 
@@ -183,16 +246,20 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
     }
 
     const updated = await prisma.matches.update({
-      where: { id: Number(id) },
+      where: { id: matchId },
       data: {
-        turneu_id,
-        ekipi_shtepiak_id,
-        ekipi_mysafir_id,
+        turneu_id: turneu_id ? Number(turneu_id) : undefined,
+        ekipi_shtepiak_id: ekipi_shtepiak_id
+          ? Number(ekipi_shtepiak_id)
+          : undefined,
+        ekipi_mysafir_id: ekipi_mysafir_id
+          ? Number(ekipi_mysafir_id)
+          : undefined,
         data_ndeshjes: data_ndeshjes ? new Date(data_ndeshjes) : undefined,
-        ora_fillimit: ora_fillimit ? new Date(`1970-01-01T${ora_fillimit}`) : ora_fillimit,
-        fusha_id,
-        statusi,
-        faza,
+        ora_fillimit: toMatchTimeValue(ora_fillimit),
+        fusha_id: fusha_id === undefined ? undefined : fusha_id ? Number(fusha_id) : null,
+        statusi: statusi ?? undefined,
+        faza: faza === undefined ? undefined : faza || null,
       },
     });
 
@@ -202,20 +269,22 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
   }
 });
 
-// Route for deleting an existing match by its ID. This route is protected and available to admins or the assigned organizer.
 router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
-  const { id } = req.params;
+  const matchId = parsePositiveInt(req.params.id);
+  if (!matchId) {
+    return res.status(400).json({ error: "Invalid match id" });
+  }
+
   try {
     if (req.user.is_organizer) {
-      // Organizers can delete only matches that belong to their own tournament.
-      const ownsMatch = await organizerOwnsMatch(Number(id), req.user.id);
+      const ownsMatch = await organizerOwnsMatch(matchId, req.user.id);
       if (!ownsMatch) {
         return res.status(403).json({ error: "Forbidden" });
       }
     }
 
     const existing = await prisma.matches.findUnique({
-      where: { id: Number(id) },
+      where: { id: matchId },
       select: { id: true },
     });
 
@@ -224,7 +293,7 @@ router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (r
     }
 
     await prisma.matches.delete({
-      where: { id: Number(id) },
+      where: { id: matchId },
     });
 
     res.json({ message: "The match was deleted successfully" });
@@ -233,5 +302,4 @@ router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (r
   }
 });
 
-// Export router for use in server.js
 export default router;

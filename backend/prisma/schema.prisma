@@ -16,6 +16,7 @@ model User {
   roli        String        @default("user")
   statusi     String        @default("Aktiv")
   createdAt   DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
+  referee   referees?   @relation("UserReferee")  // ← NDRYSHO KËTË
   tournaments tournaments[]
 
   @@map("users")
@@ -97,6 +98,8 @@ model referees {
   kategoria      String?
   pervoja_vitesh Int?
   created_at     DateTime?       @default(now()) @db.Timestamp(6)
+  user_id        Int?            @unique
+user           User?           @relation("UserReferee", fields: [user_id], references: [id], onDelete: SetNull)
   matchreferees  matchreferees[]
 }
 

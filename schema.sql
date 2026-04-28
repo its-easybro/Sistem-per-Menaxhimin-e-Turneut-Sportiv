@@ -218,12 +218,6 @@ CREATE TABLE Standings (
 
     UNIQUE (turneu_id, ekipi_id)  -- one row per team per tournament
 );
-
-/* Changes during production: */
-
-ALTER TABLE users DROP CONSTRAINT users_roli_check;
-ALTER TABLE users ADD CONSTRAINT users_roli_check CHECK (roli IN ('admin', 'organizator', 'gjyqtar', 'user'));
-
 CREATE TABLE ContactMessages (
     id          SERIAL PRIMARY KEY,
     emri        TEXT        NOT NULL,
@@ -233,3 +227,13 @@ CREATE TABLE ContactMessages (
     lexuar_at   TIMESTAMP,
     created_at  TIMESTAMP   DEFAULT NOW()
 );
+
+/* Changes during production: */
+
+
+
+ALTER TABLE users DROP CONSTRAINT users_roli_check;
+ALTER TABLE users ADD CONSTRAINT users_roli_check CHECK (roli IN ('admin', 'organizator', 'gjyqtar', 'user'));
+
+ALTER TABLE Referees 
+ADD COLUMN user_id INTEGER UNIQUE REFERENCES Users(id) ON DELETE SET NULL;

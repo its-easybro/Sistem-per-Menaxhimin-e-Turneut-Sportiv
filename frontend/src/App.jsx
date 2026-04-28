@@ -91,7 +91,7 @@ function App() {
         {/* REFEREE ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_referee"]} Layout={RefereeLayout} />}>
           <Route path="/referee/dashboard" element={<RefereeDashboard />} />
-          <Route path="/referee/matches" element={<Matches />} />
+          <Route path="/referee/matches" element={<MatchReferees />} />
           <Route path="/referee/match-results" element={<MatchResults />} />
         </Route>
       </Routes>

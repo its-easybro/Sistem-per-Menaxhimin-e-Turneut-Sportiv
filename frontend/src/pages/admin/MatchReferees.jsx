@@ -1,143 +1,248 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
-import api from "../../config/axiosInstance"
+import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 
-export default function MatchReferees() {
-  // Protects this management page behind authenticated admin context.
-  const { user } = useContext(AuthContext);
+const initialFormData = {
+  ndeshja_id: "",
+  gjyqtari_id: "",
+  roli: "Kryegjyqtar",
+};
 
-  // State Variables
+const roles = [
+  "Kryegjyqtar",
+  "Asistent 1",
+  "Asistent 2",
+  "Gjyqtar i 4-të",
+  "VAR",
+];
+
+function formatDate(value) {
+  if (!value) return "N/A";
+
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+
+    return new Intl.DateTimeFormat("en-GB").format(date);
+  } catch {
+    return "Invalid date";
+  }
+}
+
+function getRoleBadgeClasses(role) {
+  if (role === "Kryegjyqtar") return "bg-blue-100 text-blue-700";
+  if (role === "VAR") return "bg-purple-100 text-purple-700";
+  if (role === "Gjyqtar i 4-të") return "bg-amber-100 text-amber-700";
+  return "bg-gray-100 text-gray-700";
+}
+
+function getStatusBadgeClasses(status) {
+  if (status === "Përfunduar") return "bg-green-100 text-green-700";
+  if (status === "Live") return "bg-red-100 text-red-700";
+  if (status === "Shtyrë") return "bg-yellow-100 text-yellow-700";
+  if (status === "Anuluar") return "bg-gray-200 text-gray-700";
+  return "bg-blue-100 text-blue-700";
+}
+
+function MatchRefereeFormFields({
+  formData,
+  matches,
+  referees,
+  getMatchLabel,
+  onChange,
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <label className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-gray-700">Match</span>
+        <select
+          name="ndeshja_id"
+          value={formData.ndeshja_id}
+          onChange={onChange}
+          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          required
+        >
+          <option value="">Select match</option>
+          {matches.map((match) => (
+            <option key={match.id} value={match.id}>
+              {getMatchLabel(match.id)} - {formatDate(match.data_ndeshjes)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-gray-700">Referee</span>
+        <select
+          name="gjyqtari_id"
+          value={formData.gjyqtari_id}
+          onChange={onChange}
+          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          required
+        >
+          <option value="">Select referee</option>
+          {referees.map((referee) => (
+            <option key={referee.id} value={referee.id}>
+              {referee.emri} {referee.mbiemri} ({referee.kategoria || "N/A"})
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-gray-700">Role</span>
+        <select
+          name="roli"
+          value={formData.roli}
+          onChange={onChange}
+          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          required
+        >
+          {roles.map((role) => (
+            <option key={role} value={role}>
+              {role}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+export default function MatchReferees() {
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.is_admin;
+  const isReferee = user?.is_referee;
+  const canAccessPage = isAdmin || isReferee;
+
   const [assignments, setAssignments] = useState([]);
   const [matches, setMatches] = useState([]);
   const [referees, setReferees] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [alert, setAlert] = useState(null);
-  const [formData, setFormData] = useState({
-    ndeshja_id: "",
-    gjyqtari_id: "",
-    roli: "Kryegjyqtar",
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
-  // Allowed role values when assigning referees to a match.
-  const roles = [
-    "Kryegjyqtar",
-    "Asistent 1",
-    "Asistent 2",
-    "Gjyqtar i 4-të",
-    "VAR",
-  ];
-
-  // Loads assignments with related matches/referees used by table and forms.
   useEffect(() => {
     const loadData = async () => {
-      if (!user?.is_admin) {
+      if (!canAccessPage) {
         setLoading(false);
         return;
       }
+
       try {
         setLoading(true);
         setError("");
-        const [assignmentsResponse, matchesResponse, refereesResponse] =
+
+        const [
+          assignmentsResponse,
+          matchesResponse,
+          refereesResponse,
+          teamsResponse,
+        ] =
           await Promise.all([
-            api.get(`/match-referees`),
-            api.get(`/matches`),
-            api.get(`/referees`)
+            api.get("/match-referees"),
+            api.get("/matches"),
+            api.get("/referees"),
+            api.get("/teams"),
           ]);
 
-        const assignmentsData = assignmentsResponse.data;
-        const matchesData = matchesResponse.data;
-        const refereesData = refereesResponse.data;
-
-        setAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
-        setMatches(Array.isArray(matchesData) ? matchesData : []);
-        setReferees(Array.isArray(refereesData) ? refereesData : []);
+        setAssignments(
+          Array.isArray(assignmentsResponse.data) ? assignmentsResponse.data : [],
+        );
+        setMatches(Array.isArray(matchesResponse.data) ? matchesResponse.data : []);
+        setReferees(
+          Array.isArray(refereesResponse.data) ? refereesResponse.data : [],
+        );
+        setTeams(Array.isArray(teamsResponse.data) ? teamsResponse.data : []);
       } catch (err) {
-        console.error("Error loading data:", err);
-        setError(err.message);
+        setError(err?.response?.data?.error || err.message);
       } finally {
         setLoading(false);
       }
     };
-    loadData();
-  }, [user]);
 
-  // Create handler
+    loadData();
+  }, [canAccessPage]);
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+  };
+
+  const getMatchById = (matchId) =>
+    matches.find((item) => String(item.id) === String(matchId));
+
+  const getRefereeById = (refereeId) =>
+    referees.find((item) => String(item.id) === String(refereeId));
+
+  const getTeamName = (teamId) => {
+    const team = teams.find((item) => String(item.id) === String(teamId));
+    return team?.emertimi || `Team #${teamId}`;
+  };
+
+  const getMatchLabel = (matchId) => {
+    const match = getMatchById(matchId);
+
+    if (!match) {
+      return `Match #${matchId}`;
+    }
+
+    return `${getTeamName(match.ekipi_shtepiak_id)} vs ${getTeamName(match.ekipi_mysafir_id)}`;
+  };
+
+  const getRefereeLabel = (refereeId) => {
+    const referee = getRefereeById(refereeId);
+    return referee ? `${referee.emri} ${referee.mbiemri}` : "N/A";
+  };
+
   const handleCreate = () => {
-    setFormData({
-      ndeshja_id: "",
-      gjyqtari_id: "",
-      roli: "Kryegjyqtar",
-    });
+    resetForm();
     setShowModal(true);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleView = (id) => {
+    const assignment = assignments.find((item) => item.id === id);
+    if (!assignment) return;
+
+    setSelectedAssignment(assignment);
+    setShowViewModal(true);
   };
 
-  // Handle form submission (Create)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (!formData.ndeshja_id || !formData.gjyqtari_id || !formData.roli) {
-        setAlert({ type: "error", message: "Please fill in all required fields" });
-        return;
-      }
+  const handleEdit = (id) => {
+    const assignment = assignments.find((item) => item.id === id);
+    if (!assignment) return;
 
-      const dataToSend = {
-        ndeshja_id: parseInt(formData.ndeshja_id),
-        gjyqtari_id: parseInt(formData.gjyqtari_id),
-        roli: formData.roli,
-      };
-
-      const response = await api.post(`/match-referees`, dataToSend);
-
-      const newAssignment = response.data;
-      setAssignments([...assignments, newAssignment]);
-      setShowModal(false);
-      setFormData({
-        ndeshja_id: "",
-        gjyqtari_id: "",
-        roli: "Kryegjyqtar",
-      });
-      setAlert({ type: "success", message: "Assignment created successfully!" });
-    } catch (err) {
-      console.error("Error creating assignment:", err);
-      setAlert({ type: "error", message: "Error creating assignment: " + err.message });
-    }
+    setSelectedAssignment(assignment);
+    setFormData({
+      ndeshja_id: String(assignment.ndeshja_id),
+      gjyqtari_id: String(assignment.gjyqtari_id),
+      roli: assignment.roli || "Kryegjyqtar",
+    });
+    setShowEditModal(true);
   };
 
-  // Modal close handlers
+  const handleDelete = (id) => {
+    const assignment = assignments.find((item) => item.id === id);
+    if (!assignment) return;
+
+    setSelectedAssignment(assignment);
+    setShowDeleteModal(true);
+  };
+
   const handleCloseModal = () => {
-    setFormData({
-      ndeshja_id: "",
-      gjyqtari_id: "",
-      roli: "Kryegjyqtar",
-    });
+    resetForm();
     setShowModal(false);
-  };
-
-  const handleCloseEditModal = () => {
-    setFormData({
-      ndeshja_id: "",
-      gjyqtari_id: "",
-      roli: "Kryegjyqtar",
-    });
-    setSelectedAssignment(null);
-    setShowEditModal(false);
   };
 
   const handleCloseViewModal = () => {
@@ -145,206 +250,204 @@ export default function MatchReferees() {
     setShowViewModal(false);
   };
 
+  const handleCloseEditModal = () => {
+    resetForm();
+    setSelectedAssignment(null);
+    setShowEditModal(false);
+  };
+
   const handleCloseDeleteModal = () => {
     setSelectedAssignment(null);
     setShowDeleteModal(false);
   };
 
-  // Button handlers
-  const handleView = (id) => {
-    const assignment = assignments.find((a) => a.id === id);
-    setSelectedAssignment(assignment);
-    setShowViewModal(true);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleEdit = (id) => {
-    const assignment = assignments.find((a) => a.id === id);
-    if (!assignment) return;
-    setSelectedAssignment(assignment);
-    setFormData({
-      ndeshja_id: String(assignment.ndeshja_id),
-      gjyqtari_id: String(assignment.gjyqtari_id),
-      roli: assignment.roli,
-    });
-    setShowEditModal(true);
+  const buildPayload = () => ({
+    ndeshja_id: Number(formData.ndeshja_id),
+    gjyqtari_id: Number(formData.gjyqtari_id),
+    roli: formData.roli,
+  });
+
+  const validateForm = () => {
+    if (!formData.ndeshja_id || !formData.gjyqtari_id || !formData.roli) {
+      return "Please fill in all required fields.";
+    }
+
+    return null;
   };
 
-  const handleDelete = (id) => {
-    const assignment = assignments.find((a) => a.id === id);
-    setSelectedAssignment(assignment);
-    setShowDeleteModal(true);
-  };
-
-  // Edit handler
-  const handleEditSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedAssignment) return;
 
     try {
-      if (!formData.ndeshja_id || !formData.gjyqtari_id || !formData.roli) {
-        setAlert("Please fill in all required fields");
+      const validationError = validateForm();
+      if (validationError) {
+        setAlert({ type: "error", message: validationError });
         return;
       }
 
-      const dataToSend = {
-        ndeshja_id: parseInt(formData.ndeshja_id),
-        gjyqtari_id: parseInt(formData.gjyqtari_id),
-        roli: formData.roli,
-      };
-      const response = await api.put(`/match-referees/${selectedAssignment.id}`, dataToSend);
+      const response = await api.post("/match-referees", buildPayload());
+      const data = response.data || {};
 
-      const updatedAssignment = response.data;
-      setAssignments(
-        assignments.map((a) =>
-          a.id === updatedAssignment.id ? updatedAssignment : a,
-        ),
-      );
-      setShowEditModal(false);
-      setSelectedAssignment(null);
-      setAlert({ type: "success", message: "Assignment updated successfully!" });
+      setAssignments((prev) => [...prev, data]);
+      handleCloseModal();
+      setAlert({ type: "success", message: "Assignment created successfully!" });
     } catch (err) {
-      console.error("Error updating assignment:", err);
-      setAlert({ type: "error", message: "Error updating assignment: " + err.message });
+      setAlert({
+        type: "error",
+        message:
+          "Error creating assignment: " +
+          (err?.response?.data?.error || err.message),
+      });
     }
   };
 
-  // Delete handler
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!selectedAssignment) return;
+
+    try {
+      const validationError = validateForm();
+      if (validationError) {
+        setAlert({ type: "error", message: validationError });
+        return;
+      }
+
+      const response = await api.put(
+        `/match-referees/${selectedAssignment.id}`,
+        buildPayload(),
+      );
+      const data = response.data || {};
+
+      setAssignments((prev) =>
+        prev.map((item) => (item.id === data.id ? data : item)),
+      );
+
+      handleCloseEditModal();
+      setAlert({ type: "success", message: "Assignment updated successfully!" });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error updating assignment: " +
+          (err?.response?.data?.error || err.message),
+      });
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!selectedAssignment) return;
 
     try {
-      await api.delete(`/match-referees/${selectedAssignment.id}`)
+      await api.delete(`/match-referees/${selectedAssignment.id}`);
 
-      setAssignments(assignments.filter((a) => a.id !== selectedAssignment.id));
-      setSelectedAssignment(null);
-      setShowDeleteModal(false);
+      setAssignments((prev) =>
+        prev.filter((item) => item.id !== selectedAssignment.id),
+      );
+
+      handleCloseDeleteModal();
       setAlert({ type: "success", message: "Assignment deleted successfully!" });
     } catch (err) {
-      console.error("Error deleting assignment:", err);
-      setAlert({ type: "error", message: "Error deleting assignment: " + err.message });
+      setAlert({
+        type: "error",
+        message:
+          "Error deleting assignment: " +
+          (err?.response?.data?.error || err.message),
+      });
     }
   };
 
-  // Helper functions
-  const getMatchInfo = (matchId) => {
-    const match = matches.find((m) => m.id === matchId);
-    if (!match) return "N/A";
-    const homeTeam = match.ekipi_shtepiak_id;
-    const awayTeam = match.ekipi_mysafir_id;
-    return `Match ${match.id}`;
-  };
+  const filteredAssignments = assignments.filter((item) => {
+    const query = searchQuery.toLowerCase();
+    const match = getMatchById(item.ndeshja_id);
+    const referee = getRefereeById(item.gjyqtari_id);
 
-  const getRefereeInfo = (refereeId) => {
-    const referee = referees.find((r) => r.id === refereeId);
-    return referee ? `${referee.emri} ${referee.mbiemri}` : "N/A";
-  };
-
-  // Skeleton loading
-  function renderSkeleton() {
     return (
-      <div className="bg-gray-50 p-4">
-        <div className="w-full mx-auto animate-pulse">
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <div className="h-8 bg-gray-300 rounded w-64"></div>
-              <div className="h-10 bg-gray-300 rounded w-32"></div>
-            </div>
-            <div className="relative">
-              <div className="h-12 bg-gray-300 rounded-lg w-full"></div>
-            </div>
-          </div>
+      String(item.id).includes(query) ||
+      item.roli?.toLowerCase().includes(query) ||
+      getMatchLabel(item.ndeshja_id).toLowerCase().includes(query) ||
+      referee?.emri?.toLowerCase().includes(query) ||
+      referee?.mbiemri?.toLowerCase().includes(query) ||
+      referee?.kategoria?.toLowerCase().includes(query) ||
+      match?.statusi?.toLowerCase().includes(query) ||
+      formatDate(match?.data_ndeshjes).toLowerCase().includes(query)
+    );
+  });
 
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-800">
-                <tr>
-                  {[...Array(6)].map((_, i) => (
-                    <th key={i} className="px-4 py-3">
-                      <div className="h-4 bg-gray-600 rounded w-20"></div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {[...Array(5)].map((_, idx) => (
-                  <tr key={idx} className="bg-white">
-                    {[...Array(6)].map((_, i) => (
-                      <td key={i} className="px-4 py-3">
-                        <div className="h-4 bg-gray-200 rounded w-20"></div>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+  if (!user || !canAccessPage) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center bg-gray-50 px-4">
+        <div className="rounded-xl bg-white px-6 py-4 text-sm font-medium text-gray-700 shadow-sm">
+          Loading match assignments...
         </div>
       </div>
     );
   }
 
-  // Shows table skeleton while assignment data is still loading.
-  if (loading) return renderSkeleton();
-
-  // Enforces admin-only access for this route.
-  if (!user || !user.is_admin) {
-    return <Navigate to="/login" replace />;
-  }
-
   if (error) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-lg text-red-600">Error: {error}</p>
+      <div className="flex min-h-[50vh] items-center justify-center bg-gray-50 px-4">
+        <div className="rounded-xl bg-white px-6 py-4 text-sm font-medium text-red-600 shadow-sm">
+          Error loading match assignments: {error}
+        </div>
       </div>
     );
   }
 
-  // Filter assignments based on search
-  const filteredAssignments = assignments.filter(
-    (a) =>
-      getMatchInfo(a.ndeshja_id)
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      getRefereeInfo(a.gjyqtari_id)
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()),
-  );
-
   return (
     <div className="bg-gray-50 p-4">
       {alert && (
-        <Alert 
-          type={alert.type} 
+        <Alert
+          type={alert.type}
           message={alert.message}
           onClose={() => setAlert(null)}
         />
       )}
-      <div className="w-full mx-auto">
+
+      <div className="mx-auto w-full space-y-6">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">
-              Match Referee Assignments
+              {isAdmin ? "Match Referee Assignments" : "My Matches"}
             </h2>
-            <button
-              onClick={handleCreate}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
-            >
-              + Assign Referee
-            </button>
+
+            {isAdmin && (
+              <button
+                onClick={handleCreate}
+                className="rounded-lg bg-green-500 px-6 py-2 font-semibold text-white shadow-md transition duration-200 ease-in-out hover:bg-green-600"
+              >
+                + Assign Referee
+              </button>
+            )}
           </div>
 
-          {/* SEARCH BAR */}
           <div className="relative">
             <input
               type="text"
-              name="search"
-              placeholder="Search by match or referee name"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+              placeholder={
+                isAdmin
+                  ? "Search by match, referee, role, date, or status"
+                  : "Search by match, role, date, or status"
+              }
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 placeholder:text-transparent outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:placeholder:text-gray-400"
             />
             <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -359,377 +462,315 @@ export default function MatchReferees() {
           </div>
         </div>
 
-        {/* Assignments table */}
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-800 text-white">
-              <tr>
-                <th className="px-4 py-3 text-center font-semibold">ID</th>
-                <th className="px-4 py-3 text-left font-semibold">Match</th>
-                <th className="px-4 py-3 text-left font-semibold">Referee</th>
-                <th className="px-4 py-3 text-left font-semibold">Role</th>
-                <th className="px-4 py-3 text-center font-semibold">Category</th>
-                <th className="px-4 py-3 text-center font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredAssignments.length > 0 ? (
-                filteredAssignments.map((a) => (
-                  <tr
-                    key={a.id}
-                    className="hover:bg-gray-100 transition-colors duration-150"
-                  >
-                    <td className="px-4 py-3 text-gray-500 text-center">
-                      {a.id}
-                    </td>
-                    <td className="px-4 py-3 text-gray-800 font-semibold">
-                      {getMatchInfo(a.ndeshja_id)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-800 font-semibold">
-                      {getRefereeInfo(a.gjyqtari_id)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
-                        {a.roli}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-800 text-center">
-                      {referees.find((r) => r.id === a.gjyqtari_id)
-                        ?.kategoria || "N/A"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => handleView(a.id)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => handleEdit(a.id)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(a.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
+        <div className="flex overflow-x-auto rounded-lg bg-white shadow-md">
+          {filteredAssignments.length === 0 ? (
+            <div className="w-full px-6 py-12 text-center text-gray-600">
+              {searchQuery
+                ? `No assignments match "${searchQuery}". Try a different search.`
+                : isAdmin
+                  ? 'No assignments found. Click "Assign Referee" to add a new one.'
+                  : "No matches assigned to you yet."}
+            </div>
+          ) : (
+            <table className="w-full border-collapse text-left">
+              <thead className="bg-gray-800 text-white">
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-4 text-center text-gray-600"
-                  >
-                    {searchQuery
-                      ? `No assignments match "${searchQuery}". Try a different search.`
-                      : 'No assignments found. Click "Assign Referee" to add a new one.'}
-                  </td>
+                  <th className="px-4 py-3 text-center font-semibold">ID</th>
+                  <th className="px-4 py-3 text-left font-semibold">Match</th>
+                  {isAdmin && (
+                    <th className="px-4 py-3 text-left font-semibold">Referee</th>
+                  )}
+                  <th className="px-4 py-3 text-left font-semibold">Role</th>
+                  <th className="px-4 py-3 text-center font-semibold">Date</th>
+                  <th className="px-4 py-3 text-left font-semibold">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold">Category</th>
+                  <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredAssignments.map((assignment) => {
+                  const match = getMatchById(assignment.ndeshja_id);
+                  const referee = getRefereeById(assignment.gjyqtari_id);
+
+                  return (
+                    <tr
+                      key={assignment.id}
+                      className="transition-colors duration-150 hover:bg-gray-100"
+                    >
+                      <td className="px-4 py-3 text-center text-gray-500">
+                        {assignment.id}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-gray-900">
+                          {getMatchLabel(assignment.ndeshja_id)}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {match?.ora_fillimit || "No start time"}
+                        </div>
+                      </td>
+                      {isAdmin && (
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {getRefereeLabel(assignment.gjyqtari_id)}
+                        </td>
+                      )}
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getRoleBadgeClasses(assignment.roli)}`}
+                        >
+                          {assignment.roli || "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-gray-700">
+                        {formatDate(match?.data_ndeshjes)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClasses(match?.statusi)}`}
+                        >
+                          {match?.statusi || "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {referee?.kategoria || "N/A"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleView(assignment.id)}
+                            className="rounded bg-blue-500 px-3 py-1 text-sm font-medium text-white transition duration-200 hover:bg-blue-600"
+                          >
+                            View
+                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleEdit(assignment.id)}
+                              className="rounded bg-yellow-500 px-3 py-1 text-sm font-medium text-white transition duration-200 hover:bg-yellow-600"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDelete(assignment.id)}
+                              className="rounded bg-red-500 px-3 py-1 text-sm font-medium text-white transition duration-200 hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
+      </div>
 
-        {/* ADD ASSIGNMENT MODAL */}
-        {showModal && (
+      {isAdmin && showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseModal}
+        >
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseModal}
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                Assign Referee to Match
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Match *
-                    </label>
-                    <select
-                      name="ndeshja_id"
-                      value={formData.ndeshja_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    >
-                      <option value="">Select Match</option>
-                      {matches.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          Match {m.id} - {m.data_ndeshjes}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            <h3 className="mb-6 text-2xl font-bold text-gray-800">
+              Assign Referee to Match
+            </h3>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <MatchRefereeFormFields
+                formData={formData}
+                matches={matches}
+                referees={referees}
+                getMatchLabel={getMatchLabel}
+                onChange={handleInputChange}
+              />
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-lg bg-green-500 py-2 font-semibold text-white transition duration-200 hover:bg-green-600"
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 rounded-lg bg-gray-400 py-2 font-semibold text-white transition duration-200 hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Referee *
-                    </label>
-                    <select
-                      name="gjyqtari_id"
-                      value={formData.gjyqtari_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    >
-                      <option value="">Select Referee</option>
-                      {referees.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.emri} {r.mbiemri} ({r.kategoria})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Role *
-                    </label>
-                    <select
-                      name="roli"
-                      value={formData.roli}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    >
-                      {roles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Assign Referee
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+      {showViewModal && selectedAssignment && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseViewModal}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-6 text-2xl font-bold text-gray-800">
+              Match Assignment Details
+            </h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Match
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                  {getMatchLabel(selectedAssignment.ndeshja_id)}
+                </p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Referee
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                  {getRefereeLabel(selectedAssignment.gjyqtari_id)}
+                </p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Role
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                  {selectedAssignment.roli || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Date
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                  {formatDate(getMatchById(selectedAssignment.ndeshja_id)?.data_ndeshjes)}
+                </p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Start Time
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                  {getMatchById(selectedAssignment.ndeshja_id)?.ora_fillimit || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Status
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                  {getMatchById(selectedAssignment.ndeshja_id)?.statusi || "N/A"}
+                </p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Referee Category
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                  {getRefereeById(selectedAssignment.gjyqtari_id)?.kategoria || "N/A"}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4 pt-4">
+              <button
+                type="button"
+                onClick={handleCloseViewModal}
+                className="flex-1 rounded-lg bg-gray-400 py-2 font-semibold text-white transition duration-200 hover:bg-gray-500"
+              >
+                Close
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* VIEW ASSIGNMENT MODAL */}
-        {showViewModal && selectedAssignment && (
+      {isAdmin && showEditModal && selectedAssignment && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseEditModal}
+        >
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseViewModal}
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                Assignment Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Match
-                  </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {getMatchInfo(selectedAssignment.ndeshja_id)}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Referee
-                  </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {getRefereeInfo(selectedAssignment.gjyqtari_id)}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role
-                  </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {selectedAssignment.roli}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {referees.find(
-                      (r) => r.id === selectedAssignment.gjyqtari_id,
-                    )?.kategoria || "N/A"}
-                  </p>
-                </div>
+            <h3 className="mb-6 text-2xl font-bold text-gray-800">
+              Edit Assignment
+            </h3>
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              <MatchRefereeFormFields
+                formData={formData}
+                matches={matches}
+                referees={referees}
+                getMatchLabel={getMatchLabel}
+                onChange={handleInputChange}
+              />
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-lg bg-yellow-500 py-2 font-semibold text-white transition duration-200 hover:bg-yellow-600"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseEditModal}
+                  className="flex-1 rounded-lg bg-gray-400 py-2 font-semibold text-white transition duration-200 hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAdmin && showDeleteModal && selectedAssignment && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseDeleteModal}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-6 text-2xl font-bold text-gray-800">
+              Delete Assignment
+            </h3>
+            <div className="space-y-4">
+              <p className="text-gray-700">
+                Are you sure you want to delete the referee assignment for{" "}
+                <span className="font-semibold text-gray-900">
+                  {getMatchLabel(selectedAssignment.ndeshja_id)}
+                </span>
+                ?
+              </p>
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
-                  onClick={handleCloseViewModal}
-                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* EDIT ASSIGNMENT MODAL */}
-        {showEditModal && selectedAssignment && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseEditModal}
-          >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                Edit Assignment
-              </h3>
-              <form onSubmit={handleEditSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Match *
-                    </label>
-                    <select
-                      name="ndeshja_id"
-                      value={formData.ndeshja_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    >
-                      <option value="">Select Match</option>
-                      {matches.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          Match {m.id} - {m.data_ndeshjes}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Referee *
-                    </label>
-                    <select
-                      name="gjyqtari_id"
-                      value={formData.gjyqtari_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    >
-                      <option value="">Select Referee</option>
-                      {referees.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.emri} {r.mbiemri} ({r.kategoria})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Role *
-                    </label>
-                    <select
-                      name="roli"
-                      value={formData.roli}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      required
-                    >
-                      {roles.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Save Changes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseEditModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* DELETE ASSIGNMENT MODAL */}
-        {showDeleteModal && selectedAssignment && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseDeleteModal}
-          >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-red-600 mb-4">
-                Delete Assignment?
-              </h3>
-              <p className="text-gray-700 mb-6">
-                Are you sure you want to delete this referee assignment for{" "}
-                <strong>{getMatchInfo(selectedAssignment.ndeshja_id)}</strong> (
-                <strong>
-                  {getRefereeInfo(selectedAssignment.gjyqtari_id)} -
-                  {selectedAssignment.roli}
-                </strong>
-                )? This action cannot be undone.
-              </p>
-
-              <div className="flex gap-4">
-                <button
                   onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                  className="flex-1 rounded-lg bg-red-600 py-2 font-semibold text-white transition duration-200 hover:bg-red-700"
                 >
                   Delete
                 </button>
                 <button
+                  type="button"
                   onClick={handleCloseDeleteModal}
-                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                  className="flex-1 rounded-lg bg-gray-400 py-2 font-semibold text-white transition duration-200 hover:bg-gray-500"
                 >
                   Cancel
                 </button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
