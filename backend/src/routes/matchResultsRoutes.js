@@ -26,7 +26,8 @@ router.get("/", protect, async (req, res) => {
             m.ora_fillimit,
             m.statusi,
             m.faza,
-            tu.emertimi AS turneu_emri
+            tu.emertimi AS turneu_emri,
+            s.emertimi AS sport_emri
         FROM MatchResults mr
         LEFT JOIN Matches m ON mr.ndeshja_id = m.id
         LEFT JOIN Teams t_fitues ON mr.fitues_id = t_fitues.id
@@ -34,6 +35,7 @@ router.get("/", protect, async (req, res) => {
         LEFT JOIN Teams t_mysafir ON m.ekipi_mysafir_id = t_mysafir.id
         LEFT JOIN Players p ON mr.mvp_id = p.id
         LEFT JOIN Tournaments tu ON m.turneu_id = tu.id
+        LEFT JOIN Sports s ON tu.sporti_id = s.id
         ORDER BY m.data_ndeshjes DESC;`,
     );
     res.json(result.rows);
@@ -83,7 +85,8 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
             m.ora_fillimit,
             m.statusi,
             m.faza,
-            tu.emertimi AS turneu_emri
+            tu.emertimi AS turneu_emri,
+            s.emertimi AS sport_emri
         FROM MatchResults mr
         LEFT JOIN Matches m ON mr.ndeshja_id = m.id
         LEFT JOIN Teams t_fitues ON mr.fitues_id = t_fitues.id
@@ -91,6 +94,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
         LEFT JOIN Teams t_mysafir ON m.ekipi_mysafir_id = t_mysafir.id
         LEFT JOIN Players p ON mr.mvp_id = p.id
         LEFT JOIN Tournaments tu ON m.turneu_id = tu.id
+        LEFT JOIN Sports s ON tu.sporti_id = s.id
         WHERE mr.id = $1`,
       [created.rows[0].id],
     );
@@ -148,7 +152,8 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
             m.ora_fillimit,
             m.statusi,
             m.faza,
-            tu.emertimi AS turneu_emri
+            tu.emertimi AS turneu_emri,
+            s.emertimi AS sport_emri
         FROM MatchResults mr
         LEFT JOIN Matches m ON mr.ndeshja_id = m.id
         LEFT JOIN Teams t_fitues ON mr.fitues_id = t_fitues.id
@@ -156,6 +161,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
         LEFT JOIN Teams t_mysafir ON m.ekipi_mysafir_id = t_mysafir.id
         LEFT JOIN Players p ON mr.mvp_id = p.id
         LEFT JOIN Tournaments tu ON m.turneu_id = tu.id
+        LEFT JOIN Sports s ON tu.sporti_id = s.id
         WHERE mr.id = $1`,
       [id],
     );
@@ -194,7 +200,8 @@ router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
                 m.ora_fillimit,
                 m.statusi,
                 m.faza,
-                tu.emertimi AS turneu_emri
+                tu.emertimi AS turneu_emri,
+                s.emertimi AS sport_emri
             FROM MatchResults mr
             LEFT JOIN Matches m ON mr.ndeshja_id = m.id
             LEFT JOIN Teams t_fitues ON mr.fitues_id = t_fitues.id
@@ -202,6 +209,7 @@ router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
             LEFT JOIN Teams t_mysafir ON m.ekipi_mysafir_id = t_mysafir.id
             LEFT JOIN Players p ON mr.mvp_id = p.id
             LEFT JOIN Tournaments tu ON m.turneu_id = tu.id
+            LEFT JOIN Sports s ON tu.sporti_id = s.id
             WHERE mr.id = $1`,
       [id],
     );
