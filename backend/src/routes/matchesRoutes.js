@@ -1,54 +1,61 @@
 import express from "express";
-import pool from "../config/db.js";
+import prisma from "../lib/prisma.js";
 import { protect, requireRole  } from "../middleware/auth.js";
 const router = express.Router();
 
 // Checks that an organizer is trying to manage only a tournament they own.
 
 async function organizerOwnsTournament(tournamentId, organizerId){
-  const result = await pool.query(
-    "SELECT id FROM tournaments WHERE id = $1 AND organizatori_id = $2",
-    [tournamentId, organizerId],
-  );
+  const tournament = await prisma.tournaments.findFirst({
+    where: {
+      id: tournamentId,
+      organizatori_id: organizerId,
+    },
+    select: { id: true },
+  });
 
-  return result.rows.length > 0;
+  return !!tournament;
 }
 // Checks that an existing match belongs to one of the organizer's tournaments.
 
 
 async function organizerOwnsMatch(matchId, organizerId){
-  const result = await pool.query(
-    `SELECT m.id
-    FROM matches m
-    INNER JOIN tournaments t ON t.id = m.turneu_id
-    WHERE m.id = $1 AND t.organizatori_id = $2`,
-    [matchId, organizerId],
-  );
-  return result.rows.length > 0;
+  const match = await prisma.matches.findFirst({
+    where: {
+      id: matchId,
+      tournaments: {
+        organizatori_id: organizerId,
+      },
+    },
+    select: { id: true },
+  });
+  return !!match;
 }
 
 // Route for getting matches. This route is protected.
 router.get("/", protect, async (req, res) => {
   try {
-    let result;
+    let matches;
 
     if (req.user.is_admin) {
-      result = await pool.query("SELECT * FROM matches ORDER BY id");
+      matches = await prisma.matches.findMany({
+        orderBy: { id: "asc" },
+      });
     } else if (req.user.is_organizer) {
       // Organizers can only list matches from tournaments assigned to them.
-      result = await pool.query(
-        `SELECT m.*
-         FROM matches m
-         INNER JOIN tournaments t ON t.id = m.turneu_id
-         WHERE t.organizatori_id = $1
-         ORDER BY m.id`,
-        [req.user.id],
-      );
+      matches = await prisma.matches.findMany({
+        where: {
+          tournaments: {
+            organizatori_id: req.user.id,
+          },
+        },
+        orderBy: { id: "asc" },
+      });
     } else {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    res.json(result.rows);
+    res.json(matches);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -58,27 +65,30 @@ router.get("/", protect, async (req, res) => {
 router.get("/:id", protect, async (req, res) => {
   const { id } = req.params;
   try {
-    let result;
+    let match;
 
     if (req.user.is_admin) {
-      result = await pool.query("SELECT * FROM matches WHERE id = $1", [id]);
+      match = await prisma.matches.findUnique({
+        where: { id: Number(id) },
+      });
     } else if (req.user.is_organizer) {
       // Organizers can only open match details for their own tournament space.
-      result = await pool.query(
-        `SELECT m.*
-         FROM matches m
-         INNER JOIN tournaments t ON t.id = m.turneu_id
-         WHERE m.id = $1 AND t.organizatori_id = $2`,
-        [id, req.user.id],
-      );
+      match = await prisma.matches.findFirst({
+        where: {
+          id: Number(id),
+          tournaments: {
+            organizatori_id: req.user.id,
+          },
+        },
+      });
     } else {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    if (result.rows.length === 0) {
+    if (!match) {
       return res.status(404).json({ error: "The match was not found" });
     }
-    res.json(result.rows[0]);
+    res.json(match);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -114,20 +124,19 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
       }
     }
 
-    const result = await pool.query(
-      "INSERT INTO matches (turneu_id, ekipi_shtepiak_id, ekipi_mysafir_id, data_ndeshjes, ora_fillimit, fusha_id, statusi, faza) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
-      [
+    const created = await prisma.matches.create({
+      data: {
         turneu_id,
         ekipi_shtepiak_id,
         ekipi_mysafir_id,
-        data_ndeshjes,
-        ora_fillimit,
-        fusha_id,
-        statusi || "Planifikuar",
-        faza,
-      ],
-    );
-    res.status(201).json(result.rows[0]);
+        data_ndeshjes: new Date(data_ndeshjes),
+        ora_fillimit: ora_fillimit ? new Date(`1970-01-01T${ora_fillimit}`) : null,
+        fusha_id: fusha_id ?? null,
+        statusi: statusi || "Planifikuar",
+        faza: faza ?? null,
+      },
+    });
+    res.status(201).json(created);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -156,7 +165,7 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
   try {
     if (req.user.is_organizer) {
       // An organizer must own both the current match and the destination tournament during updates.
-      const ownsCurrentMatch = await organizerOwnsMatch(id, req.user.id);
+      const ownsCurrentMatch = await organizerOwnsMatch(Number(id), req.user.id);
       const ownsTargetTournament = await organizerOwnsTournament(turneu_id, req.user.id);
 
       if (!ownsCurrentMatch || !ownsTargetTournament) {
@@ -164,24 +173,30 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
       }
     }
 
-    const result = await pool.query(
-      "UPDATE matches SET turneu_id = $1, ekipi_shtepiak_id = $2, ekipi_mysafir_id = $3, data_ndeshjes = $4, ora_fillimit = $5, fusha_id = $6, statusi = $7, faza = $8 WHERE id = $9 RETURNING *",
-      [
+    const existing = await prisma.matches.findUnique({
+      where: { id: Number(id) },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "The match was not found" });
+    }
+
+    const updated = await prisma.matches.update({
+      where: { id: Number(id) },
+      data: {
         turneu_id,
         ekipi_shtepiak_id,
         ekipi_mysafir_id,
-        data_ndeshjes,
-        ora_fillimit,
+        data_ndeshjes: data_ndeshjes ? new Date(data_ndeshjes) : undefined,
+        ora_fillimit: ora_fillimit ? new Date(`1970-01-01T${ora_fillimit}`) : ora_fillimit,
         fusha_id,
         statusi,
         faza,
-        id,
-      ],
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "The match was not found" });
-    }
-    res.json(result.rows[0]);
+      },
+    });
+
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -193,19 +208,25 @@ router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (r
   try {
     if (req.user.is_organizer) {
       // Organizers can delete only matches that belong to their own tournament.
-      const ownsMatch = await organizerOwnsMatch(id, req.user.id);
+      const ownsMatch = await organizerOwnsMatch(Number(id), req.user.id);
       if (!ownsMatch) {
         return res.status(403).json({ error: "Forbidden" });
       }
     }
 
-    const result = await pool.query(
-      "DELETE FROM matches WHERE id = $1 RETURNING *",
-      [id],
-    );
-    if (result.rows.length === 0) {
+    const existing = await prisma.matches.findUnique({
+      where: { id: Number(id) },
+      select: { id: true },
+    });
+
+    if (!existing) {
       return res.status(404).json({ error: "The match was not found" });
     }
+
+    await prisma.matches.delete({
+      where: { id: Number(id) },
+    });
+
     res.json({ message: "The match was deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
