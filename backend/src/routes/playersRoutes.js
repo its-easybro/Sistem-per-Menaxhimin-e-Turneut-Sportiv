@@ -1,30 +1,51 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
-import pool from "../config/db.js";
-import path from "path";
-
+import prisma from "../lib/prisma.js";
 const router = express.Router();
+
+const parsePositiveInt = (value) => {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+};
 
 // Route for getting all players with their team information attached. This route is protected.
 router.get("/", protect, async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT 
-        p.id,
-        p.emri,
-        p.mbiemri,
-        p.data_lindjes,
-        COALESCE(t.emertimi, 'No Team') AS ekipi_id,
-        p.pozicioni,
-        p.numri,
-        p.gjatesia,
-        p.pesha,
-        p.kombesia
-      FROM players p
-      LEFT JOIN teams t ON p.ekipi_id = t.id
-      ORDER BY p.id`,
-    );
-    res.json(result.rows);
+    const players = await prisma.players.findMany({
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        emri: true,
+        mbiemri: true,
+        data_lindjes: true,
+        pozicioni: true,
+        numri: true,
+        gjatesia: true,
+        pesha: true,
+        kombesia: true,
+        teams: {
+          select: {
+            emertimi: true,
+          },
+        }
+      },
+    });  
+
+    const result = players.map(players => ({
+      id: players.id,
+      emri: players.emri,
+      mbiemri: players.mbiemri,
+      data_lindjes: players.data_lindjes,
+      pozicioni: players.pozicioni,
+      numri: players.numri,
+      gjatesia: players.gjatesia,
+      pesha: players.pesha,
+      kombesia: players.kombesia
+    }))
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -52,9 +73,8 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   }
 
   try {
-    const created = await pool.query(
-      "INSERT INTO players (emri, mbiemri, data_lindjes, ekipi_id, pozicioni, numri, gjatesia, pesha, kombesia) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
-      [
+    const created = await prisma.players.create({
+      data: {
         emri,
         mbiemri,
         data_lindjes,
@@ -63,29 +83,44 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
         numri,
         gjatesia,
         pesha,
-        kombesia
-      ],
-    );
+        kombesia,
+      },
+    });
 
-    const result = await pool.query(
-      `SELECT 
-        p.id,
-        p.emri,
-        p.mbiemri,
-        p.data_lindjes,
-        COALESCE(t.emertimi, 'No Team') AS ekipi_id,
-        p.pozicioni,
-        p.numri,
-        p.gjatesia,
-        p.pesha,
-        p.kombesia
-      FROM players p
-      LEFT JOIN teams t ON p.ekipi_id = t.id
-      WHERE p.id = $1`,
-      [created.rows[0].id],
-    );
+    const result = await prisma.players.findUnique({
+      where: { id: created.id },
+      select: {
+        id: true,
+        emri: true,
+        mbiemri: true,
+        data_lindjes: true,
+        pozicioni: true,
+        numri: true,
+        gjatesia: true,
+        pesha: true,
+        kombesia: true,
+        teams: {
+          select: {
+            emertimi: true,
+          },
+        }
+      },
+    });
 
-    res.status(201).json(result.rows[0]);
+    const formattedResult = {
+      id: result.id,
+      emri: result.emri,
+      mbiemri: result.mbiemri,
+      data_lindjes: result.data_lindjes,
+      pozicioni: result.pozicioni,
+      numri: result.numri,
+      gjatesia: result.gjatesia,
+      pesha: result.pesha,
+      kombesia: result.kombesia,
+      ekipi_id: result.teams?.emertimi ?? "No Team",
+    };
+
+    res.status(201).json(formattedResult);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -93,7 +128,11 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 
 // Route for updating a single player by their ID with team information attached. This route is protected.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const { id } = req.params;
+  const playerId = parsePositiveInt(req.params.id);
+  if (!playerId) {
+    return res.status(400).json({ error: "Invalid player id" });
+  }
+
   const {
     emri,
     mbiemri,
@@ -106,9 +145,18 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     kombesia,
   } = req.body;
   try {
-    const updated = await pool.query(
-      "UPDATE players SET emri = $1, mbiemri = $2, data_lindjes = $3, ekipi_id = $4, pozicioni = $5, numri = $6, gjatesia = $7, pesha = $8, kombesia = $9 WHERE id = $10 RETURNING *",
-      [
+    const existing = await prisma.players.findUnique({
+      where: { id: playerId },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    const result = await prisma.players.update({
+      where: { id: playerId },
+      data: {
         emri,
         mbiemri,
         data_lindjes,
@@ -118,32 +166,39 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
         gjatesia,
         pesha,
         kombesia,
-        id,
-      ],
-    );
-    if (updated.rows.length === 0) {
-      return res.status(404).json({ error: "Player not found" });
-    }
+      },
+      select: {
+        id: true,
+        emri: true,
+        mbiemri: true,
+        data_lindjes: true,
+        pozicioni: true,
+        numri: true,
+        gjatesia: true,
+        pesha: true,
+        kombesia: true,
+        teams: {
+          select: {
+            emertimi: true,
+          },
+        },
+      },
+    });
 
-    const result = await pool.query(
-      `SELECT 
-        p.id,
-        p.emri,
-        p.mbiemri,
-        p.data_lindjes,
-        COALESCE(t.emertimi, 'No Team') AS ekipi_id,
-        p.pozicioni,
-        p.numri,
-        p.gjatesia,
-        p.pesha,
-        p.kombesia
-      FROM players p
-      LEFT JOIN teams t ON p.ekipi_id = t.id
-      WHERE p.id = $1`,
-      [id],
-    );
+    const formattedResult = {
+      id: result.id,
+      emri: result.emri,
+      mbiemri: result.mbiemri,
+      data_lindjes: result.data_lindjes,
+      pozicioni: result.pozicioni,
+      numri: result.numri,
+      gjatesia: result.gjatesia,
+      pesha: result.pesha,
+      kombesia: result.kombesia,
+      ekipi_id: result.teams?.emertimi ?? "No Team",
+    };
 
-    res.json(result.rows[0]);
+    res.json(formattedResult);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -151,33 +206,54 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 
 // Route for deleting a single player by their ID with team information attached. This route is protected.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const { id } = req.params;
+  const playerId = parsePositiveInt(req.params.id);
+  if (!playerId) {
+    return res.status(400).json({ error: "Invalid player id" });
+  }
+
   try {
-    const result = await pool.query(
-      `WITH deleted AS (
-        DELETE FROM players
-        WHERE id = $1
-        RETURNING *
-      )
-      SELECT 
-        d.id,
-        d.emri,
-        d.mbiemri,
-        d.data_lindjes,
-        COALESCE(t.emertimi, 'No Team') AS ekipi_id,
-        d.pozicioni,
-        d.numri,
-        d.gjatesia,
-        d.pesha,
-        d.kombesia
-      FROM deleted d
-      LEFT JOIN teams t ON d.ekipi_id = t.id`,
-      [id]
-    );
-    if (result.rows.length === 0){
-        return res.status(404).json({ error: "Player not found" });
+    const existing = await prisma.players.findUnique({
+      where: { id: playerId },
+      select: {
+        id: true,
+        emri: true,
+        mbiemri: true,
+        data_lindjes: true,
+        pozicioni: true,
+        numri: true,
+        gjatesia: true,
+        pesha: true,
+        kombesia: true,
+        teams: {
+          select: {
+            emertimi: true,
+          },
+        },
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Player not found" });
     }
-    res.json({ message: "Player deleted successfully", deleted: result.rows[0] });
+
+    await prisma.players.delete({
+      where: { id: playerId },
+    });
+
+    const deleted = {
+      id: existing.id,
+      emri: existing.emri,
+      mbiemri: existing.mbiemri,
+      data_lindjes: existing.data_lindjes,
+      pozicioni: existing.pozicioni,
+      numri: existing.numri,
+      gjatesia: existing.gjatesia,
+      pesha: existing.pesha,
+      kombesia: existing.kombesia,
+      ekipi_id: existing.teams?.emertimi ?? "No Team",
+    };
+
+    res.json({ message: "Player deleted successfully", deleted });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
