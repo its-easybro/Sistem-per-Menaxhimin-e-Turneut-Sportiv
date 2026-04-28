@@ -16,6 +16,7 @@ import {
   CalendarRange,
   FlagTriangleRight,
   ListOrdered,
+  Mail,
 } from "lucide-react";
 
 const AdminRoute = () => {
@@ -115,6 +116,14 @@ const AdminRoute = () => {
             >
               <ListOrdered size={20} />
               Standings
+            </Link>
+
+            <Link
+              to="/contactUs"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
+              <Mail size={20} />
+              Contact Us
             </Link>
 
             <Link

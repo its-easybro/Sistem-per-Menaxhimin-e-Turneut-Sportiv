@@ -18,6 +18,7 @@ import matchRefereesRoutes from "./routes/matchRefereesRoutes.js";
 import tournamentRegistrationsRoutes from "./routes/tournamentRegistrationsRoutes.js";
 import refereesRoutes from "./routes/refereesRoutes.js";
 import standingsRoutes from "./routes/standingsRoutes.js";
+import contactUsRoute from "./routes/contactUsRoute.js";
 
 // Load environment variables
 dotenv.config();
@@ -51,6 +52,7 @@ app.use("/match-referees", matchRefereesRoutes);
 app.use("/tournament-registrations", tournamentRegistrationsRoutes);
 app.use("/referees", refereesRoutes);
 app.use("/standings", standingsRoutes);
+app.use("/contactUs", contactUsRoute);
 
 // Start the server
 app.listen(port, () => {

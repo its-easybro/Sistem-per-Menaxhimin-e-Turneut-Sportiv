@@ -22,6 +22,9 @@ import MatchReferees from "./pages/admin/MatchReferees";
 import Tournaments from "./pages/admin/Tournaments";
 import Referees from "./pages/admin/Referees";
 import Standings from "./pages/admin/Standings";
+import AdminContactUs from "./pages/admin/ContactUs";
+
+// Importing Organizer Pages
 import OrganizerDashboard from "./pages/organizator/Dashboard";
 import OrganizerMatches from "./pages/organizator/Matches";
 import OrganizerTeams from "./pages/organizator/Teams";
@@ -71,6 +74,7 @@ function App() {
           <Route path="/tournaments" element={<Tournaments />} />
           <Route path="/referees" element={<Referees />} />
           <Route path="/standings" element={<Standings />} />
+          <Route path="/contactUs" element={<AdminContactUs />} />
         </Route>
 
         {/* ORGANIZER ROUTES */}

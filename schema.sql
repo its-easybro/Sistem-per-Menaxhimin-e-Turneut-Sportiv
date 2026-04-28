@@ -223,3 +223,13 @@ CREATE TABLE Standings (
 
 ALTER TABLE users DROP CONSTRAINT users_roli_check;
 ALTER TABLE users ADD CONSTRAINT users_roli_check CHECK (roli IN ('admin', 'organizator', 'gjyqtar', 'user'));
+
+CREATE TABLE ContactMessages (
+    id          SERIAL PRIMARY KEY,
+    emri        TEXT        NOT NULL,
+    email       TEXT        NOT NULL,
+    mesazhi     TEXT        NOT NULL,
+    lexuar      BOOLEAN     NOT NULL DEFAULT FALSE,
+    lexuar_at   TIMESTAMP,
+    created_at  TIMESTAMP   DEFAULT NOW()
+);
