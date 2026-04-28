@@ -15,62 +15,17 @@ const matchResultInclude = {
       faza: true,
       teams_matches_ekipi_shtepiak_idToteams: { select: { emertimi: true } },
       teams_matches_ekipi_mysafir_idToteams: { select: { emertimi: true } },
-      tournaments: { select: { emertimi: true } },
+      tournaments: {
+        select: {
+          emertimi: true,
+          sports: { select: { emertimi: true } },
+        },
+      },
     },
   },
   teams: { select: { emertimi: true } },
   players: { select: { emri: true, mbiemri: true } },
 };
-
-// Route for getting all match results with detailed data. This route is protected.
-router.get("/", protect, async (req, res) => {
-  try {
-    const results = await prisma.matchresults.findMany({
-      include: matchResultInclude,
-    });
-
-    const formattedResult = results
-      .sort((a, b) => {
-        const dateA = a.matches?.data_ndeshjes
-          ? new Date(a.matches.data_ndeshjes).getTime()
-          : 0;
-        const dateB = b.matches?.data_ndeshjes
-          ? new Date(b.matches.data_ndeshjes).getTime()
-          : 0;
-        return dateB - dateA;
-      })
-      .map((result) => ({
-        id: result.id,
-        ndeshja_id: result.ndeshja_id,
-        golat_shtepiak: result.golat_shtepiak,
-        golat_mysafir: result.golat_mysafir,
-        fitues_id: result.fitues_id,
-        fitues_emri: result.teams?.emertimi ?? null,
-        shenime: result.shenime,
-        mvp_id: result.mvp_id,
-        mvp_emr_mbiemr: result.players
-          ? `${result.players.emri} ${result.players.mbiemri}`
-          : null,
-        ekipi_shtepiak_id: result.matches?.ekipi_shtepiak_id ?? null,
-        ekipi_shtepiak:
-          result.matches?.teams_matches_ekipi_shtepiak_idToteams?.emertimi ??
-          null,
-        ekipi_mysafir_id: result.matches?.ekipi_mysafir_id ?? null,
-        ekipi_mysafir:
-          result.matches?.teams_matches_ekipi_mysafir_idToteams?.emertimi ??
-          null,
-        data_ndeshjes: result.matches?.data_ndeshjes ?? null,
-        ora_fillimit: result.matches?.ora_fillimit ?? null,
-        statusi: result.matches?.statusi ?? null,
-        faza: result.matches?.faza ?? null,
-        turneu_emri: result.matches?.tournaments?.emertimi ?? null,
-      }));
-
-    res.json(formattedResult);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // Helper to format a matchresult record (with includes) into the API shape.
 function formatMatchResult(result) {
@@ -97,8 +52,34 @@ function formatMatchResult(result) {
     statusi: result.matches?.statusi ?? null,
     faza: result.matches?.faza ?? null,
     turneu_emri: result.matches?.tournaments?.emertimi ?? null,
+    sport_emri: result.matches?.tournaments?.sports?.emertimi ?? null,
   };
 }
+
+// Route for getting all match results with detailed data. This route is protected.
+router.get("/", protect, async (req, res) => {
+  try {
+    const results = await prisma.matchresults.findMany({
+      include: matchResultInclude,
+    });
+
+    const formattedResult = results
+      .sort((a, b) => {
+        const dateA = a.matches?.data_ndeshjes
+          ? new Date(a.matches.data_ndeshjes).getTime()
+          : 0;
+        const dateB = b.matches?.data_ndeshjes
+          ? new Date(b.matches.data_ndeshjes).getTime()
+          : 0;
+        return dateB - dateA;
+      })
+      .map(formatMatchResult);
+
+    res.json(formattedResult);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Route for creating a new match result. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {

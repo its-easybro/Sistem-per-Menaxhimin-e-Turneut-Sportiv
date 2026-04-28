@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
-import { Award, Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Award, Plus, Search, Pencil, Trash2, Spotlight } from "lucide-react";
 import { Alert } from "../../components/Alert";
 
 // Format data from ISO String to readable format
@@ -19,6 +19,40 @@ const formatDate = (isoDate) => {
   }
 };
 
+const sportTerms = {
+    "Futboll": { home: "Home Goals", away: "Away Goals"},
+    "Basketboll": { home: "Home Points", away: "Away Points"},
+    "Volejboll": { home: "Home Sets", away: "Away Sets"},
+    "Futsal": { home: "Home Goals", away: "Away Goals"},
+    "Hendboll": { home: "Home Goals", away: "Away Goals"},
+  };
+
+  const getTerms = (match) => {
+    return sportTerms[match?.sport_emri] || { home: "Home Score", away: "Away Score" }
+  }
+
+const getSportNameForMatch = (match, tournaments, sports) => {
+  if (!match) return null;
+
+  if (match.sport_emri) {
+    return match.sport_emri;
+  }
+
+  const tournament = tournaments.find(
+    (item) => String(item.id) === String(match.turneu_id),
+  );
+
+  if (!tournament) {
+    return null;
+  }
+
+  const sport = sports.find(
+    (item) => String(item.id) === String(tournament.sporti_id),
+  );
+
+  return sport?.emertimi || null;
+};
+
 // State Variables
 export default function MatchResults() {
   // Handles admin CRUD for match results and related participant metadata.
@@ -29,6 +63,8 @@ export default function MatchResults() {
   const hasOpenedPreselectedModal = useRef(false);
   const [MatchResults, setMatchResults] = useState([]);
   const [matches, setMatches] = useState([]);
+  const [tournaments, setTournaments] = useState([]);
+  const [sports, setSports] = useState([]);
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
   const [matchReferees, setMatchReferees] = useState([]);
@@ -62,6 +98,8 @@ export default function MatchResults() {
         const [
           matchResultsResponse,
           matchesResponse,
+          tournamentsResponse,
+          sportsResponse,
           teamsResponse,
           playersResponse,
           matchRefereesResponse,
@@ -69,6 +107,8 @@ export default function MatchResults() {
         ] = await Promise.all([
           api.get(`/match-results`),
           api.get(`/matches`),
+          api.get(`/tournaments`),
+          api.get(`/sports`),
           api.get(`/teams`),
           api.get(`/players`),
           api.get(`/match-referees`),
@@ -77,6 +117,8 @@ export default function MatchResults() {
 
         const MatchResultData = matchResultsResponse.data;
         const matchesData = matchesResponse.data;
+        const tournamentsData = tournamentsResponse.data;
+        const sportsData = sportsResponse.data;
         const teamsData = teamsResponse.data;
         const playersData = playersResponse.data;
         const matchRefereesData = matchRefereesResponse.data;
@@ -84,6 +126,8 @@ export default function MatchResults() {
 
         setMatchResults(MatchResultData);
         setMatches(matchesData);
+        setTournaments(tournamentsData);
+        setSports(sportsData);
         setTeams(teamsData);
         setPlayers(playersData);
         setMatchReferees(matchRefereesData);
@@ -296,6 +340,10 @@ export default function MatchResults() {
   const selectedMatchForForm = matches.find(
     (match) => String(match.id) === String(formData.ndeshja_id),
   );
+
+  const terms = getTerms({
+    sport_emri: getSportNameForMatch(selectedMatchForForm, tournaments, sports),
+  });
 
   const winnerTeamOptions = selectedMatchForForm
     ? [
@@ -585,7 +633,7 @@ export default function MatchResults() {
                 {/* Golat shtepiak */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Home Goals *
+                    {terms.home}
                   </label>
                   <input
                     type="number"
@@ -594,7 +642,7 @@ export default function MatchResults() {
                     value={formData.golat_shtepiak}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Golat shtepiak"
+                    placeholder={terms.home}
                     required
                   />
                 </div>
@@ -602,7 +650,7 @@ export default function MatchResults() {
                 {/* Golat vizitor */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Away Goals *
+                    {terms.away}
                   </label>
                   <input
                     type="number"
@@ -611,7 +659,7 @@ export default function MatchResults() {
                     value={formData.golat_mysafir}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Golat mysafir"
+                    placeholder={terms.away}
                     required
                   />
                 </div>
@@ -711,6 +759,36 @@ export default function MatchResults() {
             </h3>
             <form onSubmit={handleEditSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Match Referees Section */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Match Referees
+                  </label>
+                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                    {selectedMatchResult &&
+                    getMatchReferees(selectedMatchResult.ndeshja_id).length >
+                      0 ? (
+                      <div className="space-y-2">
+                        {getMatchReferees(selectedMatchResult.ndeshja_id).map(
+                          (ref, idx) => (
+                            <div key={idx} className="text-sm">
+                              <p className="font-medium text-gray-800">
+                                {ref.name}
+                              </p>
+                              <p className="text-gray-600 text-xs">
+                                {ref.role} • {ref.category}
+                              </p>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        No referees assigned
+                      </p>
+                    )}
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select Match *
@@ -741,7 +819,7 @@ export default function MatchResults() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Goals Home *
+                    {terms.home}
                   </label>
                   <input
                     type="number"
@@ -756,7 +834,7 @@ export default function MatchResults() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Goals Away *
+                    {terms.away}
                   </label>
                   <input
                     type="number"
@@ -767,37 +845,6 @@ export default function MatchResults() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
                   />
-                </div>
-
-                {/* Match Referees Section */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Match Referees
-                  </label>
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-                    {selectedMatchResult &&
-                    getMatchReferees(selectedMatchResult.ndeshja_id).length >
-                      0 ? (
-                      <div className="space-y-2">
-                        {getMatchReferees(selectedMatchResult.ndeshja_id).map(
-                          (ref, idx) => (
-                            <div key={idx} className="text-sm">
-                              <p className="font-medium text-gray-800">
-                                {ref.name}
-                              </p>
-                              <p className="text-gray-600 text-xs">
-                                {ref.role} • {ref.category}
-                              </p>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-sm">
-                        No referees assigned
-                      </p>
-                    )}
-                  </div>
                 </div>
 
                 <div>
