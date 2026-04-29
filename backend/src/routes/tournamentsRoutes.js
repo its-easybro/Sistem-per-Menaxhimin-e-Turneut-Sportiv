@@ -7,8 +7,8 @@ const router = express.Router();
 // Posible types of tournaments
 const tournamentTypeOptions = [
   "Grup + Eliminim",
-  "VetÃ«m Grup",
-  "VetÃ«m Eliminim",
+  "Vet\u00ebm Grup",
+  "Vet\u00ebm Eliminim",
   "Liga",
 ];
 
@@ -16,9 +16,61 @@ const tournamentTypeOptions = [
 const tournamentStatusOptions = [
   "Regjistrimi",
   "Aktiv",
-  "PÃ«rfunduar",
+  "P\u00ebrfunduar",
   "Anuluar",
 ];
+
+const normalizedTournamentTypeMap = {
+  "VetÃ«m Grup": "Vet\u00ebm Grup",
+  "VetÃ«m Eliminim": "Vet\u00ebm Eliminim",
+};
+
+const normalizedTournamentStatusMap = {
+  "PÃ«rfunduar": "P\u00ebrfunduar",
+};
+
+function normalizeTournamentType(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return normalizedTournamentTypeMap[trimmed] || trimmed;
+}
+
+function normalizeTournamentStatus(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return normalizedTournamentStatusMap[trimmed] || trimmed;
+}
+
+function handleTournamentError(err, res) {
+  if (
+    err.message === "Organizer not found" ||
+    err.message === "Only users or organizers can be assigned to a tournament"
+  ) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  if (err?.code === "P2003") {
+    return res.status(400).json({ error: "The selected sport or organizer does not exist." });
+  }
+
+  if (err?.code === "P2004") {
+    return res.status(400).json({
+      error: "The tournament data does not meet the database constraints.",
+    });
+  }
+
+  if (err?.code === "P2025") {
+    return res.status(404).json({ error: "Tournament or organizer not found." });
+  }
+
+  return res.status(500).json({ error: err.message });
+}
 
 function parsePositiveInteger(value) {
   const parsed = Number(value);
@@ -29,20 +81,45 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
+function parseTournamentDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  // Accepts YYYY-MM-DD from the UI and normalizes it to a UTC Date for Prisma DateTime fields.
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    const dateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
+    if (dateOnlyMatch) {
+      const normalized = new Date(`${trimmed}T00:00:00.000Z`);
+      return Number.isNaN(normalized.getTime()) ? null : normalized;
+    }
+
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 // Validates the tournament data and converts it to the appropriate format for the database
 function validateTournamentPayload(body) {
   const {
     emertimi,
     sporti_id,
-    lloji,
+    lloji: rawType,
     data_fillimit,
     data_perfundimit,
     lokacioni,
     organizatori_id,
     cmimi_regjistrimit,
-    statusi = "Regjistrimi",
+    statusi: rawStatus = "Regjistrimi",
     pershkrimi,
   } = body;
+
+  const lloji = normalizeTournamentType(rawType);
+  const statusi = normalizeTournamentStatus(rawStatus);
 
   if (!emertimi?.trim()) {
     return { error: "The tournament name is required." };
@@ -66,9 +143,9 @@ function validateTournamentPayload(body) {
   }
 
   // Validates the dates and ensures that the end date is after the start date
-  const startDate = new Date(data_fillimit);
-  const endDate = new Date(data_perfundimit);
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+  const startDate = parseTournamentDate(data_fillimit);
+  const endDate = parseTournamentDate(data_perfundimit);
+  if (!startDate || !endDate) {
     return { error: "The tournament dates are invalid." };
   }
 
@@ -101,8 +178,8 @@ function validateTournamentPayload(body) {
       emertimi: emertimi.trim(),
       sporti_id: sportId,
       lloji,
-      data_fillimit,
-      data_perfundimit,
+      data_fillimit: startDate,
+      data_perfundimit: endDate,
       lokacioni: lokacioni?.trim() || null,
       organizatori_id: organizerId,
       cmimi_regjistrimit: registrationPrice,
@@ -245,18 +322,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 
     res.status(201).json(result);
   } catch (err) {
-    if (
-      err.message === "Organizer not found" ||
-      err.message === "Only users or organizers can be assigned to a tournament"
-    ) {
-      return res.status(400).json({ error: err.message });
-    }
-
-    if (err?.code === "P2003") {
-      return res.status(400).json({ error: "The selected sport or organizer does not exist." });
-    }
-
-    res.status(500).json({ error: err.message });
+    handleTournamentError(err, res);
   }
 });
 
@@ -317,18 +383,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    if (
-      err.message === "Organizer not found" ||
-      err.message === "Only users or organizers can be assigned to a tournament"
-    ) {
-      return res.status(400).json({ error: err.message });
-    }
-
-    if (err?.code === "P2003") {
-      return res.status(400).json({ error: "The selected sport or organizer does not exist." });
-    }
-
-    res.status(500).json({ error: err.message });
+    handleTournamentError(err, res);
   }
 });
 

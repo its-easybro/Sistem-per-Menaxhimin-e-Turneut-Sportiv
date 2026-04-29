@@ -1,6 +1,7 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
+import recalculateStandings from "../services/recalculateStandings.js";
 
 const router = express.Router();
 
@@ -111,6 +112,21 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
       include: matchResultInclude,
     });
 
+    // Recalculate standings for the tournament this match belongs to
+    try{
+      const match = await prisma.matches.findUnique({
+        where: {
+          id: ndeshja_id
+        },
+        select: {
+          turneu_id: true,
+        },
+      });
+      if(match) await recalculateStandings(match.turneu_id);
+    }catch(err){
+      console.error("Standings recalculation failed", err);
+    }
+
     res.status(201).json(formatMatchResult(created));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -152,6 +168,21 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
       include: matchResultInclude,
     });
 
+    // Recalculate standings for the tournament this match belongs to
+    try{
+      const match = await prisma.matches.findUnique({
+        where: {
+          id: ndeshja_id
+        },
+        select: {
+          turneu_id: true,
+        },
+      });
+      if(match) await recalculateStandings(match.turneu_id);
+    }catch(err){
+      console.error("Standings recalculation failed", err);
+    }
+
     res.json(formatMatchResult(updated));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -164,7 +195,13 @@ router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const existing = await prisma.matchresults.findUnique({
       where: { id: Number(id) },
-      select: { id: true },
+      include: { 
+        matches: {
+          select: {
+            turneu_id: true,
+          },
+        },
+      },
     });
 
     if (!existing) {
@@ -174,6 +211,16 @@ router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
     await prisma.matchresults.delete({
       where: { id: Number(id) },
     });
+
+    // Recalculate standings for the tournament this match belongs to
+    try{
+      if(existing?.matches?.turneu_id){
+        await recalculateStandings(existing.matches.turneu_id);
+      }
+    }catch(err){
+      console.error("Standings recalculation failed", err);
+    }
+
 
     res.json({ message: "Match result deleted successfully" });
   } catch (err) {

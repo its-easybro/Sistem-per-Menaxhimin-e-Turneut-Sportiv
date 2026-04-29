@@ -471,7 +471,8 @@ export default function Tournaments() {
       handleCloseModal();
       setAlert({ type: 'success', message: 'Tournament created successfully!' });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error creating tournament: ' + err.message });
+      const message = err.response?.data?.error || err.message;
+      setAlert({ type: 'error', message: 'Error creating tournament: ' + message });
     }
   };
 
@@ -503,7 +504,8 @@ export default function Tournaments() {
       handleCloseEditModal();
       setAlert({ type: 'success', message: 'Tournament updated successfully!' });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error updating tournament: ' + err.message });
+      const message = err.response?.data?.error || err.message;
+      setAlert({ type: 'error', message: 'Error updating tournament: ' + message });
     }
   };
 
@@ -520,7 +522,8 @@ export default function Tournaments() {
       handleCloseDeleteModal();
       setAlert({ type: 'success', message: 'Tournament deleted successfully!' });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error deleting tournament: ' + err.message });
+      const message = err.response?.data?.error || err.message;
+      setAlert({ type: 'error', message: 'Error deleting tournament: ' + message });
     }
   };
 
