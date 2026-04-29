@@ -41,6 +41,30 @@ function splitName(fullName = "", fallbackUsername = "") {
   return { emri: normalizedUsername, mbiemri: "" };
 }
 
+async function ensureRefereeRecord(user) {
+  if (!user || user.roli !== "gjyqtar") {
+    return;
+  }
+
+  const existingReferee = await prisma.referees.findFirst({
+    where: { user_id: user.id },
+    select: { id: true },
+  });
+
+  if (existingReferee) {
+    return;
+  }
+
+  await prisma.referees.create({
+    data: {
+      emri: user.emri,
+      mbiemri: user.mbiemri,
+      email: user.email,
+      user_id: user.id,
+    },
+  });
+}
+
 // Route for getting all users. This route is protected and only admins can use it.
 router.get("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
@@ -87,6 +111,8 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
       },
     });
 
+    await ensureRefereeRecord(createdUser);
+
     res.status(201).json(formatUserResponse(createdUser));
   } catch (err) {
     if (err?.code === "P2002") {
@@ -132,6 +158,8 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
         roli: userRole,
       },
     });
+
+    await ensureRefereeRecord(updatedUser);
 
     res.json(formatUserResponse(updatedUser));
   } catch (err) {
