@@ -17,6 +17,8 @@ model User {
   statusi     String        @default("Aktiv")
   createdAt   DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
   referee   referees?   @relation("UserReferee")  // ← NDRYSHO KËTË
+  reset_token        String?
+  reset_token_expiry DateTime?
   tournaments tournaments[]
 
   @@map("users")

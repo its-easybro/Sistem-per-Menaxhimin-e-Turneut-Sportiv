@@ -3,6 +3,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { protect } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import crypto, { hash } from "crypto";
+import { sendResetEmail } from "../lib/mailer.js";
 
 const router = express.Router();
 
@@ -190,4 +192,78 @@ router.post("/Logout", async(req, res) => {
     res.json({ message: "Logged out successfully"});
 });
 
+// Forgot Password
+router.post("/forgot-password", async (req, res) => {
+    const { email } = req.body;
+
+    if(!email){
+        return res.status(400).json({ message: "Email is required" });
+    }
+
+    try{
+        const user = await prisma.user.findUnique({
+            where: { email }
+        })
+        // For security reasons always return success even if email dosent exist
+        if (!user) {
+            return res.status(200).json({ message: "If that email exists, a reset link has been sent." })
+        }
+        // Generate token
+        const token = crypto.randomBytes(32).toString("hex")
+        const expiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+        await prisma.user.update({
+            where: { email },
+            data: {
+                reset_token: token,
+                reset_token_expiry: expiry,
+            }
+        })
+
+        const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+        void sendResetEmail(user.email, resetLink).catch((mailErr) => {
+            console.error("Forgot password email error:", mailErr.message);
+        });
+
+        res.status(200).json({ message: "If that email exists, a reset link has been sent." });
+    } catch (err) {
+        console.error("Forgot password error:", err.message);
+        res.status(500).json({ message: "Internal server error" });
+    }
+})
+
+// Reset Password (for email)
+router.post("/reset-password", async (req, res) => {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+    }
+    try{
+        const user = await prisma.user.findFirst({
+            where: {
+                reset_token: token,
+                reset_token_expiry: { gt: new Date() } // token must not be expired
+            }
+        })
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or expired reset token" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                reset_token: null,
+                reset_token_expiry: null
+            }
+        })
+        res.json({ message: "Password reset successfully" });
+    } catch (err) {
+        res.status(500).json({ message: "Internal server error" });
+    }
+})
 export default router;

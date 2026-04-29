@@ -37,6 +37,8 @@ import Login from "./pages/Users/Login";
 import Register from "./pages/Users/Register";
 import AboutUs from "./pages/Users/AboutUs";
 import ContactUs from "./pages/Users/ContactUs";
+import ForgotPassword from "./pages/Users/ForgotPassword";
+import ResetPassword from "./pages/Users/ResetPassword";
 
 function App() {
   // Waits for initial auth/session check before rendering app routes.
@@ -59,6 +61,8 @@ function App() {
         <Route path="/contact-us" element={<ContactUs />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* ADMIN ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_admin"]} Layout={AdminRoute} />}>
