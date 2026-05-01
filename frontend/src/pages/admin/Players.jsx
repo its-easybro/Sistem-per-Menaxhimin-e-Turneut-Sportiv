@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
+import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
@@ -16,6 +17,25 @@ const formatDate = (isoDate) => {
   } catch {
     return "Invalid date";
   }
+};
+
+const resolvePlayerFoto = (playerFoto) => {
+  if (!playerFoto || typeof playerFoto !== "string") return "";
+
+  const trimmed = playerFoto.trim();
+  if (!trimmed) return "";
+
+  if (/^https?:\/\//.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("/players/uploads-players/")) {
+    return `${API_BASE_URL}${trimmed}`;
+  }
+  if (trimmed.startsWith("/uploads-players/")) {
+    return `${API_BASE_URL}${trimmed}`;
+  }
+  return `${API_BASE_URL}/players/uploads-players/${trimmed}`;
 };
 
 export default function Players() {
@@ -34,6 +54,7 @@ export default function Players() {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [alert, setAlert] = useState(null);
+  const [uploading, setUploading] = useState(false)
   const [formData, setFormData] = useState({
     emri: "",
     mbiemri: "",
@@ -44,7 +65,32 @@ export default function Players() {
     gjatesia: "",
     pesha: "",
     kombesia: "",
+    foto: "",
   });
+
+  const currentFotoPreview = formData.foto ? resolvePlayerFoto(formData.foto) : "";
+
+  const handleFotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const data = new FormData();
+    data.append("foto", file);
+    setUploading(true);
+    try {
+      const response = await api.post(`/players/upload-player-foto`, data, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
+      setFormData((prev) => ({ ...prev, foto: response.data.url }));
+    } catch (err) {
+      const errorMessage = err?.response?.data?.error || err.message;
+      setAlert({ type: 'error', message: 'Error uploading photo: ' + errorMessage });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Fetch players data from backend via API
   useEffect(() => {
@@ -125,12 +171,14 @@ export default function Players() {
         gjatesia: "",
         pesha: "",
         kombesia: "",
+        foto: "",
       });
       setShowModal(false);
       
       setAlert({ type: 'success', message: 'Player created successfully!' });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error creating player: ' + err.message });
+      const errorMessage = err?.response?.data?.error || err.message;
+      setAlert({ type: 'error', message: 'Error creating player: ' + errorMessage });
     }
   };
 
@@ -145,6 +193,7 @@ export default function Players() {
       gjatesia: "",
       pesha: "",
       kombesia: "",
+      foto: "",
     });
     setShowModal(false);
   };
@@ -162,6 +211,7 @@ export default function Players() {
       gjatesia: "",
       pesha: "",
       kombesia: "",
+      foto: "",
     });
     setSelectedPlayer(null);
     setShowEditModal(false);
@@ -200,6 +250,7 @@ export default function Players() {
       gjatesia: player.gjatesia,
       pesha: player.pesha,
       kombesia: player.kombesia,
+      foto: player.foto || "",
     });
     setShowEditModal(true);
   };
@@ -236,13 +287,15 @@ export default function Players() {
         gjatesia: "",
         pesha: "",
         kombesia: "",
+        foto: "",
       });
 
       setSelectedPlayer(null);
       setShowEditModal(false);
       setAlert({ type: 'success', message: 'Player updated successfully!' });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error updating player: ' + err.message });
+      const errorMessage = err?.response?.data?.error || err.message;
+      setAlert({ type: 'error', message: 'Error updating player: ' + errorMessage });
     }
   };
 
@@ -522,14 +575,40 @@ export default function Players() {
             onClick={handleCloseModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2x1 font-bold text-gray-800 mb-6">
-                Add New Player
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
+                <div className="border-2 border-gray-200 rounded-xl p-4 flex flex-col">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">Player Profile Image</p>
+                  <div className="h-[340px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 overflow-hidden">
+                    {currentFotoPreview ? (
+                      <img
+                        src={currentFotoPreview}
+                        alt="Player profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <p className="text-center text-gray-500 font-medium px-4">PLAYER IMAGE</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mt-4 mb-2">
+                      Player Profile
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      onChange={handleFotoUpload}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                    />
+                    {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2x1 font-bold text-gray-800 mb-6">Add New Player</h3>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* First name input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -668,24 +747,26 @@ export default function Players() {
                       required
                     />
                   </div>
+                    </div>
+                    {/* Form buttons */}
+                    <div className="flex gap-4 pt-4">
+                      <button
+                        type="submit"
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCloseModal}
+                        className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                {/* Form buttons */}
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Add
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
         )}
@@ -696,13 +777,27 @@ export default function Players() {
             onClick={handleCloseViewModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2x1 font-bold text-gray-800 mb-6">
-                Player Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
+                <div className="border-2 border-gray-200 rounded-xl p-4 flex flex-col">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">Player Profile Image</p>
+                  <div className="h-[340px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 overflow-hidden">
+                    {selectedPlayer.foto ? (
+                      <img
+                        src={resolvePlayerFoto(selectedPlayer.foto)}
+                        alt={`${selectedPlayer.emri} profile`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <p className="text-center text-gray-500 font-medium px-4">PLAYER IMAGE</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2x1 font-bold text-gray-800 mb-6">Player Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Player Name
@@ -775,15 +870,17 @@ export default function Players() {
                     {selectedPlayer.kombesia}
                   </p>
                 </div>
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={handleCloseViewModal}
-                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                >
-                  Close
-                </button>
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={handleCloseViewModal}
+                      className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -796,14 +893,40 @@ export default function Players() {
             onClick={handleCloseEditModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2x1 font-bold text-gray-800 mb-6">
-                Edit Player
-              </h3>
-              <form onSubmit={handleEditSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
+                <div className="border-2 border-gray-200 rounded-xl p-4 flex flex-col">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">Player Profile Image</p>
+                  <div className="h-[340px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 overflow-hidden">
+                    {currentFotoPreview ? (
+                      <img
+                        src={currentFotoPreview}
+                        alt="Player profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <p className="text-center text-gray-500 font-medium px-4">PLAYER PROFILE IMAGE HERE</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Player Profile
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleFotoUpload}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                    />
+                    {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2x1 font-bold text-gray-800 mb-6">Edit Player</h3>
+                  <form onSubmit={handleEditSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* First name input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -942,25 +1065,27 @@ export default function Players() {
                       required
                     />
                   </div>
+                    </div>
+                    {/* Edit form buttons - Save Changes */}
+                    <div className="flex gap-4 pt-4">
+                      <button
+                        type="submit"
+                        className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                      >
+                        Save Changes
+                      </button>
+                      {/* Cancel button */}
+                      <button
+                        type="button"
+                        onClick={handleCloseEditModal}
+                        className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                {/* Edit form buttons - Save Changes */}
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Save Changes
-                  </button>
-                  {/* Cancel button */}
-                  <button
-                    type="button"
-                    onClick={handleCloseEditModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
         )}

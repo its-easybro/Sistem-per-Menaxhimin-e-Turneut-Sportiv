@@ -1,8 +1,15 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import fs from "fs";
+import multer from "multer";
+import path from "path";
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Normalizes optional text fields by trimming whitespace and converting empty strings to null
 const normalizeOptionalText = (value) => {
@@ -27,6 +34,44 @@ const parsePositiveInt = (value) => {
   return parsed;
 };
 
+router.use("/uploads-teams", express.static(path.join(__dirname + "/../uploads/teams")));
+const uploadDir = path.join(__dirname, "../uploads/teams")
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, __dirname + "/../uploads/teams");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const extension = path.extname(file.originalname);
+    cb(null, file.fieldname + "-" + uniqueSuffix + extension);
+  },
+});
+const upload = multer({ 
+  storage,
+  fileFilter: (req, file, cb) => {
+    // Only allow images
+    const allowed = ["image/jpeg", "image/png"]
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true)
+    } else {
+      cb(new Error("Only JPEG or PNG images are allowed"))
+    }
+  },
+  limits: {fileSize: 5 * 1024 * 1024} // 5MB max
+});
+
+router.post("/upload-team-logo", protect, requireRole("is_admin", "is_organizer"), upload.single("logo"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  const logoUrl = `${req.protocol}://${req.get("host")}/teams/uploads-teams/${req.file.filename}`;
+  res.json({ message: "File uploaded successfully", file: req.file, url: logoUrl });
+});
 // Route for getting all teams
 router.get("/", protect, async (req, res) => {
   try {

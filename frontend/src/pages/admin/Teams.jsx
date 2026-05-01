@@ -2,6 +2,7 @@ import {useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
+import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
 
 const formatDate = (isoDate) => {
@@ -15,6 +16,30 @@ const formatDate = (isoDate) => {
     }catch{
         return "Invalid Date";
     }
+};
+
+const resolveTeamLogoUrl = (logoValue) => {
+  if (!logoValue || typeof logoValue !== "string") return "";
+
+  const trimmed = logoValue.trim();
+  if (!trimmed) return "";
+
+  // Handle legacy saved URLs that used /sports/uploads-teams.
+  const migrated = trimmed.replace("/sports/uploads-teams/", "/teams/uploads-teams/");
+
+  if (/^https?:\/\//i.test(migrated)) {
+    return migrated;
+  }
+
+  if (migrated.startsWith("/teams/uploads-teams/")) {
+    return `${API_BASE_URL}${migrated}`;
+  }
+
+  if (migrated.startsWith("/uploads-teams/")) {
+    return `${API_BASE_URL}/teams${migrated}`;
+  }
+
+  return `${API_BASE_URL}/teams/uploads-teams/${migrated.replace(/^\/+/, "")}`;
 };
 
 export default function Teams() {
@@ -32,6 +57,7 @@ export default function Teams() {
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [alert, setAlert] = useState(null);
+    const [uploading, setUploading] = useState(false)
     const [formData, setFormData] = useState({
                   emertimi : "",
                 logoja : "",
@@ -42,6 +68,27 @@ export default function Teams() {
                 data_themelimit : "",
 
     });
+
+    const handleLogoUpload = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const data = new FormData();
+      data.append("logo", file)
+
+      setUploading(true)
+      try {
+        const response = await api.post("/teams/upload-team-logo", data, {
+          headers: { "Content-Type": "multipart/form-data"}
+        })
+
+        setFormData((prev) => ({ ...prev, logoja: response.data.url }))
+      } catch {
+        setAlert({ type: "error", message: "Failed to upload logo" })
+      } finally {
+        setUploading(false)
+      }
+    }
 
     // Loads team records after auth is ready and admin access is confirmed.
     useEffect(() => {
@@ -464,6 +511,27 @@ export default function Teams() {
                 Add New Team
               </h3>
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Team logo upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Team Logo
+                    </label>
+                    {formData.logoja && (
+                    <img
+                        src={resolveTeamLogoUrl(formData.logoja)}
+                        alt="Team logo"
+                        className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200"
+                      />
+                    )}
+
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleLogoUpload}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                    />
+                    {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                  </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Name input field */}
                   <div>
@@ -589,6 +657,16 @@ export default function Teams() {
               <h3 className="text-2x1 font-bold text-gray-800 mb-6">
                 Team Details
               </h3>
+              {/* Add this */}
+              {selectedTeam.logoja && (
+                <div className="flex justify-center mb-6">
+                  <img
+                    src={resolveTeamLogoUrl(selectedTeam.logoja)}
+                    alt={`${selectedTeam.emertimi} logo`}
+                    className="w-24 h-24 object-cover rounded-xl border border-gray-200 shadow-sm"
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -662,6 +740,27 @@ export default function Teams() {
               className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
+               {/* Team logo upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Team Logo
+                    </label>
+                    {formData.logoja && (
+                    <img
+                        src={resolveTeamLogoUrl(formData.logoja)}
+                        alt="Team logo"
+                        className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200"
+                      />
+                    )}
+
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleLogoUpload}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                    />
+                    {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                  </div>
               <h3 className="text-2x1 font-bold text-gray-800 mb-6">
                 Edit Team
               </h3>
