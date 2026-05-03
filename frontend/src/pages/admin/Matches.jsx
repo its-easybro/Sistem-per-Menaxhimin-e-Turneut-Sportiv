@@ -4,6 +4,7 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Pencil, Trash2, Eye } from "lucide-react";
+import MatchTimer from "../../components/MatchTimer";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -71,18 +72,20 @@ export default function Matches() {
           api.get(`tournaments`),
           api.get(`teams`),
           api.get(`/tournament-registrations`),
-          api.get(`/venues`)
+          api.get(`/venues`),
         ]);
 
         const matchesData = matchesResponse.data;
         const tournamentsData = tournamentsResponse.data;
-        const teamsData =  teamsResponse.data;
+        const teamsData = teamsResponse.data;
         const registrationsData = registrationsResponse.data;
         const venuesData = venuesResponse.data;
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
         setMatches(Array.isArray(matchesData) ? matchesData : []);
         setTeams(Array.isArray(teamsData) ? teamsData : []);
-        setRegistrations(Array.isArray(registrationsData) ? registrationsData : []);
+        setRegistrations(
+          Array.isArray(registrationsData) ? registrationsData : [],
+        );
         setVenues(Array.isArray(venuesData) ? venuesData : []);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -149,7 +152,7 @@ export default function Matches() {
         fusha_id: formData.fusha_id ? parseInt(formData.fusha_id) : null,
       };
 
-      const response = await api.post(`/matches`, dataToSend)
+      const response = await api.post(`/matches`, dataToSend);
 
       const newMatch = response.data;
       setMatches([...matches, newMatch]);
@@ -167,7 +170,10 @@ export default function Matches() {
       setAlert({ type: "success", message: "Match created successfully!" });
     } catch (err) {
       console.error("Error creating match:", err);
-      setAlert({ type: "error", message: "Error creating match: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error creating match: " + err.message,
+      });
     }
   };
 
@@ -271,7 +277,10 @@ export default function Matches() {
         fusha_id: formData.fusha_id ? parseInt(formData.fusha_id) : null,
       };
 
-      const response = await api.put(`/matches/${selectedMatch.id}`, dataToSend)
+      const response = await api.put(
+        `/matches/${selectedMatch.id}`,
+        dataToSend,
+      );
       const updatedMatch = response.data;
       setMatches(
         matches.map((m) => (m.id === updatedMatch.id ? updatedMatch : m)),
@@ -281,7 +290,10 @@ export default function Matches() {
       setAlert({ type: "success", message: "Match updated successfully!" });
     } catch (err) {
       console.error("Error updating match:", err);
-      setAlert({ type: "error", message: "Error updating match: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error updating match: " + err.message,
+      });
     }
   };
 
@@ -298,7 +310,10 @@ export default function Matches() {
       setAlert({ type: "success", message: "Match deleted successfully!" });
     } catch (err) {
       console.error("Error deleting match:", err);
-      setAlert({ type: "error", message: "Error deleting match: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error deleting match: " + err.message,
+      });
     }
   };
 
@@ -406,8 +421,8 @@ export default function Matches() {
   return (
     <div className="bg-gray-50 p-4">
       {alert && (
-        <Alert 
-          type={alert.type} 
+        <Alert
+          type={alert.type}
           message={alert.message}
           onClose={() => setAlert(null)}
         />
@@ -428,7 +443,7 @@ export default function Matches() {
 
           {/* SEARCH BAR */}
           <div className="relative">
-            <input  
+            <input
               type="text"
               name="search"
               placeholder="Search by tournament or team"
@@ -466,6 +481,7 @@ export default function Matches() {
                 <th className="px-4 py-3 text-center font-semibold">Date</th>
                 <th className="px-4 py-3 text-left font-semibold">Time</th>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
+                <th className="px-4 py-3 text-center font-semibold">Timer</th>
                 <th className="px-4 py-3 text-center font-semibold">Actions</th>
               </tr>
             </thead>
@@ -511,6 +527,9 @@ export default function Matches() {
                       >
                         {m.statusi}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <MatchTimer match={m} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center gap-2">
@@ -560,7 +579,7 @@ export default function Matches() {
               ) : (
                 <tr>
                   <td
-                    colSpan="8"
+                    colSpan="9"
                     className="px-6 py-4 text-center text-gray-600"
                   >
                     {searchQuery

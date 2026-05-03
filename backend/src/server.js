@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import pool from "./config/db.js";
 import http from "http";
 import { Server } from "socket.io";
+import { startMatchCron } from "./services/matchCron.js";
 
 // Import routes
 import sportRoutes from "./routes/sportRoutes.js";
@@ -40,6 +41,8 @@ const io = new Server(httpServer, {
 });
 
 app.set("io", io); // Make io accessible in routes via req.app.get("io")
+const simulatorMap = new Map(); // Map to store simulator cancel functions
+startMatchCron(io, simulatorMap); // Start the match cron job
 
 // Middleware
 app.use(

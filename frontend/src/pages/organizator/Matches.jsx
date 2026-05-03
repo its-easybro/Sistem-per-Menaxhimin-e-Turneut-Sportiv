@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
+import MatchTimer from "../../components/MatchTimer";
 
 const initialFormData = {
   turneu_id: "",
@@ -55,7 +56,13 @@ export default function OrganizerMatches() {
         setError("");
 
         // The backend already filters tournaments, matches, and registrations to the organizer's scope.
-        const [matchesRes, tournamentsRes, registrationsRes, teamsRes, venuesRes] = await Promise.all([
+        const [
+          matchesRes,
+          tournamentsRes,
+          registrationsRes,
+          teamsRes,
+          venuesRes,
+        ] = await Promise.all([
           api.get("/matches"),
           api.get("/tournaments"),
           api.get("/tournament-registrations"),
@@ -64,8 +71,12 @@ export default function OrganizerMatches() {
         ]);
 
         setMatches(Array.isArray(matchesRes.data) ? matchesRes.data : []);
-        setTournaments(Array.isArray(tournamentsRes.data) ? tournamentsRes.data : []);
-        setRegistrations(Array.isArray(registrationsRes.data) ? registrationsRes.data : []);
+        setTournaments(
+          Array.isArray(tournamentsRes.data) ? tournamentsRes.data : [],
+        );
+        setRegistrations(
+          Array.isArray(registrationsRes.data) ? registrationsRes.data : [],
+        );
         setTeams(Array.isArray(teamsRes.data) ? teamsRes.data : []);
         setVenues(Array.isArray(venuesRes.data) ? venuesRes.data : []);
       } catch (err) {
@@ -140,7 +151,12 @@ export default function OrganizerMatches() {
   });
 
   const validateForm = () => {
-    if (!formData.turneu_id || !formData.ekipi_shtepiak_id || !formData.ekipi_mysafir_id || !formData.data_ndeshjes) {
+    if (
+      !formData.turneu_id ||
+      !formData.ekipi_shtepiak_id ||
+      !formData.ekipi_mysafir_id ||
+      !formData.data_ndeshjes
+    ) {
       return "Please fill in the required fields.";
     }
 
@@ -166,7 +182,10 @@ export default function OrganizerMatches() {
       resetForm();
       setAlert({ type: "success", message: "Match created successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error creating match: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error creating match: " + err.message,
+      });
     }
   };
 
@@ -181,14 +200,24 @@ export default function OrganizerMatches() {
     }
 
     try {
-      const response = await api.put(`/matches/${selectedMatch.id}`, buildPayload());
-      setMatches((prev) => prev.map((item) => (item.id === response.data.id ? response.data : item)));
+      const response = await api.put(
+        `/matches/${selectedMatch.id}`,
+        buildPayload(),
+      );
+      setMatches((prev) =>
+        prev.map((item) =>
+          item.id === response.data.id ? response.data : item,
+        ),
+      );
       setShowEditModal(false);
       setSelectedMatch(null);
       resetForm();
       setAlert({ type: "success", message: "Match updated successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error updating match: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error updating match: " + err.message,
+      });
     }
   };
 
@@ -202,7 +231,10 @@ export default function OrganizerMatches() {
       setSelectedMatch(null);
       setAlert({ type: "success", message: "Match deleted successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error deleting match: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error deleting match: " + err.message,
+      });
     }
   };
 
@@ -231,11 +263,19 @@ export default function OrganizerMatches() {
   }
 
   if (loading) {
-    return <div className="rounded-xl bg-white p-6 text-sm text-gray-600 shadow-sm">Loading matches...</div>;
+    return (
+      <div className="rounded-xl bg-white p-6 text-sm text-gray-600 shadow-sm">
+        Loading matches...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="rounded-xl bg-white p-6 text-sm text-red-600 shadow-sm">Error: {error}</div>;
+    return (
+      <div className="rounded-xl bg-white p-6 text-sm text-red-600 shadow-sm">
+        Error: {error}
+      </div>
+    );
   }
 
   const MatchForm = ({ onSubmit, submitLabel }) => (
@@ -368,7 +408,10 @@ export default function OrganizerMatches() {
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button type="submit" className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white">
+        <button
+          type="submit"
+          className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white"
+        >
           {submitLabel}
         </button>
         <button
@@ -389,13 +432,23 @@ export default function OrganizerMatches() {
 
   return (
     <div className="space-y-6">
-      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
 
       <div className="rounded-xl bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tournament Matches</h1>
-            <p className="mt-1 text-sm text-gray-600">Create and manage matches only for your tournaments.</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Tournament Matches
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Create and manage matches only for your tournaments.
+            </p>
           </div>
           <button
             onClick={() => {
@@ -426,31 +479,52 @@ export default function OrganizerMatches() {
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Venue</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-center">Timer</th>
                 <th className="px-4 py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredMatches.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center text-gray-600">
+                  <td
+                    colSpan="8"
+                    className="px-4 py-8 text-center text-gray-600"
+                  >
                     No matches found for your tournaments.
                   </td>
                 </tr>
               ) : (
                 filteredMatches.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-semibold text-gray-900">{getTournamentName(item.turneu_id)}</td>
-                    <td className="px-4 py-3">{getTeamName(item.ekipi_shtepiak_id)}</td>
-                    <td className="px-4 py-3">{getTeamName(item.ekipi_mysafir_id)}</td>
-                    <td className="px-4 py-3">{formatDate(item.data_ndeshjes)}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900">
+                      {getTournamentName(item.turneu_id)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {getTeamName(item.ekipi_shtepiak_id)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {getTeamName(item.ekipi_mysafir_id)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {formatDate(item.data_ndeshjes)}
+                    </td>
                     <td className="px-4 py-3">{getVenueName(item.fusha_id)}</td>
                     <td className="px-4 py-3">{item.statusi || "N/A"}</td>
+                    <td className="px-4 py-3 text-center">
+                      <MatchTimer match={item} />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-center gap-2">
-                        <button onClick={() => openEdit(item)} className="rounded bg-yellow-500 px-3 py-1 text-sm font-medium text-white">
+                        <button
+                          onClick={() => openEdit(item)}
+                          className="rounded bg-yellow-500 px-3 py-1 text-sm font-medium text-white"
+                        >
                           Edit
                         </button>
-                        <button onClick={() => openDelete(item)} className="rounded bg-red-500 px-3 py-1 text-sm font-medium text-white">
+                        <button
+                          onClick={() => openDelete(item)}
+                          className="rounded bg-red-500 px-3 py-1 text-sm font-medium text-white"
+                        >
                           Delete
                         </button>
                       </div>
@@ -464,8 +538,14 @@ export default function OrganizerMatches() {
       </div>
 
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="w-full max-w-3xl rounded-xl bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-xl bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="mb-6 text-2xl font-bold text-gray-900">Add Match</h2>
             <MatchForm onSubmit={handleCreate} submitLabel="Create Match" />
           </div>
@@ -473,26 +553,53 @@ export default function OrganizerMatches() {
       )}
 
       {showEditModal && selectedMatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowEditModal(false)}>
-          <div className="w-full max-w-3xl rounded-xl bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-6 text-2xl font-bold text-gray-900">Edit Match</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowEditModal(false)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-xl bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-6 text-2xl font-bold text-gray-900">
+              Edit Match
+            </h2>
             <MatchForm onSubmit={handleUpdate} submitLabel="Save Changes" />
           </div>
         </div>
       )}
 
       {showDeleteModal && selectedMatch && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDeleteModal(false)}>
-          <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">Delete Match</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-4 text-2xl font-bold text-gray-900">
+              Delete Match
+            </h2>
             <p className="mb-6 text-gray-600">
-              Delete match <strong>{getTeamName(selectedMatch.ekipi_shtepiak_id)} vs {getTeamName(selectedMatch.ekipi_mysafir_id)}</strong>?
+              Delete match{" "}
+              <strong>
+                {getTeamName(selectedMatch.ekipi_shtepiak_id)} vs{" "}
+                {getTeamName(selectedMatch.ekipi_mysafir_id)}
+              </strong>
+              ?
             </p>
             <div className="flex gap-3">
-              <button onClick={handleDelete} className="flex-1 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white">
+              <button
+                onClick={handleDelete}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 font-semibold text-white"
+              >
                 Delete
               </button>
-              <button onClick={() => setShowDeleteModal(false)} className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white"
+              >
                 Cancel
               </button>
             </div>
