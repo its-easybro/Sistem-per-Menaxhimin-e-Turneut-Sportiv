@@ -27,6 +27,7 @@ export default function Matches() {
   const [matches, setMatches] = useState([]);
   const [teams, setTeams] = useState([]);
   const [tournaments, setTournaments] = useState([]);
+  const [registrations, setRegistrations] = useState([]);
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -62,21 +63,25 @@ export default function Matches() {
           matchesResponse,
           tournamentsResponse,
           teamsResponse,
+          registrationsResponse,
           venuesResponse,
         ] = await Promise.all([
           api.get(`/matches`),
           api.get(`tournaments`),
           api.get(`teams`),
+          api.get(`/tournament-registrations`),
           api.get(`/venues`)
         ]);
 
         const matchesData = matchesResponse.data;
         const tournamentsData = tournamentsResponse.data;
         const teamsData =  teamsResponse.data;
+        const registrationsData = registrationsResponse.data;
         const venuesData = venuesResponse.data;
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
         setMatches(Array.isArray(matchesData) ? matchesData : []);
         setTeams(Array.isArray(teamsData) ? teamsData : []);
+        setRegistrations(Array.isArray(registrationsData) ? registrationsData : []);
         setVenues(Array.isArray(venuesData) ? venuesData : []);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -105,10 +110,19 @@ export default function Matches() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const next = {
+        ...prev,
+        [name]: value,
+      };
+
+      if (name === "turneu_id") {
+        next.ekipi_shtepiak_id = "";
+        next.ekipi_mysafir_id = "";
+      }
+
+      return next;
+    });
   };
 
   // Handle form submission (Create)
@@ -302,6 +316,17 @@ export default function Matches() {
     const venue = venues.find((v) => v.id === id);
     return venue?.emertimi || "N/A";
   };
+
+  const availableTeams = teams.filter((team) => {
+    if (!formData.turneu_id) return false;
+
+    return registrations.some(
+      (registration) =>
+        String(registration.turneu_id) === String(formData.turneu_id) &&
+        registration.ekipi_id === team.id &&
+        registration.statusi === "Aprovuar",
+    );
+  });
 
   // Skeleton loading
   function renderSkeleton() {
@@ -591,7 +616,7 @@ export default function Matches() {
                       required
                     >
                       <option value="">Select Home Team</option>
-                      {teams.map((t) => (
+                      {availableTeams.map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.emertimi}
                         </option>
@@ -611,7 +636,7 @@ export default function Matches() {
                       required
                     >
                       <option value="">Select Away Team</option>
-                      {teams.map((t) => (
+                      {availableTeams.map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.emertimi}
                         </option>
@@ -857,7 +882,7 @@ export default function Matches() {
                       required
                     >
                       <option value="">Select Home Team</option>
-                      {teams.map((t) => (
+                      {availableTeams.map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.emertimi}
                         </option>
@@ -877,7 +902,7 @@ export default function Matches() {
                       required
                     >
                       <option value="">Select Away Team</option>
-                      {teams.map((t) => (
+                      {availableTeams.map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.emertimi}
                         </option>

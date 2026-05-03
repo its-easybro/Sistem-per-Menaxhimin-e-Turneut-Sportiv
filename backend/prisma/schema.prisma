@@ -8,18 +8,18 @@ datasource db {
 }
 
 model User {
-  id          Int           @id @default(autoincrement())
-  emri        String
-  mbiemri     String
-  email       String        @unique
-  password    String
-  roli        String        @default("user")
-  statusi     String        @default("Aktiv")
-  createdAt   DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
-  referee   referees?   @relation("UserReferee")  // ← NDRYSHO KËTË
+  id                 Int           @id @default(autoincrement())
+  emri               String
+  mbiemri            String
+  email              String        @unique
+  password           String
+  roli               String        @default("user")
+  statusi            String        @default("Aktiv")
+  createdAt          DateTime?     @default(now()) @map("created_at") @db.Timestamp(6)
   reset_token        String?
   reset_token_expiry DateTime?
-  tournaments tournaments[]
+  referee            referees?     @relation("UserReferee")
+  tournaments        tournaments[]
 
   @@map("users")
 }
@@ -84,8 +84,8 @@ model players {
   gjatesia     Decimal?       @db.Decimal(5, 2)
   pesha        Decimal?       @db.Decimal(5, 2)
   kombesia     String?
-  foto         String?
   created_at   DateTime?      @default(now()) @db.Timestamp(6)
+  foto         String?
   matchresults matchresults[]
   teams        teams?         @relation(fields: [ekipi_id], references: [id], onUpdate: NoAction)
 }
@@ -102,8 +102,8 @@ model referees {
   pervoja_vitesh Int?
   created_at     DateTime?       @default(now()) @db.Timestamp(6)
   user_id        Int?            @unique
-user           User?           @relation("UserReferee", fields: [user_id], references: [id], onDelete: SetNull)
   matchreferees  matchreferees[]
+  user           User?           @relation("UserReferee", fields: [user_id], references: [id])
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -114,6 +114,7 @@ model sports {
   numri_lojtareve Int
   lloji           String
   created_at      DateTime?     @default(now()) @db.Timestamp(6)
+  teams           teams[]
   tournaments     tournaments[]
 }
 
@@ -146,6 +147,8 @@ model teams {
   qyteti                                   String?
   data_themelimit                          DateTime?                 @db.Date
   created_at                               DateTime?                 @default(now()) @db.Timestamp(6)
+  sporti_id                                Int
+  sports                                   sports                    @relation(fields: [sporti_id], references: [id], onUpdate: NoAction)
   matches_matches_ekipi_mysafir_idToteams  matches[]                 @relation("matches_ekipi_mysafir_idToteams")
   matches_matches_ekipi_shtepiak_idToteams matches[]                 @relation("matches_ekipi_shtepiak_idToteams")
   matchresults                             matchresults[]

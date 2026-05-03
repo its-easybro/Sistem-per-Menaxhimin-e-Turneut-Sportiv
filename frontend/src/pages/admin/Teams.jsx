@@ -48,6 +48,7 @@ export default function Teams() {
 
     // Stores team list, active dialogs, selected row, and form values.
     const [teams , setTeams ] = useState([]);
+    const [sports, setSports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
@@ -66,7 +67,7 @@ export default function Teams() {
                 email : "",
                 qyteti : "",
                 data_themelimit : "",
-
+                sporti_id: "",
     });
 
     const handleLogoUpload = async (e) => {
@@ -99,10 +100,15 @@ export default function Teams() {
         }
         try{
             setLoading(true);
-            const teamsResponse = await api.get("/teams");
-  
+            const [teamsResponse, sportsResponse] = await Promise.all([
+              api.get("/teams"),
+              api.get("/sports"),
+            ]);
+
         const teamsData = teamsResponse.data;
+        const sportsData = sportsResponse.data;
         setTeams(teamsData);
+        setSports(Array.isArray(sportsData) ? sportsData : []);
     }  catch(err){
         setError(err.message);
 
@@ -143,6 +149,7 @@ export default function Teams() {
                 email : "",
                 qyteti : "",
                 data_themelimit : "",
+                sporti_id: "",
             });
             setShowModal(false);
             setAlert({ type: "success", message: "Team created successfully!" });
@@ -160,6 +167,7 @@ export default function Teams() {
                 email : "",
                 qyteti : "",
                 data_themelimit : "",
+                sporti_id: "",
         });
         setShowModal(false);
 
@@ -174,6 +182,7 @@ export default function Teams() {
                 email : "",
                 qyteti : "",
                 data_themelimit : "",
+                sporti_id: "",
         });
         setSelectedTeam(null);
         setShowEditModal(false);
@@ -207,6 +216,7 @@ export default function Teams() {
                 email : team.email || "",
                 qyteti : team.qyteti || "",
                 data_themelimit : team.data_themelimit || "",
+                sporti_id : team.sporti_id ? String(team.sporti_id) : "",
         });
       setShowEditModal(true);
     };
@@ -234,6 +244,7 @@ export default function Teams() {
                 email : "",
                 qyteti : "",
                 data_themelimit : "",
+                sporti_id: "",
         });
 
         setSelectedTeam(null);
@@ -414,6 +425,7 @@ export default function Teams() {
                 <th className="px-4 py-3 text-left font-semibold">Contact</th>
                 <th className="px-4 py-3 text-left font-semibold">Email</th>
                 <th className="px-4 py-3 text-left font-semibold">City</th>
+                <th className="px-4 py-3 text-left font-semibold">Sport</th>
                 <th className="px-4 py-3 text-center font-semibold">Founded Date</th>
                 <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 
@@ -451,6 +463,9 @@ export default function Teams() {
                       </td>
                       <td className="px-4 py-3 text-gray-800 font-semibold">
                         {s.qyteti || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-800 font-semibold">
+                        {s.sporti_emri || "N/A"}
                       </td>
                       <td className="px-4 py-3 text-gray-800 text-center">
                         {formatDate(s.data_themelimit)}
@@ -612,6 +627,25 @@ export default function Teams() {
                   </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sport *
+                    </label>
+                    <select
+                      name="sporti_id"
+                      value={formData.sporti_id}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      required
+                    >
+                      <option value="">Select sport</option>
+                      {sports.map((sport) => (
+                        <option key={sport.id} value={sport.id}>
+                          {sport.emertimi}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Founded Date *
                     </label>
                     <input
@@ -706,6 +740,14 @@ export default function Teams() {
                   </label>
                   <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
                     {selectedTeam.qyteti}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sport
+                  </label>
+                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                    {selectedTeam.sporti_emri || "N/A"}
                   </p>
                 </div>
                 <div>
@@ -837,6 +879,25 @@ export default function Teams() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                       placeholder="City"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sport *
+                    </label>
+                    <select
+                      name="sporti_id"
+                      value={formData.sporti_id}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      required
+                    >
+                      <option value="">Select sport</option>
+                      {sports.map((sport) => (
+                        <option key={sport.id} value={sport.id}>
+                          {sport.emertimi}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   {/* Founded date input field */}
                   <div>

@@ -83,7 +83,11 @@ export default function OrganizerMatches() {
 
     // Only teams registered in the selected tournament can be used in new matches.
     const teamIds = registrations
-      .filter((item) => String(item.turneu_id) === String(formData.turneu_id))
+      .filter(
+        (item) =>
+          String(item.turneu_id) === String(formData.turneu_id) &&
+          item.statusi === "Aprovuar",
+      )
       .map((item) => item.ekipi_id);
 
     return teams.filter((team) => teamIds.includes(team.id));

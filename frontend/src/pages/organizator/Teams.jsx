@@ -55,6 +55,18 @@ export default function OrganizerTeams() {
   const resetForm = () => setFormData(initialFormData);
 
   const getTeamName = (id) => teams.find((item) => item.id === id)?.emertimi || "N/A";
+  const selectedTournament = tournaments.find((item) => String(item.id) === String(formData.turneu_id));
+  const availableTeams = teams.filter((team) => {
+    if (!selectedTournament) return false;
+
+    const alreadyRegistered = registrations.some(
+      (registration) =>
+        registration.turneu_id === selectedTournament.id &&
+        registration.ekipi_id === team.id,
+    );
+
+    return team.sporti_id === selectedTournament.sporti_id && !alreadyRegistered;
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -193,7 +205,13 @@ export default function OrganizerTeams() {
                   <select
                     name="turneu_id"
                     value={formData.turneu_id}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, turneu_id: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        turneu_id: e.target.value,
+                        ekipi_id: "",
+                      }))
+                    }
                     className="rounded-lg border border-gray-300 px-3 py-2"
                     required
                   >
@@ -216,7 +234,7 @@ export default function OrganizerTeams() {
                     required
                   >
                     <option value="">Select team</option>
-                    {teams.map((item) => (
+                    {availableTeams.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.emertimi}
                       </option>

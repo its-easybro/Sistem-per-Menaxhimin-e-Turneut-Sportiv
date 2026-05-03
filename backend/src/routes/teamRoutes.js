@@ -34,6 +34,20 @@ const parsePositiveInt = (value) => {
   return parsed;
 };
 
+const teamInclude = {
+  sports: {
+    select: {
+      id: true,
+      emertimi: true,
+    },
+  },
+};
+
+const formatTeam = (team) => ({
+  ...team,
+  sporti_emri: team.sports?.emertimi ?? null,
+});
+
 router.use("/uploads-teams", express.static(path.join(__dirname + "/../uploads/teams")));
 const uploadDir = path.join(__dirname, "../uploads/teams")
 if (!fs.existsSync(uploadDir)) {
@@ -75,10 +89,17 @@ router.post("/upload-team-logo", protect, requireRole("is_admin", "is_organizer"
 // Route for getting all teams
 router.get("/", protect, async (req, res) => {
   try {
+    const sportIdFilter = req.query.sporti_id ? parsePositiveInt(req.query.sporti_id) : null;
+    if (req.query.sporti_id && !sportIdFilter) {
+      return res.status(400).json({ error: "Invalid sport id" });
+    }
+
     const teams = await prisma.teams.findMany({
+      where: sportIdFilter ? { sporti_id: sportIdFilter } : undefined,
+      include: teamInclude,
       orderBy: { id: "asc" },
     });
-    res.json(teams);
+    res.json(teams.map(formatTeam));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -94,11 +115,12 @@ router.get("/:id", protect, async (req, res) => {
   try {
     const team = await prisma.teams.findUnique({
       where: { id: teamId },
+      include: teamInclude,
     });
     if (!team) {
       return res.status(404).json({ error: "Team not found" });
     }
-    res.json(team);
+    res.json(formatTeam(team));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -114,11 +136,19 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     email,
     qyteti,
     data_themelimit,
+    sporti_id,
   } = req.body;
 
   if (!emertimi?.trim()) {
     return res.status(400).json({
       error: "The team name is required.",
+    });
+  }
+
+  const sportId = parsePositiveInt(sporti_id);
+  if (!sportId) {
+    return res.status(400).json({
+      error: "A valid sport is required.",
     });
   }
 
@@ -130,13 +160,23 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     email: normalizeOptionalText(email),
     qyteti: normalizeOptionalText(qyteti),
     data_themelimit: normalizeOptionalDate(data_themelimit),
+    sporti_id: sportId,
   };
 
   try {
+    const sport = await prisma.sports.findUnique({
+      where: { id: sportId },
+      select: { id: true },
+    });
+    if (!sport) {
+      return res.status(400).json({ error: "Selected sport was not found." });
+    }
+
     const createdTeam = await prisma.teams.create({
       data: normalizedTeam,
+      include: teamInclude,
     });
-    res.status(201).json(createdTeam);
+    res.status(201).json(formatTeam(createdTeam));
   } catch (err) {
     if (err?.code === "P2002") {
       return res.status(409).json({
@@ -162,11 +202,19 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     email,
     qyteti,
     data_themelimit,
+    sporti_id,
   } = req.body;
 
   if (!emertimi?.trim()) {
     return res.status(400).json({
       error: "The team name is required.",
+    });
+  }
+
+  const sportId = parsePositiveInt(sporti_id);
+  if (!sportId) {
+    return res.status(400).json({
+      error: "A valid sport is required.",
     });
   }
 
@@ -178,9 +226,18 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     email: normalizeOptionalText(email),
     qyteti: normalizeOptionalText(qyteti),
     data_themelimit: normalizeOptionalDate(data_themelimit),
+    sporti_id: sportId,
   };
 
   try {
+    const sport = await prisma.sports.findUnique({
+      where: { id: sportId },
+      select: { id: true },
+    });
+    if (!sport) {
+      return res.status(400).json({ error: "Selected sport was not found." });
+    }
+
     const existingTeam = await prisma.teams.findUnique({
       where: { id: teamId },
       select: { id: true },
@@ -192,9 +249,10 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     const updatedTeam = await prisma.teams.update({
       where: { id: teamId },
       data: normalizedTeam,
+      include: teamInclude,
     });
 
-    res.json(updatedTeam);
+    res.json(formatTeam(updatedTeam));
   } catch (err) {
     if (err?.code === "P2002") {
       return res.status(409).json({

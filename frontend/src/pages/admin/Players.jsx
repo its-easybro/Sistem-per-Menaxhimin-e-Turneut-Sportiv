@@ -45,6 +45,7 @@ export default function Players() {
   // State Variables
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [sports, setSports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -55,6 +56,7 @@ export default function Players() {
   const [searchQuery, setSearchQuery] = useState("");
   const [alert, setAlert] = useState(null);
   const [uploading, setUploading] = useState(false)
+  const [selectedSportId, setSelectedSportId] = useState("");
   const [formData, setFormData] = useState({
     emri: "",
     mbiemri: "",
@@ -101,16 +103,19 @@ export default function Players() {
       }
       try {
         setLoading(true);
-        const [playersResponse, teamsResponse] = await Promise.all([
+        const [playersResponse, teamsResponse, sportsResponse] = await Promise.all([
           api.get(`/players`),
-          api.get(`/teams`)
+          api.get(`/teams`),
+          api.get(`/sports`),
         ]);
 
         const playersData = playersResponse.data;
         const teamsData = teamsResponse.data;
+        const sportsData = sportsResponse.data;
 
         setPlayers(playersData);
         setTeams(teamsData);
+        setSports(Array.isArray(sportsData) ? sportsData : []);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -123,6 +128,7 @@ export default function Players() {
   // Create players handlers
 
   const handleCreate = () => {
+    setSelectedSportId("");
     setShowModal(true);
   };
 
@@ -151,6 +157,10 @@ export default function Players() {
     ekipi_id: formData.ekipi_id || null,
   });
 
+  const filteredTeams = selectedSportId
+    ? teams.filter((team) => String(team.sporti_id) === String(selectedSportId))
+    : teams;
+
   // Handle form submission (Create)
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -173,6 +183,7 @@ export default function Players() {
         kombesia: "",
         foto: "",
       });
+      setSelectedSportId("");
       setShowModal(false);
       
       setAlert({ type: 'success', message: 'Player created successfully!' });
@@ -195,6 +206,7 @@ export default function Players() {
       kombesia: "",
       foto: "",
     });
+    setSelectedSportId("");
     setShowModal(false);
   };
 
@@ -213,6 +225,7 @@ export default function Players() {
       kombesia: "",
       foto: "",
     });
+    setSelectedSportId("");
     setSelectedPlayer(null);
     setShowEditModal(false);
   };
@@ -252,6 +265,8 @@ export default function Players() {
       kombesia: player.kombesia,
       foto: player.foto || "",
     });
+    const matchedTeam = teams.find((team) => String(team.id) === String(getTeamSelectValue(player.ekipi_id)));
+    setSelectedSportId(matchedTeam?.sporti_id ? String(matchedTeam.sporti_id) : "");
     setShowEditModal(true);
   };
 
@@ -289,6 +304,7 @@ export default function Players() {
         kombesia: "",
         foto: "",
       });
+      setSelectedSportId("");
 
       setSelectedPlayer(null);
       setShowEditModal(false);
@@ -658,6 +674,26 @@ export default function Players() {
                   {/* Team input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sport Filter
+                    </label>
+                    <select
+                      value={selectedSportId}
+                      onChange={(e) => {
+                        setSelectedSportId(e.target.value);
+                        setFormData((prev) => ({ ...prev, ekipi_id: "" }));
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">All sports</option>
+                      {sports.map((sport) => (
+                        <option key={sport.id} value={sport.id}>
+                          {sport.emertimi}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Team
                     </label>
                     <select
@@ -667,7 +703,7 @@ export default function Players() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
                       <option value="">No Team</option>
-                      {teams.map((team) => (
+                      {filteredTeams.map((team) => (
                         <option key={team.id} value={team.id}>
                           {team.emertimi}
                         </option>
@@ -976,6 +1012,26 @@ export default function Players() {
                   {/* Team input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sport Filter
+                    </label>
+                    <select
+                      value={selectedSportId}
+                      onChange={(e) => {
+                        setSelectedSportId(e.target.value);
+                        setFormData((prev) => ({ ...prev, ekipi_id: "" }));
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">All sports</option>
+                      {sports.map((sport) => (
+                        <option key={sport.id} value={sport.id}>
+                          {sport.emertimi}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Team
                     </label>
                     <select
@@ -985,7 +1041,7 @@ export default function Players() {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
                       <option value="">No Team</option>
-                      {teams.map((team) => (
+                      {filteredTeams.map((team) => (
                         <option key={team.id} value={team.id}>
                           {team.emertimi}
                         </option>

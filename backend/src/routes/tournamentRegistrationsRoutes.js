@@ -86,6 +86,37 @@ function formatRegistration(registration) {
   };
 }
 
+async function ensureTeamMatchesTournamentSport(turneu_id, ekipi_id) {
+  const [tournament, team] = await Promise.all([
+    prisma.tournaments.findUnique({
+      where: { id: turneu_id },
+      select: { id: true, sporti_id: true },
+    }),
+    prisma.teams.findUnique({
+      where: { id: ekipi_id },
+      select: { id: true, sporti_id: true },
+    }),
+  ]);
+
+  if (!tournament || !team) {
+    return {
+      ok: false,
+      status: 400,
+      error: "The selected tournament or team does not exist.",
+    };
+  }
+
+  if (team.sporti_id !== tournament.sporti_id) {
+    return {
+      ok: false,
+      status: 400,
+      error: "This team does not belong to the same sport as the tournament.",
+    };
+  }
+
+  return { ok: true };
+}
+
 // Function to handle registration errors and return appropriate responses based on the database error code
 function handleRegistrationError(err, res) {
   if (err?.code === "P2002") {
@@ -246,6 +277,11 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
       }
     }
 
+    const sportValidation = await ensureTeamMatchesTournamentSport(turneu_id, ekipi_id);
+    if (!sportValidation.ok) {
+      return res.status(sportValidation.status).json({ error: sportValidation.error });
+    }
+
     const created = await prisma.tournamentregistrations.create({
       data: {
         turneu_id,
@@ -292,6 +328,11 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
       if (!ownsRegistration || !ownsTournament) {
         return res.status(403).json({ error: "Forbidden" });
       }
+    }
+
+    const sportValidation = await ensureTeamMatchesTournamentSport(turneu_id, ekipi_id);
+    if (!sportValidation.ok) {
+      return res.status(sportValidation.status).json({ error: sportValidation.error });
     }
 
     const existingRegistration = await prisma.tournamentregistrations.findUnique({

@@ -227,6 +227,17 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   }
 
   try {
+    if (normalized.data.ekipi_id) {
+      const team = await prisma.teams.findUnique({
+        where: { id: normalized.data.ekipi_id },
+        select: { id: true, sporti_id: true },
+      });
+
+      if (!team) {
+        return res.status(400).json({ error: "Selected team does not exist." });
+      }
+    }
+
     const created = await prisma.players.create({
       data: normalized.data,
     });
@@ -298,6 +309,17 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   }
 
   try {
+    if (normalized.data.ekipi_id) {
+      const team = await prisma.teams.findUnique({
+        where: { id: normalized.data.ekipi_id },
+        select: { id: true, sporti_id: true },
+      });
+
+      if (!team) {
+        return res.status(400).json({ error: "Selected team does not exist." });
+      }
+    }
+
     const existing = await prisma.players.findUnique({
       where: { id: playerId },
       select: { id: true },

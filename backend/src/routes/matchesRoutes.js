@@ -22,6 +22,73 @@ function toMatchTimeValue(value) {
   return new Date(`1970-01-01T${normalizedValue}`);
 }
 
+async function validateMatchTeamsForTournament({
+  turneu_id,
+  ekipi_shtepiak_id,
+  ekipi_mysafir_id,
+}) {
+  const [tournament, homeTeam, awayTeam, homeRegistration, awayRegistration] =
+    await Promise.all([
+      prisma.tournaments.findUnique({
+        where: { id: turneu_id },
+        select: { id: true, sporti_id: true },
+      }),
+      prisma.teams.findUnique({
+        where: { id: ekipi_shtepiak_id },
+        select: { id: true, sporti_id: true },
+      }),
+      prisma.teams.findUnique({
+        where: { id: ekipi_mysafir_id },
+        select: { id: true, sporti_id: true },
+      }),
+      prisma.tournamentregistrations.findFirst({
+        where: {
+          turneu_id,
+          ekipi_id: ekipi_shtepiak_id,
+          statusi: "Aprovuar",
+        },
+        select: { id: true },
+      }),
+      prisma.tournamentregistrations.findFirst({
+        where: {
+          turneu_id,
+          ekipi_id: ekipi_mysafir_id,
+          statusi: "Aprovuar",
+        },
+        select: { id: true },
+      }),
+    ]);
+
+  if (!tournament || !homeTeam || !awayTeam) {
+    return {
+      ok: false,
+      status: 400,
+      error: "The selected tournament or teams do not exist.",
+    };
+  }
+
+  if (
+    homeTeam.sporti_id !== tournament.sporti_id ||
+    awayTeam.sporti_id !== tournament.sporti_id
+  ) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Both teams must belong to the same sport as the tournament.",
+    };
+  }
+
+  if (!homeRegistration || !awayRegistration) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Both teams must be approved in this tournament before creating a match.",
+    };
+  }
+
+  return { ok: true };
+}
+
 async function organizerOwnsTournament(tournamentId, organizerId) {
   const parsedTournamentId = parsePositiveInt(tournamentId);
   const parsedOrganizerId = parsePositiveInt(organizerId);
@@ -182,11 +249,23 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
       }
     }
 
+    const numericTurneuId = Number(turneu_id);
+    const numericHomeTeamId = Number(ekipi_shtepiak_id);
+    const numericAwayTeamId = Number(ekipi_mysafir_id);
+    const matchValidation = await validateMatchTeamsForTournament({
+      turneu_id: numericTurneuId,
+      ekipi_shtepiak_id: numericHomeTeamId,
+      ekipi_mysafir_id: numericAwayTeamId,
+    });
+    if (!matchValidation.ok) {
+      return res.status(matchValidation.status).json({ error: matchValidation.error });
+    }
+
     const created = await prisma.matches.create({
       data: {
-        turneu_id: Number(turneu_id),
-        ekipi_shtepiak_id: Number(ekipi_shtepiak_id),
-        ekipi_mysafir_id: Number(ekipi_mysafir_id),
+        turneu_id: numericTurneuId,
+        ekipi_shtepiak_id: numericHomeTeamId,
+        ekipi_mysafir_id: numericAwayTeamId,
         data_ndeshjes: new Date(data_ndeshjes),
         ora_fillimit: toMatchTimeValue(ora_fillimit),
         fusha_id: fusha_id ? Number(fusha_id) : null,
@@ -227,34 +306,52 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
   }
 
   try {
-    if (req.user.is_organizer) {
-      const ownsCurrentMatch = await organizerOwnsMatch(matchId, req.user.id);
-      const ownsTargetTournament = await organizerOwnsTournament(turneu_id, req.user.id);
-
-      if (!ownsCurrentMatch || !ownsTargetTournament) {
-        return res.status(403).json({ error: "Forbidden" });
-      }
-    }
-
     const existing = await prisma.matches.findUnique({
       where: { id: matchId },
-      select: { id: true },
+      select: {
+        id: true,
+        turneu_id: true,
+        ekipi_shtepiak_id: true,
+        ekipi_mysafir_id: true,
+      },
     });
 
     if (!existing) {
       return res.status(404).json({ error: "The match was not found" });
     }
 
+    const targetTournamentId = turneu_id ? Number(turneu_id) : existing.turneu_id;
+    const targetHomeTeamId = ekipi_shtepiak_id
+      ? Number(ekipi_shtepiak_id)
+      : existing.ekipi_shtepiak_id;
+    const targetAwayTeamId = ekipi_mysafir_id
+      ? Number(ekipi_mysafir_id)
+      : existing.ekipi_mysafir_id;
+
+    if (req.user.is_organizer) {
+      const ownsCurrentMatch = await organizerOwnsMatch(matchId, req.user.id);
+      const ownsTargetTournament = await organizerOwnsTournament(targetTournamentId, req.user.id);
+
+      if (!ownsCurrentMatch || !ownsTargetTournament) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
+    const matchValidation = await validateMatchTeamsForTournament({
+      turneu_id: targetTournamentId,
+      ekipi_shtepiak_id: targetHomeTeamId,
+      ekipi_mysafir_id: targetAwayTeamId,
+    });
+    if (!matchValidation.ok) {
+      return res.status(matchValidation.status).json({ error: matchValidation.error });
+    }
+
     const updated = await prisma.matches.update({
       where: { id: matchId },
       data: {
-        turneu_id: turneu_id ? Number(turneu_id) : undefined,
-        ekipi_shtepiak_id: ekipi_shtepiak_id
-          ? Number(ekipi_shtepiak_id)
-          : undefined,
-        ekipi_mysafir_id: ekipi_mysafir_id
-          ? Number(ekipi_mysafir_id)
-          : undefined,
+        turneu_id: turneu_id ? targetTournamentId : undefined,
+        ekipi_shtepiak_id: ekipi_shtepiak_id ? targetHomeTeamId : undefined,
+        ekipi_mysafir_id: ekipi_mysafir_id ? targetAwayTeamId : undefined,
         data_ndeshjes: data_ndeshjes ? new Date(data_ndeshjes) : undefined,
         ora_fillimit: toMatchTimeValue(ora_fillimit),
         fusha_id: fusha_id === undefined ? undefined : fusha_id ? Number(fusha_id) : null,
