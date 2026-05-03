@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../../config/axiosInstance";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function ResetPassword() {
     const [searchParams] = useSearchParams();
@@ -9,6 +10,8 @@ export default function ResetPassword() {
 
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [alert, setAlert] = useState(null);
 
@@ -55,25 +58,45 @@ export default function ResetPassword() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="mb-1 block text-sm font-medium text-slate-700">New Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            placeholder="••••••••"
-                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                placeholder="••••••••"
+                                className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((value) => !value)}
+                                className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                aria-label={showPassword ? "Hide new password" : "Show new password"}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label className="mb-1 block text-sm font-medium text-slate-700">Confirm Password</label>
-                        <input
-                            type="password"
-                            value={confirm}
-                            onChange={(e) => setConfirm(e.target.value)}
-                            required
-                            placeholder="••••••••"
-                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                        />
+                        <div className="relative">
+                            <input
+                                type={showConfirm ? "text" : "password"}
+                                value={confirm}
+                                onChange={(e) => setConfirm(e.target.value)}
+                                required
+                                placeholder="••••••••"
+                                className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirm((value) => !value)}
+                                className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+                            >
+                                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
                     </div>
                     <button
                         type="submit"

@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
+import { Pencil, Trash2, Eye } from "lucide-react";
 
 const initialFormData = {
   ndeshja_id: "",
@@ -537,24 +538,27 @@ export default function MatchReferees() {
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => handleView(assignment.id)}
-                            className="rounded bg-blue-500 px-3 py-1 text-sm font-medium text-white transition duration-200 hover:bg-blue-600"
+                            className="rounded bg-blue-500 p-2 text-sm font-medium text-white transition duration-200 hover:bg-blue-600"
+                            title="View"
                           >
-                            View
+                            <Eye size={16} />
                           </button>
                           {isAdmin && (
                             <button
                               onClick={() => handleEdit(assignment.id)}
-                              className="rounded bg-yellow-500 px-3 py-1 text-sm font-medium text-white transition duration-200 hover:bg-yellow-600"
+                              className="rounded bg-yellow-500 p-2 text-sm font-medium text-white transition duration-200 hover:bg-yellow-600"
+                              title="Edit"
                             >
-                              Edit
+                              <Pencil size={16} />
                             </button>
                           )}
                           {isAdmin && (
                             <button
                               onClick={() => handleDelete(assignment.id)}
-                              className="rounded bg-red-500 px-3 py-1 text-sm font-medium text-white transition duration-200 hover:bg-red-600"
+                              className="rounded bg-red-500 p-2 text-sm font-medium text-white transition duration-200 hover:bg-red-600"
+                              title="Delete"
                             >
-                              Delete
+                              <Trash2 size={16} />
                             </button>
                           )}
                         </div>

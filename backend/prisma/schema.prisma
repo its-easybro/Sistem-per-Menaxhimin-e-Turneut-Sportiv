@@ -147,8 +147,8 @@ model teams {
   qyteti                                   String?
   data_themelimit                          DateTime?                 @db.Date
   created_at                               DateTime?                 @default(now()) @db.Timestamp(6)
-  sporti_id                                Int
-  sports                                   sports                    @relation(fields: [sporti_id], references: [id], onUpdate: NoAction)
+  sporti_id                                Int?
+  sports                                   sports?                   @relation(fields: [sporti_id], references: [id], onUpdate: NoAction)
   matches_matches_ekipi_mysafir_idToteams  matches[]                 @relation("matches_ekipi_mysafir_idToteams")
   matches_matches_ekipi_shtepiak_idToteams matches[]                 @relation("matches_ekipi_shtepiak_idToteams")
   matchresults                             matchresults[]

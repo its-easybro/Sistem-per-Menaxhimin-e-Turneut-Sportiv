@@ -1,7 +1,6 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
-import { PrismaClientRustPanicError } from "@prisma/client/runtime/library";
 const router = express.Router()
 
 const MESSAGE_MAX_LENGTH = 500;

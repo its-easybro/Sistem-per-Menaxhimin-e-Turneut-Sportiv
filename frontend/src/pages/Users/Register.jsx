@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import AuthContext from '../../context/AuthContext';
 import axios from 'axios';
 import { AUTH_API_URL } from '../../config/api';
+import { Eye, EyeOff } from 'lucide-react';
+
 
 const Register = () => {
   // Captures registration form input values.
@@ -17,7 +19,7 @@ const Register = () => {
   const navigate = useNavigate();
   // Reuses shared login action to sign in immediately after registration.
   const { login } = useContext(AuthContext);
-
+  const [showPassword, setShowPassword] = useState(false);
   // Submits registration, then auto-authenticates the new user.
   const handleSubmit = async (e) => {
     // Prevents full-page reload on form submit.
@@ -88,20 +90,33 @@ const Register = () => {
               <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 pr-12 text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  plaaceholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700"
+              disabled={loading}
+              className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
             >
-              Sign Up
+              {loading ? 'Signing up...' : 'Sign Up'}
             </button>
           </form>
 

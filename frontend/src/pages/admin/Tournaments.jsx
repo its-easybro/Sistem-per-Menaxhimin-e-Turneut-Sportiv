@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
+import { Pencil, Trash2, Eye } from "lucide-react";
 
 const initialFormData = {
   emertimi: "",
@@ -691,25 +692,28 @@ export default function Tournaments() {
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => handleView(tournament.id)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="View"
                         >
-                          View
+                          <Eye size={16} />
                         </button>
                         {/* Organizers can view their own tournament here, but edit/delete stays admin-only. */}
                         {isAdmin && (
                           <button
                             onClick={() => handleEdit(tournament.id)}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                            title="Edit"
                           >
-                            Edit
+                            <Pencil size={16} />
                           </button>
                         )}
                         {isAdmin && (
                           <button
                             onClick={() => handleDelete(tournament.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                            title="Delete"
                           >
-                            Delete
+                            <Trash2 size={16} />
                           </button>
                         )}
                       </div>

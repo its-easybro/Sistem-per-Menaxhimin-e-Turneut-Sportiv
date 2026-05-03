@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
+import { Trash2, Eye, Check } from "lucide-react";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -224,22 +225,25 @@ export default function AdminContactUs() {
                         {!msg.lexuar && (
                           <button
                             onClick={() => handleMarkAsRead(msg.id)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                            title="Mark Read"
                           >
-                            Mark Read
+                            <Check size={16} />
                           </button>
                         )}
                         <button
                           onClick={() => handleView(msg.id)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                          className="bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="View"
                         >
-                          View
+                          <Eye size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(msg.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200"
+                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="Delete"
                         >
-                          Delete
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
@@ -253,11 +257,11 @@ export default function AdminContactUs() {
         {/* View Message Modal */}
         {showViewModal && selectedMessage && (
           <div
-            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 px-4 py-8 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={handleCloseModal}
           >
             <div
-              className="w-full max-w-2xl rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Message Details</h3>

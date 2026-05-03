@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
+import { Pencil, Trash2, Eye } from "lucide-react";
 
 const initialFormData = {
   emri: "",
@@ -346,9 +347,15 @@ export default function Referees() {
                     <td className="px-6 py-4 text-gray-800 text-center">{referee.pervoja_vitesh || "-"}</td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
-                        <button onClick={() => handleView(referee.id)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200">View</button>
-                        <button onClick={() => handleEdit(referee.id)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200">Edit</button>
-                        <button onClick={() => handleDelete(referee.id)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition duration-200">Delete</button>
+                        <button onClick={() => handleView(referee.id)} className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200" title="View">
+                          <Eye size={16} />
+                        </button>
+                        <button onClick={() => handleEdit(referee.id)} className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200" title="Edit">
+                          <Pencil size={16} />
+                        </button>
+                        <button onClick={() => handleDelete(referee.id)} className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200" title="Delete">
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>
