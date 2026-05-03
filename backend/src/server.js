@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import pool from "./config/db.js";
+import http from "http";
+import { Server } from "socket.io";
 
 // Import routes
 import sportRoutes from "./routes/sportRoutes.js";
@@ -23,11 +25,21 @@ import contactUsRoute from "./routes/contactUsRoute.js";
 // Load environment variables
 dotenv.config();
 const app = express();
+const httpServer = http.createServer(app);
 const port = process.env.PORT || 3005;
 const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(
   /\/$/,
   "",
 );
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: clientUrl,
+    credentials: true,
+  }
+});
+
+app.set("io", io); // Make io accessible in routes via req.app.get("io")
 
 // Middleware
 app.use(
@@ -55,7 +67,7 @@ app.use("/standings", standingsRoutes);
 app.use("/contactUs", contactUsRoute);
 
 // Start the server
-app.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 

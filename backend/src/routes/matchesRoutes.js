@@ -399,4 +399,89 @@ router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (r
   }
 });
 
+router.patch("/:id/score", protect, requireRole("is_admin", "is_organizer", "is_referee"), async (req, res) => {
+  const matchId = parsePositiveInt(req.params.id);
+  if(!matchId){
+    return res.status(400).json({ error: "Invalid match id" });
+  }
+
+  const homeScore = Number(req.body.golat_shtepiak);
+  const awayScore = Number(req.body.golat_mysafir);
+
+  if(
+    !Number.isInteger(homeScore) ||
+    !Number.isInteger(awayScore) ||
+    homeScore < 0 ||
+    awayScore < 0
+  ){
+    return res.status(400).json({ error: "Scores must be non-negative numbers" });
+  }
+
+  try{
+    if(req.user.is_organizer){
+      const ownsMatch = await organizerOwnsMatch(matchId, req.user.id);
+      if(!ownsMatch){
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
+    if(req.user.is_referee){
+      const assignedMatch = await prisma.matches.findFirst({
+        where: {
+          id: matchId,
+          matchreferees: {
+            some: {
+              referees: {
+                user_id: req.user.id,
+              },
+            },
+          },
+        },
+        select: { id: true },
+      });
+      if(!assignedMatch){
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
+    const match = await prisma.matches.findUnique({
+      where: { id: matchId },
+      select: {
+        id: true,
+        statusi: true,
+      },
+    });
+
+    if (!match) {
+      return res.status(404).json({ error: "Match not found" });
+    }
+
+    const result = await prisma.matchresults.upsert({
+      where: { ndeshja_id: matchId },
+      update: {
+        golat_shtepiak: homeScore,
+        golat_mysafir: awayScore,
+      },
+      create: {
+        ndeshja_id: matchId,
+        golat_shtepiak: homeScore,
+        golat_mysafir: awayScore,
+      },
+    });
+
+    const io = req.app.get("io");
+
+    io.emit("score_update", {
+      matchId,
+      homeScore: result.golat_shtepiak,
+      awayScore: result.golat_mysafir,
+    });
+
+    res.json({ message: "Score updated successfully", result });
+  }catch(err){
+    res.status(500).json({ error: err.message });
+  }
+
+});
+
 export default router;
