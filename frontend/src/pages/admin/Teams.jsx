@@ -155,7 +155,12 @@ export default function Teams() {
             setShowModal(false);
             setAlert({ type: "success", message: "Team created successfully!" });
         } catch(err){
-            setAlert({ type: "error", message: "Error creating team: " + err.message });
+            setAlert({
+              type: "error",
+              message:
+                "Error creating team: " +
+                (err.response?.data?.error || err.message),
+            });
 
         }
     };
@@ -252,7 +257,12 @@ export default function Teams() {
         setShowEditModal(false);
         setAlert({ type: "success", message: "Team updated successfully!" });
         } catch(err) {
-            setAlert({ type: "error", message: "Error updating team: " + err.message });
+            setAlert({
+              type: "error",
+              message:
+                "Error updating team: " +
+                (err.response?.data?.error || err.message),
+            });
         }
     };
 
@@ -267,7 +277,12 @@ export default function Teams() {
             setShowDeleteModal(false);
             setAlert({ type: "success", message: "Team deleted successfully!" });
         }catch(err){
-            setAlert({ type: "error", message: "Error deleting team: " + err.message });
+            setAlert({
+              type: "error",
+              message:
+                "Error deleting team: " +
+                (err.response?.data?.error || err.message),
+            });
         }
 
     };

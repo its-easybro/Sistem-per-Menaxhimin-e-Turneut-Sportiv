@@ -22,7 +22,13 @@ const normalizeOptionalText = (value) => {
 const normalizeOptionalDate = (value) => {
     if (typeof value !== "string") return value ?? null;
     const trimmed = value.trim();
-    return trimmed === "" ? null : trimmed;
+    if (trimmed === "") return null;
+
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
+      ? new Date(`${trimmed}T00:00:00.000Z`)
+      : new Date(trimmed);
+
+    return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const parsePositiveInt = (value) => {

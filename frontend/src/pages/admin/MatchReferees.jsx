@@ -4,6 +4,7 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Pencil, Trash2, Eye } from "lucide-react";
+import socket from "../../socket";
 
 const initialFormData = {
   ndeshja_id: "",
@@ -133,6 +134,10 @@ export default function MatchReferees() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [scoreForm, setScoreForm] = useState({
+    golat_shtepiak: 0,
+    golat_mysafir: 0,
+  });
   const [formData, setFormData] = useState(initialFormData);
 
   useEffect(() => {
@@ -177,6 +182,37 @@ export default function MatchReferees() {
     loadData();
   }, [canAccessPage]);
 
+  useEffect(() => {
+    const handleScoreUpdate = ({ matchId, homeScore, awayScore }) => {
+      setMatches((prev) =>
+        prev.map((match) =>
+          String(match.id) === String(matchId)
+            ? {
+                ...match,
+                score: {
+                  golat_shtepiak: homeScore,
+                  golat_mysafir: awayScore,
+                },
+              }
+            : match,
+        ),
+      );
+
+      if (String(selectedAssignment?.ndeshja_id) === String(matchId)) {
+        setScoreForm({
+          golat_shtepiak: homeScore,
+          golat_mysafir: awayScore,
+        });
+      }
+    };
+
+    socket.on("score_update", handleScoreUpdate);
+
+    return () => {
+      socket.off("score_update", handleScoreUpdate);
+    };
+  }, [selectedAssignment]);
+
   const resetForm = () => {
     setFormData(initialFormData);
   };
@@ -212,12 +248,38 @@ export default function MatchReferees() {
     setShowModal(true);
   };
 
-  const handleView = (id) => {
+  const handleView = async (id) => {
     const assignment = assignments.find((item) => item.id === id);
     if (!assignment) return;
 
     setSelectedAssignment(assignment);
+    setScoreForm({
+      golat_shtepiak: 0,
+      golat_mysafir: 0,
+    });
     setShowViewModal(true);
+
+    try {
+      const response = await api.get("/match-results");
+      const results = Array.isArray(response.data) ? response.data : [];
+      const existingResult = results.find(
+        (result) => String(result.ndeshja_id) === String(assignment.ndeshja_id),
+      );
+
+      if (existingResult) {
+        setScoreForm({
+          golat_shtepiak: existingResult.golat_shtepiak ?? 0,
+          golat_mysafir: existingResult.golat_mysafir ?? 0,
+        });
+      }
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error loading match score: " +
+          (err?.response?.data?.error || err.message),
+      });
+    }
   };
 
   const handleEdit = (id) => {
@@ -269,6 +331,55 @@ export default function MatchReferees() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleScoreInputChange = (e) => {
+    const { name, value } = e.target;
+
+    setScoreForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleScoreSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!selectedAssignment) return;
+
+    try {
+      const response = await api.patch(
+        `/matches/${selectedAssignment.ndeshja_id}/score`,
+        {
+          golat_shtepiak: Number(scoreForm.golat_shtepiak),
+          golat_mysafir: Number(scoreForm.golat_mysafir),
+        },
+      );
+
+      const result = response.data.result;
+      const nextScore = {
+        golat_shtepiak: result.golat_shtepiak ?? 0,
+        golat_mysafir: result.golat_mysafir ?? 0,
+      };
+
+      setScoreForm(nextScore);
+      setMatches((prev) =>
+        prev.map((match) =>
+          String(match.id) === String(selectedAssignment.ndeshja_id)
+            ? { ...match, score: nextScore }
+            : match,
+        ),
+      );
+
+      setAlert({ type: "success", message: "Score updated successfully!" });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error updating score: " +
+          (err?.response?.data?.error || err.message),
+      });
+    }
   };
 
   const buildPayload = () => ({
@@ -682,6 +793,51 @@ export default function MatchReferees() {
                 </p>
               </div>
             </div>
+            <form
+              onSubmit={handleScoreSubmit}
+              className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
+            >
+              <h4 className="mb-4 text-lg font-semibold text-gray-800">
+                Update Live Score
+              </h4>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    Home Score
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    name="golat_shtepiak"
+                    value={scoreForm.golat_shtepiak}
+                    onChange={handleScoreInputChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    Away Score
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    name="golat_mysafir"
+                    value={scoreForm.golat_mysafir}
+                    onChange={handleScoreInputChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700"
+              >
+                Update Score
+              </button>
+            </form>
             <div className="flex gap-4 pt-4">
               <button
                 type="button"

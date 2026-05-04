@@ -3,6 +3,7 @@ import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
+const DEFAULT_MATCH_DURATION_MINUTES = 60;
 
 function parsePositiveInt(value) {
   const parsed = Number(value);
@@ -19,7 +20,23 @@ function toMatchTimeValue(value) {
   const normalizedValue =
     typeof value === "string" && value.length === 5 ? `${value}:00` : value;
 
-  return new Date(`1970-01-01T${normalizedValue}`);
+  return new Date(`1970-01-01T${normalizedValue}Z`);
+}
+
+function getDatePart(value) {
+  if (!value) return null;
+  return value instanceof Date
+    ? value.toISOString().slice(0, 10)
+    : String(value).slice(0, 10);
+}
+
+function getTimePart(value) {
+  if (!value) return "00:00:00";
+
+  const text = value instanceof Date ? value.toISOString() : String(value);
+  if (text.includes("T")) return text.slice(11, 19);
+
+  return text.length === 5 ? `${text}:00` : text.slice(0, 8);
 }
 
 async function validateMatchTeamsForTournament({
@@ -128,6 +145,109 @@ async function organizerOwnsMatch(matchId, organizerId) {
 
   return Boolean(match);
 }
+
+function formatPublicMatch(match){
+  const result = match.matchresults;
+
+  return{
+    id: match.id,
+    turneu_id: match.turneu_id,
+    ekipi_shtepiak_id: match.ekipi_shtepiak_id,
+    ekipi_mysafir_id: match.ekipi_mysafir_id,
+    ekipi_shtepiak:
+      match.teams_matches_ekipi_shtepiak_idToteams?.emertimi ?? null,
+    ekipi_mysafir:
+      match.teams_matches_ekipi_mysafir_idToteams?.emertimi ?? null,
+    turneu_emri: match.tournaments?.emertimi ?? null,
+    data_ndeshjes: match.data_ndeshjes,
+    ora_fillimit: match.ora_fillimit,
+    starts_at: `${getDatePart(match.data_ndeshjes)}T${getTimePart(match.ora_fillimit)}`,
+    statusi: match.statusi,
+    faza: match.faza,
+    kohezgjatja: match.kohezgjatja ?? DEFAULT_MATCH_DURATION_MINUTES,
+    score: {
+      golat_shtepiak: result?.golat_shtepiak ?? 0,
+      golat_mysafir: result?.golat_mysafir ?? 0,
+    },
+    cards: match.matchevents.map((event) => ({
+      id: event.id,
+      matchId: event.ndeshja_id,
+      playerId: event.lojtari_id,
+      playerName: event.players
+        ? `${event.players.emri} ${event.players.mbiemri}`
+        : null,
+      teamId: event.ekipi_id,
+      teamName: event.teams?.emertimi ?? null,
+      card: event.lloji,
+      minuta: event.minuta,
+      created_at: event.created_at,
+
+    })),
+  };
+}
+
+router.get("/public/live", async (req, res) => {
+  try {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const matches = await prisma.matches.findMany({
+      where: {
+        OR: [
+          { statusi: "Live" },
+          {
+            statusi: "Përfunduar",
+            data_ndeshjes: {
+              gte: yesterday,
+            },
+          },
+        ],
+      },
+      include: {
+        teams_matches_ekipi_shtepiak_idToteams: {
+          select: { emertimi: true },
+        },
+        teams_matches_ekipi_mysafir_idToteams: {
+          select: { emertimi: true },
+        },
+        tournaments: {
+          select: { emertimi: true },
+        },
+        matchresults: true,
+        matchevents: {
+          include: {
+            players: {
+              select: {
+                id: true,
+                emri: true,
+                mbiemri: true,
+              },
+            },
+            teams: {
+              select: {
+                id: true,
+                emertimi: true,
+              },
+            },
+          },
+          orderBy: [
+            { minuta: "asc" },
+            { id: "asc" },
+          ],
+        },
+      },
+      orderBy: [
+        { data_ndeshjes: "desc" },
+        { ora_fillimit: "desc" },
+      ],
+    });
+
+    res.json(matches.map(formatPublicMatch));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 router.get("/", protect, async (req, res) => {
   try {
@@ -271,6 +391,7 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
         fusha_id: fusha_id ? Number(fusha_id) : null,
         statusi: statusi || "Planifikuar",
         faza: faza || null,
+        kohezgjatja: DEFAULT_MATCH_DURATION_MINUTES,
       },
     });
 

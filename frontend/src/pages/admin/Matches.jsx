@@ -5,6 +5,7 @@ import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Pencil, Trash2, Eye } from "lucide-react";
 import MatchTimer from "../../components/MatchTimer";
+import socket from "../../socket";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -18,6 +19,22 @@ const formatDate = (isoDate) => {
   } catch {
     return "Invalid date";
   }
+};
+
+const formatDateInput = (value) => {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+};
+
+const formatTime = (value) => {
+  if (!value) return "";
+  const text = String(value);
+
+  if (text.includes("T")) {
+    return text.slice(11, 16);
+  }
+
+  return text.slice(0, 5);
 };
 
 export default function Matches() {
@@ -40,6 +57,10 @@ export default function Matches() {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [alert, setAlert] = useState(null);
+  const [scoreForm, setScoreForm] = useState({
+    golat_shtepiak: 0,
+    golat_mysafir: 0,
+  });
   const [formData, setFormData] = useState({
     turneu_id: "",
     ekipi_shtepiak_id: "",
@@ -96,6 +117,57 @@ export default function Matches() {
     };
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    const handleMatchLive = ({ matchId }) => {
+      setMatches((prev) =>
+        prev.map((match) =>
+          match.id === matchId ? { ...match, statusi: "Live" } : match,
+        ),
+      );
+    };
+
+    const handleMatchFinished = ({ matchId }) => {
+      setMatches((prev) =>
+        prev.map((match) =>
+          match.id === matchId ? { ...match, statusi: "Përfunduar" } : match,
+        ),
+      );
+    };
+
+    const handleScoreUpdate = ({ matchId, homeScore, awayScore }) => {
+      setSelectedMatch((prev) => {
+        if (!prev || prev.id !== matchId) return prev;
+
+        return {
+          ...prev,
+          score: {
+            golat_shtepiak: homeScore,
+            golat_mysafir: awayScore,
+          },
+        };
+      });
+
+      setScoreForm((prev) => {
+        if(!selectedMatch || selectedMatch.id !== matchId) return prev;
+
+        return {
+          golat_shtepiak: homeScore,
+          golat_mysafir: awayScore,
+        };
+      });
+    };
+
+    socket.on("match_live", handleMatchLive);
+    socket.on("match_finished", handleMatchFinished);
+    socket.on("score_update", handleScoreUpdate);
+
+    return () => {
+      socket.off("match_live", handleMatchLive);
+      socket.off("match_finished", handleMatchFinished);
+      socket.off("score_update", handleScoreUpdate);
+    };
+  }, [selectedMatch]);
 
   // Create match handler
   const handleCreate = () => {
@@ -170,9 +242,10 @@ export default function Matches() {
       setAlert({ type: "success", message: "Match created successfully!" });
     } catch (err) {
       console.error("Error creating match:", err);
+      const message = err.response?.data?.error || err.message;
       setAlert({
         type: "error",
-        message: "Error creating match: " + err.message,
+        message: "Error creating match: " + message,
       });
     }
   };
@@ -218,10 +291,46 @@ export default function Matches() {
   };
 
   // Button handlers
-  const handleView = (id) => {
+  const handleView = async (id) => {
     const match = matches.find((m) => m.id === id);
     setSelectedMatch(match);
+    setScoreForm({
+      golat_shtepiak: 0,
+      golat_mysafir: 0,
+    });
+
     setShowViewModal(true);
+
+    try{
+      const response = await api.get("/match-results");
+      const results = Array.isArray(response.data) ? response.data : [];
+      const existingResult = results.find((result) => result.ndeshja_id === id);
+
+      if(existingResult){
+        setScoreForm({
+          golat_shtepiak: existingResult.golat_shtepiak ?? 0,
+          golat_mysafir: existingResult.golat_mysafir ?? 0,
+        });
+
+        setSelectedMatch((prev) =>
+          prev 
+            ? {
+                ...prev,
+                score: {
+                  golat_shtepiak: existingResult.golat_shtepiak ?? 0,
+                  golat_mysafir: existingResult.golat_mysafir ?? 0,
+                },
+            }
+            : prev,
+        );
+      }
+    }catch(err){
+      setAlert({
+        type: "error",
+        message: "Error fetching match results: " +
+         (err.response?.data?.error || err.message),
+      });
+    }
   };
 
   const handleEdit = (id) => {
@@ -232,8 +341,8 @@ export default function Matches() {
       turneu_id: String(match.turneu_id),
       ekipi_shtepiak_id: String(match.ekipi_shtepiak_id),
       ekipi_mysafir_id: String(match.ekipi_mysafir_id),
-      data_ndeshjes: match.data_ndeshjes || "",
-      ora_fillimit: match.ora_fillimit || "",
+      data_ndeshjes: formatDateInput(match.data_ndeshjes),
+      ora_fillimit: formatTime(match.ora_fillimit),
       fusha_id: match.fusha_id ? String(match.fusha_id) : "",
       statusi: match.statusi || "Planifikuar",
       faza: match.faza || "",
@@ -290,9 +399,10 @@ export default function Matches() {
       setAlert({ type: "success", message: "Match updated successfully!" });
     } catch (err) {
       console.error("Error updating match:", err);
+      const message = err.response?.data?.error || err.message;
       setAlert({
         type: "error",
-        message: "Error updating match: " + err.message,
+        message: "Error updating match: " + message,
       });
     }
   };
@@ -316,6 +426,59 @@ export default function Matches() {
       });
     }
   };
+
+  const handleScoreInputChange = (e) => {
+    const { name, value } = e.target;
+
+    setScoreForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleScoreSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!selectedMatch) return;
+
+    try {
+      const response = await api.patch(`/matches/${selectedMatch.id}/score`, {
+        golat_shtepiak: Number(scoreForm.golat_shtepiak),
+        golat_mysafir: Number(scoreForm.golat_mysafir),
+      });
+
+      const result = response.data.result;
+
+      const nextScore = {
+        golat_shtepiak: result.golat_shtepiak ?? 0,
+        golat_mysafir: result.golat_mysafir ?? 0,
+      };
+
+      setScoreForm(nextScore);
+
+      setSelectedMatch((prev) => 
+        prev
+          ? {
+              ...prev,
+              score: nextScore,
+          }
+        : prev,
+      );
+
+      setAlert({
+        type: "success",
+        message: "Score updated successfully!",
+      });
+
+    } catch (err) {
+      setAlert({
+      type: "error",
+      message:
+        "Error updating score: " +
+        (err.response?.data?.error || err.message),
+    });
+  }
+};
 
   // Helper functions
   const getTournamentName = (id) => {
@@ -509,7 +672,7 @@ export default function Matches() {
                       {formatDate(m.data_ndeshjes)}
                     </td>
                     <td className="px-4 py-3 text-gray-900 font-semibold">
-                      {m.ora_fillimit || "N/A"}
+                      {formatTime(m.ora_fillimit) || "N/A"}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -817,7 +980,7 @@ export default function Matches() {
                     Time
                   </label>
                   <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {selectedMatch.ora_fillimit || "N/A"}
+                    {formatTime(selectedMatch.ora_fillimit) || "N/A"}
                   </p>
                 </div>
                 <div>
@@ -845,6 +1008,51 @@ export default function Matches() {
                   </p>
                 </div>
               </div>
+              <form
+                onSubmit={handleScoreSubmit}
+                className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
+              >
+                <h4 className="mb-4 text-lg font-semibold text-gray-800">
+                  Update Live Score
+                </h4>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Home Score
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      name="golat_shtepiak"
+                      value={scoreForm.golat_shtepiak}
+                      onChange={handleScoreInputChange}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Away Score
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      name="golat_mysafir"
+                      value={scoreForm.golat_mysafir}
+                      onChange={handleScoreInputChange}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700"
+                >
+                  Update Score
+                </button>
+              </form>
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"

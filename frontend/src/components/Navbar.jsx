@@ -132,9 +132,9 @@ const Navbar = () => {
           <a href="/contact-us" className="text-sm/6 font-semibold text-white">
             Contact us
           </a>
-          <a href="#" className="text-sm/6 font-semibold text-white">
-            Company
-          </a>
+          <Link to="/live-matches" className="text-sm/6 font-semibold text-white">
+            Live Matches
+          </Link>
         </PopoverGroup>
         {/* Desktop auth actions vary by user role. */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
@@ -199,24 +199,13 @@ const Navbar = () => {
                     ))}
                   </DisclosurePanel>
                 </Disclosure>
-                <a
-                  href="#"
+                <Link
+                  to="/live-matches"
                   className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-white hover:bg-white/5"
+                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  Features
-                </a>
-                <a
-                  href="#"
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-white hover:bg-white/5"
-                >
-                  Marketplace
-                </a>
-                <a
-                  href="#"
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-white hover:bg-white/5"
-                >
-                  Company
-                </a>
+                  Live Matches
+                </Link>
               </div>
               <div className="py-6">
                 {/* Mobile auth actions also switch for guest/admin/user states. */}

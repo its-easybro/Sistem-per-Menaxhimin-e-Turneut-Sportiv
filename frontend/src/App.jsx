@@ -39,6 +39,7 @@ import AboutUs from "./pages/Users/AboutUs";
 import ContactUs from "./pages/Users/ContactUs";
 import ForgotPassword from "./pages/Users/ForgotPassword";
 import ResetPassword from "./pages/Users/ResetPassword";
+import LiveMatches from "./pages/Users/LiveMatches";
 
 function App() {
   // Waits for initial auth/session check before rendering app routes.
@@ -63,6 +64,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/live-matches" element={<LiveMatches />} />
 
         {/* ADMIN ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_admin"]} Layout={AdminRoute} />}>
@@ -72,6 +74,7 @@ function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/venues" element={<Venues />} />
           <Route path="/matches" element={<Matches />} />
+          <Route path="/admin/live-matches" element={<LiveMatches />} />
           <Route path="/teams" element={<Teams />} />
           <Route path="/match-results" element={<MatchResults />} />
           <Route path="/match-referees" element={<MatchReferees />} />
@@ -88,6 +91,7 @@ function App() {
           <Route path="/organizer/tournaments" element={<Tournaments />} />
           {/* Dedicated organizer pages for match scheduling and team registration inside owned tournaments. */}
           <Route path="/organizer/matches" element={<OrganizerMatches />} />
+          <Route path="/organizer/live-matches" element={<LiveMatches />} />
           <Route path="/organizer/teams" element={<OrganizerTeams />} />
           <Route path="/organizer/standings" element={<Standings />} />
         </Route>
@@ -96,6 +100,7 @@ function App() {
         <Route element={<ProtectedRoute requiredRoles={["is_referee"]} Layout={RefereeLayout} />}>
           <Route path="/referee/dashboard" element={<RefereeDashboard />} />
           <Route path="/referee/matches" element={<MatchReferees />} />
+          <Route path="/referee/live-matches" element={<LiveMatches />} />
           <Route path="/referee/match-results" element={<MatchResults />} />
         </Route>
       </Routes>

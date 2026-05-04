@@ -4,6 +4,8 @@ function getRandomItem(items) {
   return items[Math.floor(Math.random() * items.length)];
 }
 
+const DEFAULT_MAX_MATCH_MINUTES = 60;
+
 export function startSimulator(io, matchId, players, kohezgjatja) {
   if (!players || players.length === 0) {
     return () => {};
@@ -40,16 +42,25 @@ export function startSimulator(io, matchId, players, kohezgjatja) {
           : "00:00:00";
 
         const startTime = new Date(`${datePart}T${timePart}`);
-        const minuta = Math.floor((Date.now() - startTime.getTime()) / 60000);
+        const elapsedMinutes = Math.floor(
+          (Date.now() - startTime.getTime()) / 60000,
+        );
 
-        if (minuta < 0) {
+        if (elapsedMinutes < 0) {
           tick();
           return;
         }
 
-        if (kohezgjatja && minuta > kohezgjatja) {
+        const maxMinute =
+          Number.isInteger(kohezgjatja) && kohezgjatja > 0
+            ? kohezgjatja
+            : DEFAULT_MAX_MATCH_MINUTES;
+
+        if (elapsedMinutes > maxMinute) {
           return;
         }
+
+        const minuta = Math.min(elapsedMinutes, maxMinute);
 
         const event = await prisma.matchevents.create({
           data: {

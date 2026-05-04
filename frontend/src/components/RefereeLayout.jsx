@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { Link, Navigate, Outlet } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
-import { LogOut, Menu, Award, LayoutDashboard, Swords, Flag } from "lucide-react";
+import { LogOut, Menu, Award, LayoutDashboard, Swords, Flag, Radio } from "lucide-react";
 
 const RefereeLayout = () => {
   const { user, logout} = useContext(AuthContext);
@@ -41,6 +41,13 @@ return (
             >
               <Swords size={20} />
               My Matches
+            </Link>
+            <Link
+              to="/referee/live-matches"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
+              <Radio size={20} />
+              Live Matches
             </Link>
             <Link
               to="/referee/match-results"

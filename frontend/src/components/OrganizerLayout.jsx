@@ -8,7 +8,7 @@ import {
   ClipboardList,
   Swords,
   ShieldPlus,
-  CalendarRange,
+  Radio,
 } from "lucide-react";
 
 const OrganizerLayout = () => {
@@ -56,6 +56,13 @@ return (
             >
               <Swords size={20} />
               Matches
+            </Link>
+            <Link
+              to="/organizer/live-matches"
+              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+            >
+              <Radio size={20} />
+              Live Matches
             </Link>
             {/* New organizer section for adding/removing teams inside the assigned tournament. */}
             <Link

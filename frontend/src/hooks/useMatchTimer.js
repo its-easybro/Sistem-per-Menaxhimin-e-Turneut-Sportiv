@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 
+const DEFAULT_MAX_MATCH_MINUTES = 60;
+
 function getMatchStartTime(match){
+    if(match?.starts_at){
+        const startTime = new Date(match.starts_at);
+        return Number.isNaN(startTime.getTime()) ? null : startTime;
+    }
+
     if(!match?.data_ndeshjes){
         return null;
     }
@@ -43,7 +50,7 @@ export function useMatchTimer(match) {
         const intervalId = setInterval(updateElapsed, 1000);
 
         return () => clearInterval(intervalId);
-    }, [match?.statusi, match?.data_ndeshjes, match?.ora_fillimit]);
+    }, [match?.statusi, match?.starts_at, match?.data_ndeshjes, match?.ora_fillimit]);
 
     const minutes = Math.floor(elapsedSeconds / 60);
     const seconds = elapsedSeconds % 60;
@@ -53,11 +60,17 @@ export function useMatchTimer(match) {
             ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
             : "--:--";
 
-    const isFinished = 
-        typeof match?.kohezgjatja === "number" && minutes >= match.kohezgjatja;
+    const maxMinutes =
+        typeof match?.kohezgjatja === "number"
+            ? match.kohezgjatja
+            : DEFAULT_MAX_MATCH_MINUTES;
+
+    const isFinished = match?.statusi === "Live" && minutes >= maxMinutes;
 
     return {
-        display,
+        display: isFinished
+            ? `${String(maxMinutes).padStart(2, "0")}:00+`
+            : display,
         minutes,
         seconds,
         isFinished,

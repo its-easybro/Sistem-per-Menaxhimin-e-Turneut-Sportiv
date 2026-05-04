@@ -4,6 +4,8 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import MatchTimer from "../../components/MatchTimer";
+import socket from "../../socket";
+
 
 const initialFormData = {
   turneu_id: "",
@@ -25,6 +27,22 @@ function formatDate(value) {
   } catch {
     return "Invalid date";
   }
+}
+
+function formatDateInput(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
+
+function formatTime(value) {
+  if (!value) return "";
+  const text = String(value);
+
+  if (text.includes("T")) {
+    return text.slice(11, 16);
+  }
+
+  return text.slice(0, 5);
 }
 
 export default function OrganizerMatches() {
@@ -88,6 +106,34 @@ export default function OrganizerMatches() {
 
     loadData();
   }, [user]);
+
+  useEffect(() => {
+    const handleMatchLive = ({ matchId }) => {
+      setMatches((prev) => 
+        prev.map((match) => 
+          match.id === matchId ? { ...match, statusi: "Live"} : match,
+      ),
+    );
+    };
+
+    const handleMatchFinished = ({ matchId }) => {
+      setMatches((prev) =>
+        prev.map((match) => 
+          match.id === matchId ? { ...match, statusi: "Përfunduar"} : match,
+        ),
+      );
+    };
+
+    socket.on("match_live", handleMatchLive);
+    socket.on("match_finished", handleMatchFinished);
+
+
+    return () => {
+      socket.off("match_live", handleMatchLive);
+      socket.off("match_finished", handleMatchFinished);
+    };
+
+  }, []);
 
   const availableTeams = useMemo(() => {
     if (!formData.turneu_id) return [];
@@ -244,8 +290,8 @@ export default function OrganizerMatches() {
       turneu_id: String(match.turneu_id),
       ekipi_shtepiak_id: String(match.ekipi_shtepiak_id),
       ekipi_mysafir_id: String(match.ekipi_mysafir_id),
-      data_ndeshjes: String(match.data_ndeshjes).slice(0, 10),
-      ora_fillimit: match.ora_fillimit || "",
+      data_ndeshjes: formatDateInput(match.data_ndeshjes),
+      ora_fillimit: formatTime(match.ora_fillimit),
       fusha_id: match.fusha_id ? String(match.fusha_id) : "",
       statusi: match.statusi || "Planifikuar",
       faza: match.faza || "",
