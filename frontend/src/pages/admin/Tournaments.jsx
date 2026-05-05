@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Pencil, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye } from "lucide-react";
 
 const initialFormData = {
   emertimi: "",
@@ -704,7 +704,7 @@ export default function Tournaments() {
                             className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
                             title="Edit"
                           >
-                            <Pencil size={16} />
+                            <Edit size={16} />
                           </button>
                         )}
                         {isAdmin && (

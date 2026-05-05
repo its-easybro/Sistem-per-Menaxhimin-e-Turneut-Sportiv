@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Trash2, Pencil, Eye, EyeOff } from "lucide-react";
+import { Trash2, Edit, Eye, EyeOff } from "lucide-react";
 
 export default function Users() {
   // Uses auth context to enforce admin-only access and guard UI render timing.
@@ -338,7 +338,7 @@ export default function Users() {
                           className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
                           title='Edit'
                         >
-                          <Pencil size={16} />
+                          <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(item)}

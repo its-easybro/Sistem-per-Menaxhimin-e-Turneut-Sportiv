@@ -4,7 +4,7 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
-import { Pencil, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye } from "lucide-react";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -559,7 +559,7 @@ export default function Players() {
                             className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
                             title="Edit"
                           >
-                            <Pencil size={16} />
+                            <Edit size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(s.id)}

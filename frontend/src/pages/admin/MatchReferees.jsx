@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Pencil, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye } from "lucide-react";
 import socket from "../../socket";
 
 const initialFormData = {
@@ -660,7 +660,7 @@ export default function MatchReferees() {
                               className="rounded bg-yellow-500 p-2 text-sm font-medium text-white transition duration-200 hover:bg-yellow-600"
                               title="Edit"
                             >
-                              <Pencil size={16} />
+                              <Edit size={16} />
                             </button>
                           )}
                           {isAdmin && (

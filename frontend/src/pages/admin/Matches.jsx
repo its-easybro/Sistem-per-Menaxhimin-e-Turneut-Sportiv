@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Pencil, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye } from "lucide-react";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
 
@@ -47,6 +47,8 @@ export default function Matches() {
   const [teams, setTeams] = useState([]);
   const [tournaments, setTournaments] = useState([]);
   const [registrations, setRegistrations] = useState([]);
+  const [matchReferees, setMatchReferees] = useState([]);
+  const [referees, setReferees] = useState([]);
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,6 +70,7 @@ export default function Matches() {
     data_ndeshjes: "",
     ora_fillimit: "",
     fusha_id: "",
+    referi_id: "",
     statusi: "Planifikuar",
     faza: "",
   });
@@ -87,12 +90,16 @@ export default function Matches() {
           tournamentsResponse,
           teamsResponse,
           registrationsResponse,
+          matchRefereesResponse,
+          refereesResponse,
           venuesResponse,
         ] = await Promise.all([
           api.get(`/matches`),
           api.get(`tournaments`),
           api.get(`teams`),
           api.get(`/tournament-registrations`),
+          api.get(`/match-referees`),
+          api.get(`/referees`),
           api.get(`/venues`),
         ]);
 
@@ -100,6 +107,8 @@ export default function Matches() {
         const tournamentsData = tournamentsResponse.data;
         const teamsData = teamsResponse.data;
         const registrationsData = registrationsResponse.data;
+        const matchRefereesData = matchRefereesResponse.data;
+        const refereesData = refereesResponse.data;
         const venuesData = venuesResponse.data;
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
         setMatches(Array.isArray(matchesData) ? matchesData : []);
@@ -107,6 +116,10 @@ export default function Matches() {
         setRegistrations(
           Array.isArray(registrationsData) ? registrationsData : [],
         );
+        setMatchReferees(
+          Array.isArray(matchRefereesData) ? matchRefereesData : [],
+        );
+        setReferees(Array.isArray(refereesData) ? refereesData : []);
         setVenues(Array.isArray(venuesData) ? venuesData : []);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -178,6 +191,7 @@ export default function Matches() {
       data_ndeshjes: "",
       ora_fillimit: "",
       fusha_id: "",
+      referi_id: "",
       statusi: "Planifikuar",
       faza: "",
     });
@@ -216,8 +230,9 @@ export default function Matches() {
       }
 
       // Convert IDs to integers
+      const { referi_id, ...matchPayload } = formData;
       const dataToSend = {
-        ...formData,
+        ...matchPayload,
         turneu_id: parseInt(formData.turneu_id),
         ekipi_shtepiak_id: parseInt(formData.ekipi_shtepiak_id),
         ekipi_mysafir_id: parseInt(formData.ekipi_mysafir_id),
@@ -228,6 +243,19 @@ export default function Matches() {
 
       const newMatch = response.data;
       setMatches([...matches, newMatch]);
+      // If a referee was selected, create MatchReferees entry for this match
+      if (referi_id) {
+        try {
+          const mrResponse = await api.post(`/match-referees`, {
+            ndeshja_id: newMatch.id,
+            gjyqtari_id: parseInt(referi_id),
+            roli: "Kryegjyqtar",
+          });
+          setMatchReferees((prev) => [...prev, mrResponse.data]);
+        } catch (e) {
+          console.error("Error assigning referee:", e);
+        }
+      }
       setShowModal(false);
       setFormData({
         turneu_id: "",
@@ -236,6 +264,7 @@ export default function Matches() {
         data_ndeshjes: "",
         ora_fillimit: "",
         fusha_id: "",
+        referi_id: "",
         statusi: "Planifikuar",
         faza: "",
       });
@@ -259,6 +288,7 @@ export default function Matches() {
       data_ndeshjes: "",
       ora_fillimit: "",
       fusha_id: "",
+      referi_id: "",
       statusi: "Planifikuar",
       faza: "",
     });
@@ -273,6 +303,7 @@ export default function Matches() {
       data_ndeshjes: "",
       ora_fillimit: "",
       fusha_id: "",
+      referi_id: "",
       statusi: "Planifikuar",
       faza: "",
     });
@@ -324,6 +355,20 @@ export default function Matches() {
             : prev,
         );
       }
+      // fetch primary referee for this match and attach to selectedMatch
+      try {
+        const mrResp = await api.get(`/match-referees`);
+        const mrs = Array.isArray(mrResp.data) ? mrResp.data : [];
+        const primary = mrs.find((r) => r.ndeshja_id === id && r.roli === "Kryegjyqtar");
+        if (primary) {
+          const ref = referees.find((r) => r.id === primary.gjyqtari_id) || null;
+          setSelectedMatch((prev) => (prev ? { ...prev, primary_referee: ref } : prev));
+        } else {
+          setSelectedMatch((prev) => (prev ? { ...prev, primary_referee: null } : prev));
+        }
+      } catch {
+        // ignore referee fetch errors
+      }
     }catch(err){
       setAlert({
         type: "error",
@@ -333,10 +378,12 @@ export default function Matches() {
     }
   };
 
-  const handleEdit = (id) => {
+  const handleEdit = async (id) => {
     const match = matches.find((m) => m.id === id);
     if (!match) return;
     setSelectedMatch(match);
+    const primaryReferee = getPrimaryReferee(id);
+
     setFormData({
       turneu_id: String(match.turneu_id),
       ekipi_shtepiak_id: String(match.ekipi_shtepiak_id),
@@ -344,6 +391,7 @@ export default function Matches() {
       data_ndeshjes: formatDateInput(match.data_ndeshjes),
       ora_fillimit: formatTime(match.ora_fillimit),
       fusha_id: match.fusha_id ? String(match.fusha_id) : "",
+      referi_id: primaryReferee ? String(primaryReferee.id) : "",
       statusi: match.statusi || "Planifikuar",
       faza: match.faza || "",
     });
@@ -378,8 +426,9 @@ export default function Matches() {
       }
 
       // Convert IDs to integers
+      const { referi_id, ...matchPayload } = formData;
       const dataToSend = {
-        ...formData,
+        ...matchPayload,
         turneu_id: parseInt(formData.turneu_id),
         ekipi_shtepiak_id: parseInt(formData.ekipi_shtepiak_id),
         ekipi_mysafir_id: parseInt(formData.ekipi_mysafir_id),
@@ -391,6 +440,47 @@ export default function Matches() {
         dataToSend,
       );
       const updatedMatch = response.data;
+      // Sync primary referee assignment (Kryegjyqtar)
+      try {
+        const existing = matchReferees.find(
+          (r) => r.ndeshja_id === updatedMatch.id && r.roli === "Kryegjyqtar",
+        );
+
+        if (referi_id) {
+          const gid = parseInt(referi_id);
+          if (existing) {
+            if (existing.gjyqtari_id !== gid) {
+              const updateResp = await api.put(
+                `/match-referees/${existing.id}`,
+                {
+                  ndeshja_id: updatedMatch.id,
+                  gjyqtari_id: gid,
+                  roli: "Kryegjyqtar",
+                },
+              );
+              setMatchReferees((prev) =>
+                prev.map((item) =>
+                  item.id === existing.id ? updateResp.data : item,
+                ),
+              );
+            }
+          } else {
+            const createResp = await api.post(`/match-referees`, {
+              ndeshja_id: updatedMatch.id,
+              gjyqtari_id: gid,
+              roli: "Kryegjyqtar",
+            });
+            setMatchReferees((prev) => [...prev, createResp.data]);
+          }
+        } else if (existing) {
+          await api.delete(`/match-referees/${existing.id}`);
+          setMatchReferees((prev) =>
+            prev.filter((item) => item.id !== existing.id),
+          );
+        }
+      } catch (e) {
+        console.error("Error syncing referee:", e);
+      }
       setMatches(
         matches.map((m) => (m.id === updatedMatch.id ? updatedMatch : m)),
       );
@@ -494,6 +584,23 @@ export default function Matches() {
   const getVenueName = (id) => {
     const venue = venues.find((v) => v.id === id);
     return venue?.emertimi || "N/A";
+  };
+
+  const getPrimaryReferee = (matchId) => {
+    const assignment = matchReferees.find(
+      (item) => item.ndeshja_id === matchId && item.roli === "Kryegjyqtar",
+    );
+
+    if (!assignment) return null;
+
+    return referees.find((item) => item.id === assignment.gjyqtari_id) || null;
+  };
+
+  const getPrimaryRefereeName = (matchId) => {
+    const referee = getPrimaryReferee(matchId);
+    if (!referee) return "N/A";
+
+    return `${referee.emri || ""} ${referee.mbiemri || ""}`.trim() || referee.emertimi || "N/A";
   };
 
   const availableTeams = teams.filter((team) => {
@@ -644,6 +751,7 @@ export default function Matches() {
                 <th className="px-4 py-3 text-center font-semibold">Date</th>
                 <th className="px-4 py-3 text-left font-semibold">Time</th>
                 <th className="px-4 py-3 text-left font-semibold">Status</th>
+                <th className="px-4 py-3 text-left font-semibold">Referee</th>
                 <th className="px-4 py-3 text-center font-semibold">Timer</th>
                 <th className="px-4 py-3 text-center font-semibold">Actions</th>
               </tr>
@@ -691,6 +799,9 @@ export default function Matches() {
                         {m.statusi}
                       </span>
                     </td>
+                    <td className="px-4 py-3">
+                      {getPrimaryRefereeName(m.id)}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <MatchTimer match={m} />
                     </td>
@@ -708,7 +819,7 @@ export default function Matches() {
                           className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
                           title="Edit"
                         >
-                          <Pencil size={16} />
+                          <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(m.id)}
@@ -878,6 +989,25 @@ export default function Matches() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Referee
+                    </label>
+                    <select
+                      name="referi_id"
+                      value={formData.referi_id}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Select Referee</option>
+                      {referees.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.emri} {r.mbiemri}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Status
                     </label>
                     <select
@@ -989,6 +1119,14 @@ export default function Matches() {
                   </label>
                   <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
                     {getVenueName(selectedMatch.fusha_id)}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Referee
+                  </label>
+                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                    {getPrimaryRefereeName(selectedMatch.id)}
                   </p>
                 </div>
                 <div>
@@ -1182,6 +1320,25 @@ export default function Matches() {
                       {venues.map((v) => (
                         <option key={v.id} value={v.id}>
                           {v.emertimi}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Referee
+                    </label>
+                    <select
+                      name="referi_id"
+                      value={formData.referi_id}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Select Referee</option>
+                      {referees.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.emri} {r.mbiemri}
                         </option>
                       ))}
                     </select>

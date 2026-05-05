@@ -2,7 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
-import { Award, Plus, Search, Pencil, Trash2, Spotlight } from "lucide-react";
+import { Award, Plus, Search, Edit, Trash2, Spotlight } from "lucide-react";
 import { Alert } from "../../components/Alert";
 
 // Format data from ISO String to readable format
@@ -543,7 +543,7 @@ export default function MatchResults() {
                     className="text-gray-400 hover:text-indigo-600 transition-colors p-1"
                     title="Edit"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(match.id)}

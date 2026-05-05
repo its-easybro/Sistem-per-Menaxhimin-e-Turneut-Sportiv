@@ -5,6 +5,7 @@ import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
+import { Edit, Trash2 } from "lucide-react";
 
 
 const initialFormData = {
@@ -563,15 +564,17 @@ export default function OrganizerMatches() {
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => openEdit(item)}
-                          className="rounded bg-yellow-500 px-3 py-1 text-sm font-medium text-white"
+                          className="rounded bg-yellow-500 p-2 text-sm font-medium text-white"
+                          title="edit"
                         >
-                          Edit
+                          <Edit size={16} />
                         </button>
                         <button
                           onClick={() => openDelete(item)}
-                          className="rounded bg-red-500 px-3 py-1 text-sm font-medium text-white"
+                          className="rounded bg-red-500 p-2 text-sm font-medium text-white"
+                          title="delete"
                         >
-                          Delete
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
