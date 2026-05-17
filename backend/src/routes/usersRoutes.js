@@ -2,8 +2,50 @@ import express from "express";
 import bcrypt from "bcrypt";
 import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";
+import Joi from "joi";
 
 const router = express.Router();
+
+// Validation Schemas
+const userCreateSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "string.email": "Email must be valid",
+    "any.required": "Email is required",
+  }),
+  username: Joi.string().min(3).max(30).required().messages({
+    "string.min": "Username must be at least 3 characters",
+    "string.max": "Username must be less than 30 characters",
+    "any.required": "Username is required",
+  }),
+  full_name: Joi.string().optional(),
+  password: Joi.string().min(6).required().messages({
+    "string.min": "Password must be at least 6 characters",
+    "any.required": "Password is required",
+  }),
+  roli: Joi.string()
+    .valid("admin", "organizator", "gjyqtar", "user")
+    .optional()
+    .messages({
+      "any.only": "Role must be admin, organizator, gjyqtar, or user",
+    }),
+});
+
+const userUpdateSchema = Joi.object({
+  email: Joi.string().email().optional().messages({
+    "string.email": "Email must be valid",
+  }),
+  username: Joi.string().min(3).max(30).optional().messages({
+    "string.min": "Username must be at least 3 characters",
+    "string.max": "Username must be less than 30 characters",
+  }),
+  full_name: Joi.string().optional(),
+  roli: Joi.string()
+    .valid("admin", "organizator", "gjyqtar", "user")
+    .optional()
+    .messages({
+      "any.only": "Role must be admin, organizator, gjyqtar, or user",
+    }),
+});
 
 function parsePositiveInt(value) {
   const parsed = Number(value);
@@ -30,8 +72,10 @@ function formatUserResponse(user) {
 
 // Helper function to split a full name into first name and last name, or use the username as a fallback for the first name if the full name is not provided
 function splitName(fullName = "", fallbackUsername = "") {
-  const normalizedFullName = typeof fullName === "string" ? fullName.trim().replace(/\s+/g, " ") : "";
-  const normalizedUsername = typeof fallbackUsername === "string" ? fallbackUsername.trim() : "";
+  const normalizedFullName =
+    typeof fullName === "string" ? fullName.trim().replace(/\s+/g, " ") : "";
+  const normalizedUsername =
+    typeof fallbackUsername === "string" ? fallbackUsername.trim() : "";
 
   if (normalizedFullName) {
     const [emri, ...rest] = normalizedFullName.split(" ");
@@ -79,12 +123,13 @@ router.get("/", protect, requireRole("is_admin"), async (req, res) => {
 
 // Route for creating a new user. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
-  const { email, username, full_name, password, roli } = req.body;
-
   try {
-    if (!email || !username || !password) {
-      return res.status(400).json({ error: "Email, username and password are required" });
+    const { error, value } = userCreateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
     }
+
+    const { email, username, full_name, password, roli } = value;
 
     const userExists = await prisma.user.findUnique({
       where: { email },
@@ -96,9 +141,8 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const { emri, mbiemri } = splitName(full_name, username);
-    // Validate role, default to 'user' if not provided
-    const validRoles = ['admin', 'organizator', 'gjyqtar', 'user'];
-    const userRole = validRoles.includes(roli) ? roli : 'user';
+    const validRoles = ["admin", "organizator", "gjyqtar", "user"];
+    const userRole = validRoles.includes(roli) ? roli : "user";
 
     const createdUser = await prisma.user.create({
       data: {
@@ -129,17 +173,21 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     return res.status(400).json({ error: "Invalid user id" });
   }
 
-  const { email, username, full_name, roli } = req.body;
-
-  if (!req.user.is_admin && req.user.id !== userId) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-
   try {
+    const { error, value } = userUpdateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { email, username, full_name, roli } = value;
+
+    if (!req.user.is_admin && req.user.id !== userId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     const { emri, mbiemri } = splitName(full_name, username);
-    // Validate role, if not provided use 'user'
-    const validRoles = ['admin', 'organizator', 'gjyqtar', 'user'];
-    const userRole = validRoles.includes(roli) ? roli : 'user';
+    const validRoles = ["admin", "organizator", "gjyqtar", "user"];
+    const userRole = validRoles.includes(roli) ? roli : "user";
 
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },

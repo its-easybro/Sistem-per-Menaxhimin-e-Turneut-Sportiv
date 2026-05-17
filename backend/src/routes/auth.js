@@ -5,14 +5,52 @@ import { protect } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import crypto, { hash } from "crypto";
 import { sendResetEmail } from "../lib/mailer.js";
-import {
-  registerSchema,
-  loginSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
-} from "../validation/authValidation.js";
+import Joi from "joi";
 
 const router = express.Router();
+
+// Validation Schemas
+const registerSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "string.email": "Email must be valid",
+    "any.required": "Email is required",
+  }),
+  password: Joi.string().min(6).required().messages({
+    "string.min": "Password must be at least 6 characters",
+    "any.required": "Password is required",
+  }),
+  username: Joi.string().optional(),
+  full_name: Joi.string().optional(),
+  emri: Joi.string().optional(),
+  mbiemri: Joi.string().optional(),
+});
+
+const loginSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "string.email": "Email must be valid",
+    "any.required": "Email is required",
+  }),
+  password: Joi.string().required().messages({
+    "any.required": "Password is required",
+  }),
+});
+
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "string.email": "Email must be valid",
+    "any.required": "Email is required",
+  }),
+});
+
+const resetPasswordSchema = Joi.object({
+  token: Joi.string().required().messages({
+    "any.required": "Token is required",
+  }),
+  password: Joi.string().min(6).required().messages({
+    "string.min": "Password must be at least 6 characters",
+    "any.required": "Password is required",
+  }),
+});
 
 // Cookie options for JWT token
 const accessCookieOptions = {
