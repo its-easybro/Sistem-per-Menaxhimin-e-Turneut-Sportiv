@@ -1,8 +1,41 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";
+import Joi from "joi";
 
 const router = express.Router();
+
+const matchRefereeCreateSchema = Joi.object({
+  ndeshja_id: Joi.number().integer().positive().required().messages({
+    "number.base": "Match ID must be a valid number.",
+    "number.positive": "Match ID must be a positive integer.",
+    "any.required": "Match ID is required.",
+  }),
+  gjyqtari_id: Joi.number().integer().positive().required().messages({
+    "number.base": "Referee ID must be a valid number.",
+    "number.positive": "Referee ID must be a positive integer.",
+    "any.required": "Referee ID is required.",
+  }),
+  roli: Joi.string().valid("main", "assistant").required().messages({
+    "any.only": "Role must be either 'main' or 'assistant'.",
+    "any.required": "Role is required.",
+  }),
+});
+
+const matchRefereeUpdateSchema = Joi.object({
+  ndeshja_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "Match ID must be a valid number.",
+    "number.positive": "Match ID must be a positive integer.",
+  }),
+  gjyqtari_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "Referee ID must be a valid number.",
+    "number.positive": "Referee ID must be a positive integer.",
+  }),
+  roli: Joi.string().valid("main", "assistant").optional().messages({
+    "any.only": "Role must be either 'main' or 'assistant'.",
+  }),
+});
+
 
 function parsePositiveInteger(value) {
   const parsed = Number(value);
@@ -94,10 +127,9 @@ router.get("/:id", protect, async (req, res) => {
 // Route for creating a new match referee. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
-  if (!ndeshja_id || !gjyqtari_id || !roli) {
-    return res.status(400).json({
-      error: "Fields required: ndeshja_id, gjyqtari_id, roli",
-    });
+  const { error } = matchRefereeCreateSchema.validate({ ndeshja_id, gjyqtari_id, roli });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
   try {
     const result = await prisma.matchreferees.create({
@@ -117,10 +149,9 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
-  if (!ndeshja_id || !gjyqtari_id || !roli) {
-    return res.status(400).json({
-      error: "Fields required: ndeshja_id, gjyqtari_id, roli",
-    });
+  const { error } = matchRefereeUpdateSchema.validate({ ndeshja_id, gjyqtari_id, roli });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
   try {
     const result = await prisma.matchreferees.update({

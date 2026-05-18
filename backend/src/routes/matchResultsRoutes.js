@@ -2,8 +2,70 @@ import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
 import recalculateStandings from "../services/recalculateStandings.js";
+import Joi from "joi";
 
 const router = express.Router();
+
+const matchResultCreateSchema = Joi.object({
+  ndeshja_id: Joi.number().integer().positive().required().messages({
+    "number.base": "Match ID must be a valid number.",
+    "number.positive": "Match ID must be a positive integer.",
+    "any.required": "Match ID is required.",
+  }),
+  golat_shtepiak: Joi.number().integer().min(0).optional().messages({
+    "number.base": "Home team goals must be a valid number.",
+    "number.min": "Home team goals cannot be negative.",
+  }),
+  golat_mysafir: Joi.number().integer().min(0).optional().messages({
+    "number.base": "Away team goals must be a valid number.",
+    "number.min": "Away team goals cannot be negative.",
+  }),
+  fitues_id: Joi.number().integer().positive().optional().allow(null).messages({
+    "number.base": "Winner ID must be a valid number.",
+    "number.positive": "Winner ID must be a positive integer.",
+  }),
+  shenime: Joi.string().optional().allow(null, "").messages({
+    "string.base": "Notes must be a valid string.",
+  }),
+  mvp_id: Joi.number().integer().positive().optional().allow(null).messages({
+    "number.base": "MVP ID must be a valid number.",
+    "number.positive": "MVP ID must be a positive integer.",
+  }),
+});
+
+const matchResultUpdateSchema = Joi.object({
+  ndeshja_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "Match ID must be a valid number.",
+    "number.positive": "Match ID must be a positive integer.",
+  }),
+  golat_shtepiak: Joi.number().integer().min(0).optional().messages({
+    "number.base": "Home team goals must be a valid number.",
+    "number.min": "Home team goals cannot be negative.",
+  }),
+  golat_mysafir: Joi.number().integer().min(0).optional().messages({
+    "number.base": "Away team goals must be a valid number.",
+    "number.min": "Away team goals cannot be negative.",
+  }),
+  fitues_id: Joi.number().integer().positive().optional().allow(null).messages({
+    "number.base": "Winner ID must be a valid number.",
+    "number.positive": "Winner ID must be a positive integer.",
+  }),
+  shenime: Joi.string().optional().allow(null, "").messages({
+    "string.base": "Notes must be a valid string.",
+  }),
+  mvp_id: Joi.number().integer().positive().optional().allow(null).messages({
+    "number.base": "MVP ID must be a valid number.",
+    "number.positive": "MVP ID must be a positive integer.",
+  }),
+});
+
+function parsePositiveInteger(value) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
 
 const matchResultInclude = {
   matches: {
@@ -93,10 +155,16 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     mvp_id,
   } = req.body;
 
-  if (!ndeshja_id) {
-    return res.status(400).json({
-      error: "The following fields are required: ndeshja_id",
-    });
+  const { error } = matchResultCreateSchema.validate({
+    ndeshja_id,
+    golat_shtepiak,
+    golat_mysafir,
+    fitues_id,
+    shenime,
+    mvp_id,
+  });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
 
   try {
@@ -113,17 +181,17 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     });
 
     // Recalculate standings for the tournament this match belongs to
-    try{
+    try {
       const match = await prisma.matches.findUnique({
         where: {
-          id: ndeshja_id
+          id: ndeshja_id,
         },
         select: {
           turneu_id: true,
         },
       });
-      if(match) await recalculateStandings(match.turneu_id);
-    }catch(err){
+      if (match) await recalculateStandings(match.turneu_id);
+    } catch (err) {
       console.error("Standings recalculation failed", err);
     }
 
@@ -136,6 +204,11 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 // Route for updating an existing match result by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
+  const matchResultId = parsePositiveInteger(id);
+  if (!matchResultId) {
+    return res.status(400).json({ error: "The match result ID is invalid." });
+  }
+
   const {
     ndeshja_id,
     golat_shtepiak,
@@ -145,9 +218,21 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     mvp_id,
   } = req.body;
 
+  const { error } = matchResultUpdateSchema.validate({
+    ndeshja_id,
+    golat_shtepiak,
+    golat_mysafir,
+    fitues_id,
+    shenime,
+    mvp_id,
+  });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
   try {
     const existing = await prisma.matchresults.findUnique({
-      where: { id: Number(id) },
+      where: { id: matchResultId },
       select: { id: true },
     });
 
@@ -156,7 +241,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     }
 
     const updated = await prisma.matchresults.update({
-      where: { id: Number(id) },
+      where: { id: matchResultId },
       data: {
         ndeshja_id,
         golat_shtepiak,
@@ -169,17 +254,17 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     });
 
     // Recalculate standings for the tournament this match belongs to
-    try{
+    try {
       const match = await prisma.matches.findUnique({
         where: {
-          id: ndeshja_id
+          id: ndeshja_id,
         },
         select: {
           turneu_id: true,
         },
       });
-      if(match) await recalculateStandings(match.turneu_id);
-    }catch(err){
+      if (match) await recalculateStandings(match.turneu_id);
+    } catch (err) {
       console.error("Standings recalculation failed", err);
     }
 
@@ -192,10 +277,15 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 // Route for deleting an existing match result by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
+  const matchResultId = parsePositiveInteger(id);
+  if (!matchResultId) {
+    return res.status(400).json({ error: "The match result ID is invalid." });
+  }
+
   try {
     const existing = await prisma.matchresults.findUnique({
-      where: { id: Number(id) },
-      include: { 
+      where: { id: matchResultId },
+      include: {
         matches: {
           select: {
             turneu_id: true,
@@ -209,18 +299,17 @@ router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
     }
 
     await prisma.matchresults.delete({
-      where: { id: Number(id) },
+      where: { id: matchResultId },
     });
 
     // Recalculate standings for the tournament this match belongs to
-    try{
-      if(existing?.matches?.turneu_id){
+    try {
+      if (existing?.matches?.turneu_id) {
         await recalculateStandings(existing.matches.turneu_id);
       }
-    }catch(err){
+    } catch (err) {
       console.error("Standings recalculation failed", err);
     }
-
 
     res.json({ message: "Match result deleted successfully" });
   } catch (err) {
