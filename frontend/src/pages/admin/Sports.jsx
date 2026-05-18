@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import * as yup from 'yup';
 import AuthContext from '../../context/AuthContext';
 import api from '../../config/axiosInstance';
 import { Alert } from '../../components/Alert';
@@ -13,6 +14,41 @@ const initialFormData = {
 };
 
 const sportTypeOptions = ['Ekipor', 'Individual', 'I dyfishtë'];
+
+const sportCreateSchema = yup.object().shape({
+  emertimi: yup
+    .string()
+    .min(2, 'Sport name must be at least 2 characters')
+    .required('Sport name is required'),
+  pershkrimi: yup
+    .string()
+    .min(5, 'Description must be at least 5 characters')
+    .required('Description is required'),
+  numri_lojtareve: yup
+    .number()
+    .positive('Number of players must be positive')
+    .required('Number of players is required'),
+  lloji: yup
+    .string()
+    .oneOf(sportTypeOptions, 'Invalid sport type')
+    .required('Sport type is required'),
+});
+
+const sportUpdateSchema = yup.object().shape({
+  emertimi: yup
+    .string()
+    .min(2, 'Sport name must be at least 2 characters'),
+  pershkrimi: yup
+    .string()
+    .min(5, 'Description must be at least 5 characters'),
+  numri_lojtareve: yup
+    .number()
+    .positive('Number of players must be positive')
+    .nullable(),
+  lloji: yup
+    .string()
+    .oneOf(sportTypeOptions, 'Invalid sport type'),
+});
 
 export default function SportsManagment() {
   // Uses auth context for access control and initial auth-loading state.
@@ -30,6 +66,7 @@ export default function SportsManagment() {
   const [searchQuery, setSearchQuery] = useState('');
   const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [formErrors, setFormErrors] = useState({});
 
   // Fetch sports data from backend
   useEffect(() => {
@@ -66,6 +103,9 @@ export default function SportsManagment() {
       ...prev,
       [name]: value
     }));
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const buildSportPayload = () => ({
@@ -79,7 +119,10 @@ export default function SportsManagment() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormErrors({});
+
     try {
+      const validatedData = await sportCreateSchema.validate(formData, { abortEarly: false });
       const response = await api.post(`/sports`, buildSportPayload())
 
       const newSport = response.data;
@@ -88,18 +131,28 @@ export default function SportsManagment() {
       setShowModal(false);
       setAlert({ type: 'success', message: 'Sport created successfully!' });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error creating sport: ' + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: 'error', message: 'Error creating sport: ' + err.message });
+      }
     }
   };
 
   const handleCloseModal = () => {
     setFormData(initialFormData);
+    setFormErrors({});
     setShowModal(false);
   };
 
   // Modal close handlers
   const handleCloseEditModal = () => {
     setFormData(initialFormData);
+    setFormErrors({});
     setSelectedSport(null);
     setShowEditModal(false);
   };
@@ -143,8 +196,10 @@ export default function SportsManagment() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!selectedSport) return;
+    setFormErrors({});
 
     try {
+      await sportUpdateSchema.validate(formData, { abortEarly: false });
       const response = await api.put(`/sports/${selectedSport.id}`, buildSportPayload())
 
       const updatedSport = response.data;
@@ -154,7 +209,15 @@ export default function SportsManagment() {
       setShowEditModal(false);
       setAlert({ type: 'success', message: 'Sport updated successfully!' });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error updating sport: ' + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: 'error', message: 'Error updating sport: ' + err.message });
+      }
     }
   };
 
@@ -377,10 +440,10 @@ export default function SportsManagment() {
                     name="emertimi"
                     value={formData.emertimi}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.emertimi ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="e.g., Football"
-                    required
                   />
+                  {formErrors.emertimi && <p className='text-red-500 text-xs mt-1'>{formErrors.emertimi}</p>}
                 </div>
 
                 <div>
@@ -391,11 +454,11 @@ export default function SportsManagment() {
                     name="pershkrimi"
                     value={formData.pershkrimi}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.pershkrimi ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter description"
                     rows="3"
-                    required
                   />
+                  {formErrors.pershkrimi && <p className='text-red-500 text-xs mt-1'>{formErrors.pershkrimi}</p>}
                 </div>
 
                 <div>
@@ -407,10 +470,10 @@ export default function SportsManagment() {
                     name="numri_lojtareve"
                     value={formData.numri_lojtareve}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.numri_lojtareve ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="e.g., 11"
-                    required
                   />
+                  {formErrors.numri_lojtareve && <p className='text-red-500 text-xs mt-1'>{formErrors.numri_lojtareve}</p>}
                 </div>
 
                 <div>
@@ -421,8 +484,7 @@ export default function SportsManagment() {
                     name="lloji"
                     value={formData.lloji}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.lloji ? 'border-red-500' : 'border-gray-300'}`}
                   >
                     <option value="">Select type</option>
                     {sportTypeOptions.map((option) => (
@@ -431,6 +493,7 @@ export default function SportsManagment() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.lloji && <p className='text-red-500 text-xs mt-1'>{formErrors.lloji}</p>}
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -524,10 +587,10 @@ export default function SportsManagment() {
                     name="emertimi"
                     value={formData.emertimi}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${formErrors.emertimi ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="e.g., Football"
-                    required
                   />
+                  {formErrors.emertimi && <p className='text-red-500 text-xs mt-1'>{formErrors.emertimi}</p>}
                 </div>
 
                 <div>
@@ -538,11 +601,11 @@ export default function SportsManagment() {
                     name="pershkrimi"
                     value={formData.pershkrimi}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${formErrors.pershkrimi ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter description"
                     rows="3"
-                    required
                   />
+                  {formErrors.pershkrimi && <p className='text-red-500 text-xs mt-1'>{formErrors.pershkrimi}</p>}
                 </div>
 
                 <div>
@@ -554,10 +617,10 @@ export default function SportsManagment() {
                     name="numri_lojtareve"
                     value={formData.numri_lojtareve}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${formErrors.numri_lojtareve ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="e.g., 11"
-                    required
                   />
+                  {formErrors.numri_lojtareve && <p className='text-red-500 text-xs mt-1'>{formErrors.numri_lojtareve}</p>}
                 </div>
 
                 <div>
@@ -568,8 +631,7 @@ export default function SportsManagment() {
                     name="lloji"
                     value={formData.lloji}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${formErrors.lloji ? 'border-red-500' : 'border-gray-300'}`}
                   >
                     <option value="">Select type</option>
                     {sportTypeOptions.map((option) => (
@@ -578,6 +640,7 @@ export default function SportsManagment() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.lloji && <p className='text-red-500 text-xs mt-1'>{formErrors.lloji}</p>}
                 </div>
 
                 <div className="flex gap-4 pt-4">

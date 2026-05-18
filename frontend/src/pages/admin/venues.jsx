@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
@@ -14,6 +15,59 @@ const initialFormData = {
   ndricimi: false,
   statusi: "Aktiv",
 };
+
+const surfaceTypeOptions = ["Bari Natyror", "Bari Artificial", "Parket", "Beton", "PVC", "Tartan"];
+const statusOptions = ["Aktiv", "Nën Rinovim", "Joaktiv"];
+
+const venueCreateSchema = yup.object().shape({
+  emertimi: yup
+    .string()
+    .min(2, "Venue name must be at least 2 characters")
+    .required("Venue name is required"),
+  qyteti: yup
+    .string()
+    .min(2, "City must be at least 2 characters")
+    .required("City is required"),
+  adresa: yup
+    .string()
+    .min(3, "Address must be at least 3 characters"),
+  kapaciteti: yup
+    .number()
+    .positive("Capacity must be positive")
+    .nullable(),
+  lloji_siperfaqes: yup
+    .string()
+    .oneOf(surfaceTypeOptions, "Invalid surface type")
+    .required("Surface type is required"),
+  statusi: yup
+    .string()
+    .oneOf(statusOptions, "Invalid status")
+    .required("Status is required"),
+  ndricimi: yup.boolean(),
+});
+
+const venueUpdateSchema = yup.object().shape({
+  emertimi: yup
+    .string()
+    .min(2, "Venue name must be at least 2 characters"),
+  qyteti: yup
+    .string()
+    .min(2, "City must be at least 2 characters"),
+  adresa: yup
+    .string()
+    .min(3, "Address must be at least 3 characters"),
+  kapaciteti: yup
+    .number()
+    .positive("Capacity must be positive")
+    .nullable(),
+  lloji_siperfaqes: yup
+    .string()
+    .oneOf(surfaceTypeOptions, "Invalid surface type"),
+  statusi: yup
+    .string()
+    .oneOf(statusOptions, "Invalid status"),
+  ndricimi: yup.boolean(),
+});
 
 export default function Venues() {
   // Venue CRUD page protected by admin authentication context.
@@ -31,6 +85,7 @@ export default function Venues() {
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState(initialFormData);
   const [alert, setAlert] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
   // Loads venues when admin access is confirmed.
   useEffect(() => {
     const loadVenues = async () => {
@@ -71,10 +126,15 @@ export default function Venues() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleCloseModal = () => {
     resetForm();
+    setFormErrors({});
     setShowModal(false);
   };
 
@@ -85,6 +145,7 @@ export default function Venues() {
 
   const handleCloseEditModal = () => {
     resetForm();
+    setFormErrors({});
     setSelectedVenue(null);
     setShowEditModal(false);
   };
@@ -132,8 +193,10 @@ export default function Venues() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormErrors({});
 
     try {
+      await venueCreateSchema.validate(formData, { abortEarly: false });
       const response = await api.post(`/venues`, buildPayload())
 
       const data = response.data;
@@ -142,7 +205,15 @@ export default function Venues() {
       handleCloseModal();
       setAlert({ type: "success", message: "Venue created successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error creating venue: " + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: "error", message: "Error creating venue: " + err.message });
+      }
     }
   };
 
@@ -150,8 +221,10 @@ export default function Venues() {
     e.preventDefault();
 
     if (!selectedVenue) return;
+    setFormErrors({});
 
     try {
+      await venueUpdateSchema.validate(formData, { abortEarly: false });
       const response = await api.put(`/venues/${selectedVenue.id}`, buildPayload())
 
       const data = response.data;
@@ -160,7 +233,15 @@ export default function Venues() {
       handleCloseEditModal();
       setAlert({ type: "success", message: "Venue updated successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error updating venue: " + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: "error", message: "Error updating venue: " + err.message });
+      }
     }
   };
 
