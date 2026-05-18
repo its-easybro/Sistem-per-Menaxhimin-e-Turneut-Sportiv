@@ -1,7 +1,61 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
+import Joi from "joi";
+
 const router = express.Router();
+
+// Validation Schemas
+const venueCreateSchema = Joi.object({
+  emertimi: Joi.string().trim().required().messages({
+    "string.empty": "Venue name is required.",
+    "any.required": "Venue name is required.",
+  }),
+  adresa: Joi.string().trim().required().messages({
+    "string.empty": "Address is required.",
+    "any.required": "Address is required.",
+  }),
+  qyteti: Joi.string().trim().required().messages({
+    "string.empty": "City is required.",
+    "any.required": "City is required.",
+  }),
+  kapaciteti: Joi.number().integer().optional().allow(null).messages({
+    "number.base": "Capacity must be a valid number.",
+  }),
+  lloji_siperfaqes: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Surface type must be a string.",
+  }),
+  ndricimi: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Lighting must be a string.",
+  }),
+  statusi: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Status must be a string.",
+  }),
+});
+
+const venueUpdateSchema = Joi.object({
+  emertimi: Joi.string().trim().optional().messages({
+    "string.empty": "Venue name cannot be empty.",
+  }),
+  adresa: Joi.string().trim().optional().messages({
+    "string.empty": "Address cannot be empty.",
+  }),
+  qyteti: Joi.string().trim().optional().messages({
+    "string.empty": "City cannot be empty.",
+  }),
+  kapaciteti: Joi.number().integer().optional().allow(null).messages({
+    "number.base": "Capacity must be a valid number.",
+  }),
+  lloji_siperfaqes: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Surface type must be a string.",
+  }),
+  ndricimi: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Lighting must be a string.",
+  }),
+  statusi: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Status must be a string.",
+  }),
+});
 
 function parsePositiveInt(value) {
   const parsed = Number(value);
@@ -46,17 +100,23 @@ router.get("/:id", protect, async (req, res) => {
 
 // Route for creating a new venue. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
-  const { emertimi, adresa, qyteti, kapaciteti, lloji_siperfaqes, ndricimi, statusi } = req.body;
   try {
+    const { error, value } = venueCreateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { emertimi, adresa, qyteti, kapaciteti, lloji_siperfaqes, ndricimi, statusi } = value;
+
     const venue = await prisma.venues.create({
       data: {
         emertimi,
         adresa,
         qyteti,
-        kapaciteti,
-        lloji_siperfaqes,
-        ndricimi,
-        statusi,
+        kapaciteti: kapaciteti || null,
+        lloji_siperfaqes: lloji_siperfaqes || null,
+        ndricimi: ndricimi || null,
+        statusi: statusi || null,
       },
     });
     res.status(201).json(venue);
@@ -72,8 +132,12 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     return res.status(400).json({ error: "Invalid venue id" });
   }
 
-  const { emertimi, adresa, qyteti, kapaciteti, lloji_siperfaqes, ndricimi, statusi } = req.body;
   try {
+    const { error, value } = venueUpdateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
     const existingVenue = await prisma.venues.findUnique({
       where: { id: venueId },
     });
@@ -81,17 +145,21 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(404).json({ error: "Venue not found" });
     }
 
+    const { emertimi, adresa, qyteti, kapaciteti, lloji_siperfaqes, ndricimi, statusi } = value;
+
+    const venueData = {
+      ...(emertimi !== undefined && { emertimi }),
+      ...(adresa !== undefined && { adresa }),
+      ...(qyteti !== undefined && { qyteti }),
+      ...(kapaciteti !== undefined && { kapaciteti: kapaciteti || null }),
+      ...(lloji_siperfaqes !== undefined && { lloji_siperfaqes: lloji_siperfaqes || null }),
+      ...(ndricimi !== undefined && { ndricimi: ndricimi || null }),
+      ...(statusi !== undefined && { statusi: statusi || null }),
+    };
+
     const venue = await prisma.venues.update({
       where: { id: venueId },
-      data: {
-        emertimi,
-        adresa,
-        qyteti,
-        kapaciteti,
-        lloji_siperfaqes,
-        ndricimi,
-        statusi,
-      },
+      data: venueData,
     });
 
     res.json(venue);

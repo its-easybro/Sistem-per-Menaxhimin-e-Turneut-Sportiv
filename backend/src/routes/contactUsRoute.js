@@ -1,9 +1,28 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
-const router = express.Router()
+import Joi from "joi";
+
+const router = express.Router();
 
 const MESSAGE_MAX_LENGTH = 500;
+
+// Validation Schemas
+const contactMessageSchema = Joi.object({
+  emri: Joi.string().trim().required().messages({
+    "string.empty": "Name is required.",
+    "any.required": "Name is required.",
+  }),
+  email: Joi.string().trim().email().required().messages({
+    "string.email": "Email must be valid.",
+    "any.required": "Email is required.",
+  }),
+  mesazhi: Joi.string().trim().max(MESSAGE_MAX_LENGTH).required().messages({
+    "string.empty": "Message is required.",
+    "string.max": `Message must be ${MESSAGE_MAX_LENGTH} characters or less.`,
+    "any.required": "Message is required.",
+  }),
+});
 
 router.get("/", protect, requireRole("is_admin"), async (req, res) => {
     try{
@@ -17,25 +36,22 @@ router.get("/", protect, requireRole("is_admin"), async (req, res) => {
 })
 
 router.post("/", async (req, res) => {
-    const { emri, email, mesazhi } = req.body;
+    try {
+        const { error, value } = contactMessageSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
 
-    if (!emri || !email || !mesazhi) {
-        return res.status(400).json({ error: "All fields are required"})
-    }
+        const { emri, email, mesazhi } = value;
 
-    if (mesazhi.length > MESSAGE_MAX_LENGTH) {
-        return res.status(400).json({ error: `Message must be ${MESSAGE_MAX_LENGTH} characters or less.` });
-    }
-
-    try{
         const msg = await prisma.contactMessages.create({
             data: { emri, email, mesazhi }
-        })
+        });
         res.status(201).json(msg);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-})
+});
 
 // Mark as read
 router.patch("/:id/read", protect, requireRole("is_admin"), async (req, res) => {

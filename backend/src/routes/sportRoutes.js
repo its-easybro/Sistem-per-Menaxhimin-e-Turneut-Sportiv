@@ -1,47 +1,45 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
+import Joi from "joi";
+
 const router = express.Router();
 
-// Posible sport types
-const sportTypeOptions = ["Ekipor", "Individual", "I dyfishtë"];
+// Validation Schemas
+const sportCreateSchema = Joi.object({
+  emertimi: Joi.string().trim().required().messages({
+    "string.empty": "The sport name is required.",
+    "any.required": "The sport name is required.",
+  }),
+  pershkrimi: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Description must be a string.",
+  }),
+  numri_lojtareve: Joi.number().integer().positive().required().messages({
+    "number.base": "The number of players must be a valid number.",
+    "number.positive": "The number of players must be a positive integer.",
+    "any.required": "The number of players is required.",
+  }),
+  lloji: Joi.string().trim().valid("Ekipor", "Individual", "I dyfishtë").required().messages({
+    "any.only": "The type must be one of: Ekipor, Individual, I dyfishtë.",
+    "any.required": "Sport type is required.",
+  }),
+});
 
-// Normalizes the sport type to handle variations of the same value
-function normalizeSportType(value) {
-  if (value === "I dyfishtÃ«" || value === "I dyfishte") {
-    return "I dyfishtë";
-  }
-
-  return value;
-}
-
-// Validates the sport data and converts it to the appropriate format for the database
-function validateSportPayload(body) {
-  const { emertimi, pershkrimi, numri_lojtareve, lloji } = body;
-
-  if (!emertimi?.trim()) {
-    return { error: "The sport name is required." };
-  }
-
-  const playersCount = Number(numri_lojtareve);
-  if (!Number.isInteger(playersCount) || playersCount <= 0) {
-    return { error: "The number of players must be a positive integer." };
-  }
-
-  const normalizedType = normalizeSportType(lloji);
-  if (!sportTypeOptions.includes(normalizedType)) {
-    return { error: `The type must be one of: ${sportTypeOptions.join(", ")}.` };
-  }
-
-  return {
-    value: {
-      emertimi: emertimi.trim(),
-      pershkrimi: pershkrimi?.trim() || null,
-      numri_lojtareve: playersCount,
-      lloji: normalizedType,
-    },
-  };
-}
+const sportUpdateSchema = Joi.object({
+  emertimi: Joi.string().trim().optional().messages({
+    "string.empty": "The sport name cannot be empty.",
+  }),
+  pershkrimi: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Description must be a string.",
+  }),
+  numri_lojtareve: Joi.number().integer().positive().optional().messages({
+    "number.base": "The number of players must be a valid number.",
+    "number.positive": "The number of players must be a positive integer.",
+  }),
+  lloji: Joi.string().trim().valid("Ekipor", "Individual", "I dyfishtë").optional().messages({
+    "any.only": "The type must be one of: Ekipor, Individual, I dyfishtë.",
+  }),
+});
 
 function parsePositiveInt(value) {
   const parsed = Number(value);
@@ -86,17 +84,18 @@ router.get("/:id", protect, async (req, res) => {
 
 // Route for creating a new sport. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
-  const validation = validateSportPayload(req.body);
-  if (validation.error) {
-    return res.status(400).json({ error: validation.error });
-  }
-
-  const { emertimi, pershkrimi, numri_lojtareve, lloji } = validation.value;
   try {
+    const { error, value } = sportCreateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { emertimi, pershkrimi, numri_lojtareve, lloji } = value;
+
     const sport = await prisma.sports.create({
       data: {
         emertimi,
-        pershkrimi,
+        pershkrimi: pershkrimi || null,
         numri_lojtareve,
         lloji,
       },
@@ -114,14 +113,12 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     return res.status(400).json({ error: "Invalid sport id" });
   }
 
-  const validation = validateSportPayload(req.body);
-  if (validation.error) {
-    return res.status(400).json({ error: validation.error });
-  }
-
-  const { emertimi, pershkrimi, numri_lojtareve, lloji } = validation.value;
-
   try {
+    const { error, value } = sportUpdateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
     const existingSport = await prisma.sports.findUnique({
       where: { id: sportId },
     });
@@ -129,14 +126,18 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(404).json({ error: "Sport not found" });
     }
 
+    const { emertimi, pershkrimi, numri_lojtareve, lloji } = value;
+
+    const sportData = {
+      ...(emertimi !== undefined && { emertimi }),
+      ...(pershkrimi !== undefined && { pershkrimi: pershkrimi || null }),
+      ...(numri_lojtareve !== undefined && { numri_lojtareve }),
+      ...(lloji !== undefined && { lloji }),
+    };
+
     const sport = await prisma.sports.update({
       where: { id: sportId },
-      data: {
-        emertimi,
-        pershkrimi,
-        numri_lojtareve,
-        lloji,
-      },
+      data: sportData,
     });
     res.json(sport);
   } catch (err) {
