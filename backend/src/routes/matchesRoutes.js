@@ -1,9 +1,90 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";
+import Joi from "joi";
 
 const router = express.Router();
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
+
+// Validation Schemas
+const matchCreateSchema = Joi.object({
+  turneu_id: Joi.number().integer().positive().required().messages({
+    "number.base": "Tournament ID must be a valid number.",
+    "number.positive": "Tournament ID must be positive.",
+    "any.required": "Tournament ID is required.",
+  }),
+  ekipi_shtepiak_id: Joi.number().integer().positive().required().messages({
+    "number.base": "Home team ID must be a valid number.",
+    "number.positive": "Home team ID must be positive.",
+    "any.required": "Home team ID is required.",
+  }),
+  ekipi_mysafir_id: Joi.number().integer().positive().required().messages({
+    "number.base": "Away team ID must be a valid number.",
+    "number.positive": "Away team ID must be positive.",
+    "any.required": "Away team ID is required.",
+  }),
+  data_ndeshjes: Joi.date().required().messages({
+    "date.base": "Match date must be a valid date.",
+    "any.required": "Match date is required.",
+  }),
+  ora_fillimit: Joi.string().optional().allow("", null).pattern(/^\d{2}:\d{2}(:\d{2})?$/).messages({
+    "string.pattern.base": "Match time must be in HH:MM or HH:MM:SS format.",
+  }),
+  fusha_id: Joi.number().integer().positive().optional().allow(null).messages({
+    "number.base": "Field ID must be a valid number.",
+    "number.positive": "Field ID must be positive.",
+  }),
+  statusi: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Status must be a string.",
+  }),
+  faza: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Phase must be a string.",
+  }),
+});
+
+const matchUpdateSchema = Joi.object({
+  turneu_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "Tournament ID must be a valid number.",
+    "number.positive": "Tournament ID must be positive.",
+  }),
+  ekipi_shtepiak_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "Home team ID must be a valid number.",
+    "number.positive": "Home team ID must be positive.",
+  }),
+  ekipi_mysafir_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "Away team ID must be a valid number.",
+    "number.positive": "Away team ID must be positive.",
+  }),
+  data_ndeshjes: Joi.date().optional().messages({
+    "date.base": "Match date must be a valid date.",
+  }),
+  ora_fillimit: Joi.string().optional().allow("", null).pattern(/^\d{2}:\d{2}(:\d{2})?$/).messages({
+    "string.pattern.base": "Match time must be in HH:MM or HH:MM:SS format.",
+  }),
+  fusha_id: Joi.number().integer().positive().optional().allow(null).messages({
+    "number.base": "Field ID must be a valid number.",
+    "number.positive": "Field ID must be positive.",
+  }),
+  statusi: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Status must be a string.",
+  }),
+  faza: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Phase must be a string.",
+  }),
+});
+
+const matchScoreSchema = Joi.object({
+  golat_shtepiak: Joi.number().integer().min(0).required().messages({
+    "number.base": "Home score must be a valid number.",
+    "number.min": "Home score cannot be negative.",
+    "any.required": "Home score is required.",
+  }),
+  golat_mysafir: Joi.number().integer().min(0).required().messages({
+    "number.base": "Away score must be a valid number.",
+    "number.min": "Away score cannot be negative.",
+    "any.required": "Away score is required.",
+  }),
+});
 
 function parsePositiveInt(value) {
   const parsed = Number(value);
@@ -339,29 +420,27 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
-  const {
-    turneu_id,
-    ekipi_shtepiak_id,
-    ekipi_mysafir_id,
-    data_ndeshjes,
-    ora_fillimit,
-    fusha_id,
-    statusi,
-    faza,
-  } = req.body;
-
-  if (!turneu_id || !ekipi_shtepiak_id || !ekipi_mysafir_id || !data_ndeshjes) {
-    return res.status(400).json({
-      error:
-        "Fields required: turneu_id, ekipi_shtepiak_id, ekipi_mysafir_id, data_ndeshjes",
-    });
-  }
-
-  if (Number(ekipi_shtepiak_id) === Number(ekipi_mysafir_id)) {
-    return res.status(400).json({ error: "The teams cannot be the same" });
-  }
-
   try {
+    const { error, value } = matchCreateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const {
+      turneu_id,
+      ekipi_shtepiak_id,
+      ekipi_mysafir_id,
+      data_ndeshjes,
+      ora_fillimit,
+      fusha_id,
+      statusi,
+      faza,
+    } = value;
+
+    if (ekipi_shtepiak_id === ekipi_mysafir_id) {
+      return res.status(400).json({ error: "The teams cannot be the same" });
+    }
+
     if (req.user.is_organizer) {
       const ownsTournament = await organizerOwnsTournament(turneu_id, req.user.id);
       if (!ownsTournament) {
@@ -369,13 +448,10 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
       }
     }
 
-    const numericTurneuId = Number(turneu_id);
-    const numericHomeTeamId = Number(ekipi_shtepiak_id);
-    const numericAwayTeamId = Number(ekipi_mysafir_id);
     const matchValidation = await validateMatchTeamsForTournament({
-      turneu_id: numericTurneuId,
-      ekipi_shtepiak_id: numericHomeTeamId,
-      ekipi_mysafir_id: numericAwayTeamId,
+      turneu_id,
+      ekipi_shtepiak_id,
+      ekipi_mysafir_id,
     });
     if (!matchValidation.ok) {
       return res.status(matchValidation.status).json({ error: matchValidation.error });
@@ -383,12 +459,12 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
 
     const created = await prisma.matches.create({
       data: {
-        turneu_id: numericTurneuId,
-        ekipi_shtepiak_id: numericHomeTeamId,
-        ekipi_mysafir_id: numericAwayTeamId,
-        data_ndeshjes: new Date(data_ndeshjes),
+        turneu_id,
+        ekipi_shtepiak_id,
+        ekipi_mysafir_id,
+        data_ndeshjes,
         ora_fillimit: toMatchTimeValue(ora_fillimit),
-        fusha_id: fusha_id ? Number(fusha_id) : null,
+        fusha_id: fusha_id || null,
         statusi: statusi || "Planifikuar",
         faza: faza || null,
         kohezgjatja: DEFAULT_MATCH_DURATION_MINUTES,
@@ -407,26 +483,27 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
     return res.status(400).json({ error: "Invalid match id" });
   }
 
-  const {
-    turneu_id,
-    ekipi_shtepiak_id,
-    ekipi_mysafir_id,
-    data_ndeshjes,
-    ora_fillimit,
-    fusha_id,
-    statusi,
-    faza,
-  } = req.body;
-
-  if (
-    ekipi_shtepiak_id &&
-    ekipi_mysafir_id &&
-    Number(ekipi_shtepiak_id) === Number(ekipi_mysafir_id)
-  ) {
-    return res.status(400).json({ error: "The teams cannot be the same" });
-  }
-
   try {
+    const { error, value } = matchUpdateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const {
+      turneu_id,
+      ekipi_shtepiak_id,
+      ekipi_mysafir_id,
+      data_ndeshjes,
+      ora_fillimit,
+      fusha_id,
+      statusi,
+      faza,
+    } = value;
+
+    if (ekipi_shtepiak_id && ekipi_mysafir_id && ekipi_shtepiak_id === ekipi_mysafir_id) {
+      return res.status(400).json({ error: "The teams cannot be the same" });
+    }
+
     const existing = await prisma.matches.findUnique({
       where: { id: matchId },
       select: {
@@ -441,13 +518,9 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
       return res.status(404).json({ error: "The match was not found" });
     }
 
-    const targetTournamentId = turneu_id ? Number(turneu_id) : existing.turneu_id;
-    const targetHomeTeamId = ekipi_shtepiak_id
-      ? Number(ekipi_shtepiak_id)
-      : existing.ekipi_shtepiak_id;
-    const targetAwayTeamId = ekipi_mysafir_id
-      ? Number(ekipi_mysafir_id)
-      : existing.ekipi_mysafir_id;
+    const targetTournamentId = turneu_id ?? existing.turneu_id;
+    const targetHomeTeamId = ekipi_shtepiak_id ?? existing.ekipi_shtepiak_id;
+    const targetAwayTeamId = ekipi_mysafir_id ?? existing.ekipi_mysafir_id;
 
     if (req.user.is_organizer) {
       const ownsCurrentMatch = await organizerOwnsMatch(matchId, req.user.id);
@@ -467,18 +540,20 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
       return res.status(matchValidation.status).json({ error: matchValidation.error });
     }
 
+    const updateData = {
+      ...(turneu_id !== undefined && { turneu_id }),
+      ...(ekipi_shtepiak_id !== undefined && { ekipi_shtepiak_id }),
+      ...(ekipi_mysafir_id !== undefined && { ekipi_mysafir_id }),
+      ...(data_ndeshjes !== undefined && { data_ndeshjes }),
+      ...(ora_fillimit !== undefined && { ora_fillimit: toMatchTimeValue(ora_fillimit) }),
+      ...(fusha_id !== undefined && { fusha_id: fusha_id || null }),
+      ...(statusi !== undefined && { statusi: statusi || null }),
+      ...(faza !== undefined && { faza: faza || null }),
+    };
+
     const updated = await prisma.matches.update({
       where: { id: matchId },
-      data: {
-        turneu_id: turneu_id ? targetTournamentId : undefined,
-        ekipi_shtepiak_id: ekipi_shtepiak_id ? targetHomeTeamId : undefined,
-        ekipi_mysafir_id: ekipi_mysafir_id ? targetAwayTeamId : undefined,
-        data_ndeshjes: data_ndeshjes ? new Date(data_ndeshjes) : undefined,
-        ora_fillimit: toMatchTimeValue(ora_fillimit),
-        fusha_id: fusha_id === undefined ? undefined : fusha_id ? Number(fusha_id) : null,
-        statusi: statusi ?? undefined,
-        faza: faza === undefined ? undefined : faza || null,
-      },
+      data: updateData,
     });
 
     res.json(updated);
@@ -526,19 +601,14 @@ router.patch("/:id/score", protect, requireRole("is_admin", "is_organizer", "is_
     return res.status(400).json({ error: "Invalid match id" });
   }
 
-  const homeScore = Number(req.body.golat_shtepiak);
-  const awayScore = Number(req.body.golat_mysafir);
+  try {
+    const { error, value } = matchScoreSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
-  if(
-    !Number.isInteger(homeScore) ||
-    !Number.isInteger(awayScore) ||
-    homeScore < 0 ||
-    awayScore < 0
-  ){
-    return res.status(400).json({ error: "Scores must be non-negative numbers" });
-  }
+    const { golat_shtepiak, golat_mysafir } = value;
 
-  try{
     if(req.user.is_organizer){
       const ownsMatch = await organizerOwnsMatch(matchId, req.user.id);
       if(!ownsMatch){
@@ -580,13 +650,13 @@ router.patch("/:id/score", protect, requireRole("is_admin", "is_organizer", "is_
     const result = await prisma.matchresults.upsert({
       where: { ndeshja_id: matchId },
       update: {
-        golat_shtepiak: homeScore,
-        golat_mysafir: awayScore,
+        golat_shtepiak,
+        golat_mysafir,
       },
       create: {
         ndeshja_id: matchId,
-        golat_shtepiak: homeScore,
-        golat_mysafir: awayScore,
+        golat_shtepiak,
+        golat_mysafir,
       },
     });
 
@@ -602,7 +672,6 @@ router.patch("/:id/score", protect, requireRole("is_admin", "is_organizer", "is_
   }catch(err){
     res.status(500).json({ error: err.message });
   }
-
 });
 
 export default router;

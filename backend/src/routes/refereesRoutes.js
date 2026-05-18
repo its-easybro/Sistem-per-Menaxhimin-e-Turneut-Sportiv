@@ -1,8 +1,86 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
+import Joi from "joi";
 
 const router = express.Router();
+
+// Validation Schemas
+const promoteSchema = Joi.object({
+  user_id: Joi.number().integer().positive().required().messages({
+    "number.base": "User ID must be a valid number.",
+    "number.positive": "User ID must be positive.",
+    "any.required": "User ID is required.",
+  }),
+  telefoni: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Phone number must be a string.",
+  }),
+  nr_licences: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "License number must be a string.",
+  }),
+  kategoria: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Category must be a string.",
+  }),
+  pervoja_vitesh: Joi.number().integer().min(0).optional().allow(null).messages({
+    "number.base": "Years of experience must be a valid number.",
+    "number.min": "Years of experience must be non-negative.",
+  }),
+});
+
+// Validation schema for creating a new referee. All fields are required except for phone, license number, category, and years of experience.
+const refereeCreateSchema = Joi.object({
+  emri: Joi.string().trim().required().messages({
+    "string.empty": "First name is required.",
+    "any.required": "First name is required.",
+  }),
+  mbiemri: Joi.string().trim().required().messages({
+    "string.empty": "Last name is required.",
+    "any.required": "Last name is required.",
+  }),
+  email: Joi.string().trim().email().required().messages({
+    "string.email": "Email must be valid.",
+    "any.required": "Email is required.",
+  }),
+  telefoni: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Phone number must be a string.",
+  }),
+  nr_licences: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "License number must be a string.",
+  }),
+  kategoria: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Category must be a string.",
+  }),
+  pervoja_vitesh: Joi.number().integer().min(0).optional().allow(null).messages({
+    "number.base": "Years of experience must be a valid number.",
+    "number.min": "Years of experience must be non-negative.",
+  }),
+});
+
+// Validation schema for updating a referee. All fields are optional, but if provided they must be valid.
+const refereeUpdateSchema = Joi.object({
+  emri: Joi.string().trim().optional().messages({
+    "string.empty": "First name cannot be empty.",
+  }),
+  mbiemri: Joi.string().trim().optional().messages({
+    "string.empty": "Last name cannot be empty.",
+  }),
+  email: Joi.string().trim().email().optional().messages({
+    "string.email": "Email must be valid.",
+  }),
+  telefoni: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Phone number must be a string.",
+  }),
+  nr_licences: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "License number must be a string.",
+  }),
+  kategoria: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Category must be a string.",
+  }),
+  pervoja_vitesh: Joi.number().integer().min(0).optional().allow(null).messages({
+    "number.base": "Years of experience must be a valid number.",
+    "number.min": "Years of experience must be non-negative.",
+  }),
+});
 
 async function ensureRefereeUser(userId) {
   if (!userId) return null;
@@ -58,15 +136,16 @@ router.get("/", protect, async (req, res) => {
 
 // Route for promoting a user to referee. Must be BEFORE /:id
 router.post("/promote", protect, requireRole("is_admin"), async (req, res) => {
-  const { user_id, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
-
-  if (!user_id) {
-    return res.status(400).json({ error: "user_id is required" });
-  }
-
   try {
+    const { error, value } = promoteSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { user_id, telefoni, nr_licences, kategoria, pervoja_vitesh } = value;
+
     const userResult = await prisma.user.findUnique({
-      where: { id: Number(user_id) },
+      where: { id: user_id },
       select: { id: true, roli: true, emri: true, mbiemri: true, email: true },
     });
 
@@ -74,17 +153,15 @@ router.post("/promote", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Ndrysho rolin në gjyqtar nëse nuk është
     if (userResult.roli !== "gjyqtar") {
       await prisma.user.update({
-        where: { id: Number(user_id) },
+        where: { id: user_id },
         data: { roli: "gjyqtar" },
       });
     }
 
-    // Kontrollo nëse ekziston tashmë
     const existing = await prisma.referees.findFirst({
-      where: { user_id: Number(user_id) },
+      where: { user_id },
     });
 
     if (existing) {
@@ -99,8 +176,8 @@ router.post("/promote", protect, requireRole("is_admin"), async (req, res) => {
         telefoni: telefoni || null,
         nr_licences: nr_licences || null,
         kategoria: kategoria || null,
-        pervoja_vitesh: pervoja_vitesh ? Number(pervoja_vitesh) : null,
-        user_id: Number(user_id),
+        pervoja_vitesh: pervoja_vitesh || null,
+        user_id,
       },
     });
 
@@ -131,17 +208,23 @@ router.get("/:id", protect, async (req, res) => {
 
 // Route for creating a new referee. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
-  const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
   try {
+    const { error, value } = refereeCreateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = value;
+
     const referee = await prisma.referees.create({
       data: {
         emri,
         mbiemri,
         email,
-        telefoni,
-        nr_licences,
-        kategoria,
-        pervoja_vitesh,
+        telefoni: telefoni || null,
+        nr_licences: nr_licences || null,
+        kategoria: kategoria || null,
+        pervoja_vitesh: pervoja_vitesh || null,
       },
     });
     res.status(201).json(referee);
@@ -156,17 +239,35 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   if (!refereeId) {
     return res.status(400).json({ error: "Invalid referee id" });
   }
-  const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = req.body;
+
   try {
+    const { error, value } = refereeUpdateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
     const existingReferee = await prisma.referees.findUnique({
       where: { id: refereeId },
     });
     if (!existingReferee) {
       return res.status(404).json({ error: "Referee not found" });
     }
+
+    const { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh } = value;
+
+    const refereeData = {
+      ...(emri !== undefined && { emri }),
+      ...(mbiemri !== undefined && { mbiemri }),
+      ...(email !== undefined && { email }),
+      ...(telefoni !== undefined && { telefoni: telefoni || null }),
+      ...(nr_licences !== undefined && { nr_licences: nr_licences || null }),
+      ...(kategoria !== undefined && { kategoria: kategoria || null }),
+      ...(pervoja_vitesh !== undefined && { pervoja_vitesh: pervoja_vitesh || null }),
+    };
+
     const referee = await prisma.referees.update({
       where: { id: refereeId },
-      data: { emri, mbiemri, email, telefoni, nr_licences, kategoria, pervoja_vitesh },
+      data: refereeData,
     });
     res.json(referee);
   } catch (err) {
