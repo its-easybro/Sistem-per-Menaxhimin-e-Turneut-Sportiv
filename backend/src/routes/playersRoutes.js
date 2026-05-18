@@ -6,9 +6,87 @@ import { dirname } from "path";
 import fs from "fs";
 import multer from "multer";
 import path from "path";
+import Joi from "joi";
+
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Validation Schemas
+const playerCreateSchema = Joi.object({
+  emri: Joi.string().trim().required().messages({
+    "string.empty": "First name is required.",
+    "any.required": "First name is required.",
+  }),
+  mbiemri: Joi.string().trim().required().messages({
+    "string.empty": "Last name is required.",
+    "any.required": "Last name is required.",
+  }),
+  data_lindjes: Joi.date().required().messages({
+    "date.base": "Date of birth must be a valid date.",
+    "any.required": "Date of birth is required.",
+  }),
+  pozicioni: Joi.string().trim().required().messages({
+    "string.empty": "Position is required.",
+    "any.required": "Position is required.",
+  }),
+  numri: Joi.number().integer().min(0).required().messages({
+    "number.base": "Number must be a valid integer.",
+    "number.min": "Number must be non-negative.",
+    "any.required": "Number is required.",
+  }),
+  ekipi_id: Joi.number().integer().positive().optional().allow(null).messages({
+    "number.base": "Team must be a valid number.",
+    "number.positive": "Team ID must be positive.",
+  }),
+  gjatesia: Joi.number().optional().allow(null).messages({
+    "number.base": "Height must be a valid number.",
+  }),
+  pesha: Joi.number().optional().allow(null).messages({
+    "number.base": "Weight must be a valid number.",
+  }),
+  kombesia: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Nationality must be a string.",
+  }),
+  foto: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Photo must be a string.",
+  }),
+});
+
+const playerUpdateSchema = Joi.object({
+  emri: Joi.string().trim().optional().messages({
+    "string.empty": "First name cannot be empty.",
+  }),
+  mbiemri: Joi.string().trim().optional().messages({
+    "string.empty": "Last name cannot be empty.",
+  }),
+  data_lindjes: Joi.date().optional().messages({
+    "date.base": "Date of birth must be a valid date.",
+  }),
+  pozicioni: Joi.string().trim().optional().messages({
+    "string.empty": "Position cannot be empty.",
+  }),
+  numri: Joi.number().integer().min(0).optional().messages({
+    "number.base": "Number must be a valid integer.",
+    "number.min": "Number must be non-negative.",
+  }),
+  ekipi_id: Joi.number().integer().positive().optional().allow(null).messages({
+    "number.base": "Team must be a valid number.",
+    "number.positive": "Team ID must be positive.",
+  }),
+  gjatesia: Joi.number().optional().allow(null).messages({
+    "number.base": "Height must be a valid number.",
+  }),
+  pesha: Joi.number().optional().allow(null).messages({
+    "number.base": "Weight must be a valid number.",
+  }),
+  kombesia: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Nationality must be a string.",
+  }),
+  foto: Joi.string().trim().optional().allow("", null).messages({
+    "string.base": "Photo must be a string.",
+  }),
+});
 
 const parsePositiveInt = (value) => {
   const parsed = Number(value);
@@ -201,35 +279,28 @@ router.get("/", protect, async (req, res) => {
 
 // Route for creating a new player. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
-  const {
-    emri,
-    mbiemri,
-    data_lindjes,
-    ekipi_id,
-    pozicioni,
-    numri,
-    gjatesia,
-    pesha,
-    kombesia,
-    foto,
-  } = req.body;
-
-  // Validates required fields
-  if (!emri || !mbiemri || !data_lindjes || !pozicioni || !numri) {
-    return res.status(400).json({
-      error: "The following fields are required: emri, mbiemri, data_lindjes, pozicioni, numri",
-    });
-  }
-
-  const normalized = normalizePlayerPayload(req.body);
-  if (!normalized.ok) {
-    return res.status(400).json({ error: normalized.error });
-  }
-
   try {
-    if (normalized.data.ekipi_id) {
+    const { error, value } = playerCreateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const {
+      emri,
+      mbiemri,
+      data_lindjes,
+      ekipi_id,
+      pozicioni,
+      numri,
+      gjatesia,
+      pesha,
+      kombesia,
+      foto,
+    } = value;
+
+    if (ekipi_id) {
       const team = await prisma.teams.findUnique({
-        where: { id: normalized.data.ekipi_id },
+        where: { id: ekipi_id },
         select: { id: true, sporti_id: true },
       });
 
@@ -238,8 +309,24 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
       }
     }
 
+    const playerData = {
+      emri,
+      mbiemri,
+      data_lindjes,
+      pozicioni,
+      numri,
+      gjatesia: gjatesia || null,
+      pesha: pesha || null,
+      kombesia: kombesia || null,
+      foto: foto || null,
+    };
+
+    if (ekipi_id) {
+      playerData.ekipi_id = ekipi_id;
+    }
+
     const created = await prisma.players.create({
-      data: normalized.data,
+      data: playerData,
     });
 
     const result = await prisma.players.findUnique({
@@ -290,28 +377,38 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     return res.status(400).json({ error: "Invalid player id" });
   }
 
-  const {
-    emri,
-    mbiemri,
-    data_lindjes,
-    ekipi_id,
-    pozicioni,
-    numri,
-    gjatesia,
-    pesha,
-    kombesia,
-    foto,
-  } = req.body;
-
-  const normalized = normalizePlayerPayload(req.body);
-  if (!normalized.ok) {
-    return res.status(400).json({ error: normalized.error });
-  }
-
   try {
-    if (normalized.data.ekipi_id) {
+    const { error, value } = playerUpdateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const existing = await prisma.players.findUnique({
+      where: { id: playerId },
+      select: { id: true, ekipi_id: true },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    const {
+      emri,
+      mbiemri,
+      data_lindjes,
+      ekipi_id,
+      pozicioni,
+      numri,
+      gjatesia,
+      pesha,
+      kombesia,
+      foto,
+    } = value;
+
+    const finalEkipiId = ekipi_id ?? existing.ekipi_id;
+    if (finalEkipiId) {
       const team = await prisma.teams.findUnique({
-        where: { id: normalized.data.ekipi_id },
+        where: { id: finalEkipiId },
         select: { id: true, sporti_id: true },
       });
 
@@ -320,18 +417,22 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
       }
     }
 
-    const existing = await prisma.players.findUnique({
-      where: { id: playerId },
-      select: { id: true },
-    });
-
-    if (!existing) {
-      return res.status(404).json({ error: "Player not found" });
-    }
+    const playerData = {
+      ...(emri !== undefined && { emri }),
+      ...(mbiemri !== undefined && { mbiemri }),
+      ...(data_lindjes !== undefined && { data_lindjes }),
+      ...(pozicioni !== undefined && { pozicioni }),
+      ...(numri !== undefined && { numri }),
+      ...(gjatesia !== undefined && { gjatesia: gjatesia || null }),
+      ...(pesha !== undefined && { pesha: pesha || null }),
+      ...(kombesia !== undefined && { kombesia: kombesia || null }),
+      ...(foto !== undefined && { foto: foto || null }),
+      ...(ekipi_id !== undefined && { ekipi_id: finalEkipiId || null }),
+    };
 
     const result = await prisma.players.update({
       where: { id: playerId },
-      data: normalized.data,
+      data: playerData,
       select: {
         id: true,
         emri: true,
