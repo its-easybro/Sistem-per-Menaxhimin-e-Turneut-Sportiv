@@ -21,32 +21,141 @@ const tournamentStatusOptions = [
   "Anuluar",
 ];
 
-const normalizedTournamentTypeMap = {
-  "VetÃ«m Grup": "Vet\u00ebm Grup",
-  "VetÃ«m Eliminim": "Vet\u00ebm Eliminim",
-};
+const normalizedTournamentTypeMap = {};
 
-const normalizedTournamentStatusMap = {
-  "PÃ«rfunduar": "P\u00ebrfunduar",
-};
+const normalizedTournamentStatusMap = {};
 
 function normalizeTournamentType(value) {
-  if (typeof value !== "string") {
-    return value;
-  }
-
-  const trimmed = value.trim();
-  return normalizedTournamentTypeMap[trimmed] || trimmed;
+  return value;
 }
 
 function normalizeTournamentStatus(value) {
-  if (typeof value !== "string") {
-    return value;
-  }
-
-  const trimmed = value.trim();
-  return normalizedTournamentStatusMap[trimmed] || trimmed;
+  return value;
 }
+
+const tournamentParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required().messages({
+    "number.base": "Tournament ID must be a valid number.",
+    "number.positive": "Tournament ID must be a positive integer.",
+    "any.required": "Tournament ID is required.",
+  }),
+});
+
+const tournamentCreateSchema = Joi.object({
+  emertimi: Joi.string().trim().min(1).required().messages({
+    "string.empty": "The tournament name is required.",
+    "any.required": "The tournament name is required.",
+  }),
+  sporti_id: Joi.number().integer().positive().required().messages({
+    "number.base": "The sport ID is invalid.",
+    "number.positive": "The sport ID must be a positive integer.",
+    "any.required": "The sport ID is required.",
+  }),
+  lloji: Joi.string()
+    .valid(...tournamentTypeOptions)
+    .required()
+    .messages({
+      "any.only": `The type must be one of: ${tournamentTypeOptions.join(", ")}.`,
+      "any.required": "Tournament type is required.",
+    }),
+  data_fillimit: Joi.date().iso().required().messages({
+    "date.base": "The tournament dates are invalid.",
+    "date.iso": "The tournament dates are invalid.",
+    "any.required": "The start date is required.",
+  }),
+  data_perfundimit: Joi.date().iso().required().messages({
+    "date.base": "The tournament dates are invalid.",
+    "date.iso": "The tournament dates are invalid.",
+    "any.required": "The end date is required.",
+  }),
+  lokacioni: Joi.string().trim().optional().allow(null, "").messages({
+    "string.base": "Location must be a valid string.",
+  }),
+  organizatori_id: Joi.number()
+    .integer()
+    .positive()
+    .optional()
+    .allow(null)
+    .messages({
+      "number.base": "The organizer ID is invalid.",
+      "number.positive": "The organizer ID must be a positive integer.",
+    }),
+  cmimi_regjistrimit: Joi.number().min(0).optional().default(0).messages({
+    "number.base": "The registration price must be a non-negative number.",
+    "number.min": "The registration price must be a non-negative number.",
+  }),
+  statusi: Joi.string()
+    .valid(...tournamentStatusOptions)
+    .optional()
+    .default("Regjistrimi")
+    .messages({
+      "any.only": `The status must be one of: ${tournamentStatusOptions.join(", ")}.`,
+    }),
+  pershkrimi: Joi.string().trim().optional().allow(null, "").messages({
+    "string.base": "Description must be a valid string.",
+  }),
+}).external(async (value) => {
+  if (new Date(value.data_perfundimit) <= new Date(value.data_fillimit)) {
+    throw new Error("The end date must be after the start date.");
+  }
+});
+
+const tournamentUpdateSchema = Joi.object({
+  emertimi: Joi.string().trim().min(1).optional().messages({
+    "string.empty": "The tournament name cannot be empty.",
+  }),
+  sporti_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "The sport ID is invalid.",
+    "number.positive": "The sport ID must be a positive integer.",
+  }),
+  lloji: Joi.string()
+    .valid(...tournamentTypeOptions)
+    .optional()
+    .messages({
+      "any.only": `The type must be one of: ${tournamentTypeOptions.join(", ")}.`,
+    }),
+  data_fillimit: Joi.date().iso().optional().messages({
+    "date.base": "The tournament dates are invalid.",
+    "date.iso": "The tournament dates are invalid.",
+  }),
+  data_perfundimit: Joi.date().iso().optional().messages({
+    "date.base": "The tournament dates are invalid.",
+    "date.iso": "The tournament dates are invalid.",
+  }),
+  lokacioni: Joi.string().trim().optional().allow(null, "").messages({
+    "string.base": "Location must be a valid string.",
+  }),
+  organizatori_id: Joi.number()
+    .integer()
+    .positive()
+    .optional()
+    .allow(null)
+    .messages({
+      "number.base": "The organizer ID is invalid.",
+      "number.positive": "The organizer ID must be a positive integer.",
+    }),
+  cmimi_regjistrimit: Joi.number().min(0).optional().messages({
+    "number.base": "The registration price must be a non-negative number.",
+    "number.min": "The registration price must be a non-negative number.",
+  }),
+  statusi: Joi.string()
+    .valid(...tournamentStatusOptions)
+    .optional()
+    .messages({
+      "any.only": `The status must be one of: ${tournamentStatusOptions.join(", ")}.`,
+    }),
+  pershkrimi: Joi.string().trim().optional().allow(null, "").messages({
+    "string.base": "Description must be a valid string.",
+  }),
+}).external(async (value) => {
+  if (
+    value.data_perfundimit &&
+    value.data_fillimit &&
+    new Date(value.data_perfundimit) <= new Date(value.data_fillimit)
+  ) {
+    throw new Error("The end date must be after the start date.");
+  }
+});
 
 function handleTournamentError(err, res) {
   if (
@@ -57,7 +166,9 @@ function handleTournamentError(err, res) {
   }
 
   if (err?.code === "P2003") {
-    return res.status(400).json({ error: "The selected sport or organizer does not exist." });
+    return res
+      .status(400)
+      .json({ error: "The selected sport or organizer does not exist." });
   }
 
   if (err?.code === "P2004") {
@@ -67,7 +178,9 @@ function handleTournamentError(err, res) {
   }
 
   if (err?.code === "P2025") {
-    return res.status(404).json({ error: "Tournament or organizer not found." });
+    return res
+      .status(404)
+      .json({ error: "Tournament or organizer not found." });
   }
 
   return res.status(500).json({ error: err.message });
@@ -132,11 +245,15 @@ function validateTournamentPayload(body) {
   }
 
   if (!tournamentTypeOptions.includes(lloji)) {
-    return { error: `The type must be one of: ${tournamentTypeOptions.join(", ")}.` };
+    return {
+      error: `The type must be one of: ${tournamentTypeOptions.join(", ")}.`,
+    };
   }
 
   if (!tournamentStatusOptions.includes(statusi)) {
-    return { error: `The status must be one of: ${tournamentStatusOptions.join(", ")}.` };
+    return {
+      error: `The status must be one of: ${tournamentStatusOptions.join(", ")}.`,
+    };
   }
 
   if (!data_fillimit || !data_perfundimit) {
@@ -156,7 +273,9 @@ function validateTournamentPayload(body) {
 
   // Validates the registration price, it can be empty (default to 0) but if given it must be a non-negative number
   const registrationPrice =
-    cmimi_regjistrimit === "" || cmimi_regjistrimit === null || cmimi_regjistrimit === undefined
+    cmimi_regjistrimit === "" ||
+    cmimi_regjistrimit === null ||
+    cmimi_regjistrimit === undefined
       ? 0
       : Number(cmimi_regjistrimit);
 
@@ -166,7 +285,11 @@ function validateTournamentPayload(body) {
 
   // Allows admins to optionally assign a specific user as the organizer of the tournament.
   let organizerId = null;
-  if (organizatori_id !== "" && organizatori_id !== null && organizatori_id !== undefined) {
+  if (
+    organizatori_id !== "" &&
+    organizatori_id !== null &&
+    organizatori_id !== undefined
+  ) {
     organizerId = Number(organizatori_id);
 
     if (!Number.isInteger(organizerId) || organizerId <= 0) {
@@ -246,10 +369,14 @@ router.get("/", protect, async (req, res) => {
 
 // Route for getting a specific tournament by its ID
 router.get("/:id", protect, async (req, res) => {
-  const tournamentId = parsePositiveInteger(req.params.id);
-  if (!tournamentId) {
-    return res.status(400).json({ error: "The tournament ID is invalid." });
+  const { error, value } = tournamentParamSchema.validate({
+    id: req.params.id,
+  });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
+
+  const tournamentId = value.id;
 
   try {
     let result;
@@ -282,9 +409,9 @@ router.get("/:id", protect, async (req, res) => {
 
 // Route for creating a new tournament. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
-  const validation = validateTournamentPayload(req.body);
-  if (validation.error) {
-    return res.status(400).json({ error: validation.error });
+  const { error, value } = await tournamentCreateSchema.validateAsync(req.body);
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
 
   const {
@@ -298,7 +425,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
     cmimi_regjistrimit,
     statusi,
     pershkrimi,
-  } = validation.value;
+  } = value;
 
   try {
     // When a tournament is assigned, the chosen user automatically becomes an organizer.
@@ -329,16 +456,21 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 
 // Route for updating an existing tournament by its ID. This route is protected and only admins can use it.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const tournamentId = parsePositiveInteger(req.params.id);
-  if (!tournamentId) {
-    return res.status(400).json({ error: "The tournament ID is invalid." });
+  const { error: paramError, value: paramValue } = tournamentParamSchema.validate({
+    id: req.params.id,
+  });
+  if (paramError) {
+    return res.status(400).json({ error: paramError.details[0].message });
   }
 
-  const validation = validateTournamentPayload(req.body);
-  if (validation.error) {
-    return res.status(400).json({ error: validation.error });
+  const { error: bodyError, value: bodyValue } = await tournamentUpdateSchema.validateAsync(
+    req.body,
+  );
+  if (bodyError) {
+    return res.status(400).json({ error: bodyError.details[0].message });
   }
 
+  const tournamentId = paramValue.id;
   const {
     emertimi,
     sporti_id,
@@ -350,7 +482,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     cmimi_regjistrimit,
     statusi,
     pershkrimi,
-  } = validation.value;
+  } = bodyValue;
 
   try {
     const existingTournament = await prisma.tournaments.findUnique({
@@ -390,10 +522,12 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 
 // Route for deleting an existing tournament by its ID. This route is protected and only admins can use it.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
-  const tournamentId = parsePositiveInteger(req.params.id);
-  if (!tournamentId) {
-    return res.status(400).json({ error: "The tournament ID is invalid." });
+  const { error, value } = tournamentParamSchema.validate({ id: req.params.id });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
+
+  const tournamentId = value.id;
 
   try {
     const existingTournament = await prisma.tournaments.findUnique({

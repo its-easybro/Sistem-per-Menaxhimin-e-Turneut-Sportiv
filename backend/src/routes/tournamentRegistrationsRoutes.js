@@ -1,16 +1,70 @@
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
+import Joi from "joi";
 
 const router = express.Router();
 
 // Posible registration statuses
 const registrationStatusOptions = [
-  "NÃ« Pritje",
+  "Në Pritje",
   "Aprovuar",
   "Refuzuar",
   "Anuluar",
 ];
+
+const registrationParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required().messages({
+    "number.base": "Registration ID must be a valid number.",
+    "number.positive": "Registration ID must be a positive integer.",
+    "any.required": "Registration ID is required.",
+  }),
+});
+
+const registrationCreateSchema = Joi.object({
+  turneu_id: Joi.number().integer().positive().required().messages({
+    "number.base": "Tournament ID must be a valid number.",
+    "number.positive": "Tournament ID must be a positive integer.",
+    "any.required": "Tournament ID is required.",
+  }),
+  ekipi_id: Joi.number().integer().positive().required().messages({
+    "number.base": "Team ID must be a valid number.",
+    "number.positive": "Team ID must be a positive integer.",
+    "any.required": "Team ID is required.",
+  }),
+  statusi: Joi.string()
+    .valid(...registrationStatusOptions)
+    .optional()
+    .default("Në Pritje")
+    .messages({
+      "any.only": `Status must be one of: ${registrationStatusOptions.join(", ")}.`,
+    }),
+  tarifa_paguar: Joi.number().min(0).optional().default(0).messages({
+    "number.base": "Paid fee must be a valid number.",
+    "number.min": "Paid fee cannot be negative.",
+  }),
+});
+
+const registrationUpdateSchema = Joi.object({
+  turneu_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "Tournament ID must be a valid number.",
+    "number.positive": "Tournament ID must be a positive integer.",
+  }),
+  ekipi_id: Joi.number().integer().positive().optional().messages({
+    "number.base": "Team ID must be a valid number.",
+    "number.positive": "Team ID must be a positive integer.",
+  }),
+  statusi: Joi.string()
+    .valid(...registrationStatusOptions)
+    .optional()
+    .messages({
+      "any.only": `Status must be one of: ${registrationStatusOptions.join(", ")}.`,
+    }),
+  tarifa_paguar: Joi.number().min(0).optional().messages({
+    "number.base": "Paid fee must be a valid number.",
+    "number.min": "Paid fee cannot be negative.",
+  }),
+});
 
 function parsePositiveInteger(value) {
   const parsed = Number(value);
@@ -229,23 +283,28 @@ router.get("/", protect, async (req, res) => {
 
 // Route for getting a specific registration by its ID
 router.get("/:id", protect, async (req, res) => {
-  const idValidation = validateRouteId(req.params.id);
-  if (idValidation.error) {
-    return res.status(400).json({ error: idValidation.error });
+  const { error, value } = registrationParamSchema.validate({
+    id: req.params.id,
+  });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
   }
 
   try {
     let result;
 
     if (req.user.is_admin) {
-      result = await fetchRegistrationById(idValidation.value);
+      result = await fetchRegistrationById(value.id);
     } else if (req.user.is_organizer) {
       // Protects direct access by id so organizers cannot inspect another tournament's registration.
-      const ownsRegistration = await organizerOwnsRegistration(idValidation.value, req.user.id);
+      const ownsRegistration = await organizerOwnsRegistration(
+        value.id,
+        req.user.id,
+      );
       if (!ownsRegistration) {
         return res.status(403).json({ error: "Forbidden" });
       }
-      result = await fetchRegistrationById(idValidation.value);
+      result = await fetchRegistrationById(value.id);
     } else {
       return res.status(403).json({ error: "Forbidden" });
     }
@@ -260,146 +319,188 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new tournament registration. This route is protected and available to admins or the assigned organizer.
-router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
-  const validation = validateRegistrationPayload(req.body);
-  if (validation.error) {
-    return res.status(400).json({ error: validation.error });
-  }
+router.post(
+  "/",
+  protect,
+  requireRole("is_admin", "is_organizer"),
+  async (req, res) => {
+    const { error, value } = registrationCreateSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
-  const { turneu_id, ekipi_id, statusi, tarifa_paguar } = validation.value;
+    const { turneu_id, ekipi_id, statusi, tarifa_paguar } = value;
 
-  try {
-    if (req.user.is_organizer) {
-      // Organizers can add teams only inside their own tournaments.
-      const ownsTournament = await organizerOwnsTournament(turneu_id, req.user.id);
-      if (!ownsTournament) {
-        return res.status(403).json({ error: "Forbidden" });
+    try {
+      if (req.user.is_organizer) {
+        // Organizers can add teams only inside their own tournaments.
+        const ownsTournament = await organizerOwnsTournament(
+          turneu_id,
+          req.user.id,
+        );
+        if (!ownsTournament) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
       }
-    }
 
-    const sportValidation = await ensureTeamMatchesTournamentSport(turneu_id, ekipi_id);
-    if (!sportValidation.ok) {
-      return res.status(sportValidation.status).json({ error: sportValidation.error });
-    }
-
-    const created = await prisma.tournamentregistrations.create({
-      data: {
+      const sportValidation = await ensureTeamMatchesTournamentSport(
         turneu_id,
         ekipi_id,
-        statusi,
-        tarifa_paguar,
-      },
-      include: {
-        tournaments: {
-          select: { emertimi: true },
-        },
-        teams: {
-          select: { emertimi: true },
-        },
-      },
-    });
+      );
+      if (!sportValidation.ok) {
+        return res
+          .status(sportValidation.status)
+          .json({ error: sportValidation.error });
+      }
 
-    res.status(201).json(formatRegistration(created));
-  } catch (err) {
-    handleRegistrationError(err, res);
-  }
-});
+      const created = await prisma.tournamentregistrations.create({
+        data: {
+          turneu_id,
+          ekipi_id,
+          statusi,
+          tarifa_paguar,
+        },
+        include: {
+          tournaments: {
+            select: { emertimi: true },
+          },
+          teams: {
+            select: { emertimi: true },
+          },
+        },
+      });
+
+      res.status(201).json(formatRegistration(created));
+    } catch (err) {
+      handleRegistrationError(err, res);
+    }
+  },
+);
 
 // Route for updating an existing registration by its ID. This route is protected and available to admins or the assigned organizer.
-router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
-  const idValidation = validateRouteId(req.params.id);
-  if (idValidation.error) {
-    return res.status(400).json({ error: idValidation.error });
-  }
+router.put(
+  "/:id",
+  protect,
+  requireRole("is_admin", "is_organizer"),
+  async (req, res) => {
+    const { error: paramError, value: paramValue } = registrationParamSchema.validate(
+      { id: req.params.id },
+    );
+    if (paramError) {
+      return res.status(400).json({ error: paramError.details[0].message });
+    }
 
-  const validation = validateRegistrationPayload(req.body);
-  if (validation.error) {
-    return res.status(400).json({ error: validation.error });
-  }
+    const { error: bodyError, value: bodyValue } = registrationUpdateSchema.validate(
+      req.body,
+    );
+    if (bodyError) {
+      return res.status(400).json({ error: bodyError.details[0].message });
+    }
 
-  const { turneu_id, ekipi_id, statusi, tarifa_paguar } = validation.value;
+    const { turneu_id, ekipi_id, statusi, tarifa_paguar } = bodyValue;
 
-  try {
-    if (req.user.is_organizer) {
-      // Organizers can edit only registrations that belong to their own tournament space.
-      const ownsRegistration = await organizerOwnsRegistration(idValidation.value, req.user.id);
-      const ownsTournament = await organizerOwnsTournament(turneu_id, req.user.id);
+    try {
+      if (req.user.is_organizer) {
+        // Organizers can edit only registrations that belong to their own tournament space.
+        const ownsRegistration = await organizerOwnsRegistration(
+          paramValue.id,
+          req.user.id,
+        );
+        const ownsTournament = await organizerOwnsTournament(
+          turneu_id,
+          req.user.id,
+        );
 
-      if (!ownsRegistration || !ownsTournament) {
-        return res.status(403).json({ error: "Forbidden" });
+        if (!ownsRegistration || !ownsTournament) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
       }
-    }
 
-    const sportValidation = await ensureTeamMatchesTournamentSport(turneu_id, ekipi_id);
-    if (!sportValidation.ok) {
-      return res.status(sportValidation.status).json({ error: sportValidation.error });
-    }
-
-    const existingRegistration = await prisma.tournamentregistrations.findUnique({
-      where: { id: idValidation.value },
-      select: { id: true },
-    });
-    if (!existingRegistration) {
-      return res.status(404).json({ error: "Registration not found" });
-    }
-
-    const updated = await prisma.tournamentregistrations.update({
-      where: { id: idValidation.value },
-      data: {
+      const sportValidation = await ensureTeamMatchesTournamentSport(
         turneu_id,
         ekipi_id,
-        statusi,
-        tarifa_paguar,
-      },
-      include: {
-        tournaments: {
-          select: { emertimi: true },
-        },
-        teams: {
-          select: { emertimi: true },
-        },
-      },
-    });
+      );
+      if (!sportValidation.ok) {
+        return res
+          .status(sportValidation.status)
+          .json({ error: sportValidation.error });
+      }
 
-    res.json(formatRegistration(updated));
-  } catch (err) {
-    handleRegistrationError(err, res);
-  }
-});
+      const existingRegistration =
+        await prisma.tournamentregistrations.findUnique({
+          where: { id: paramValue.id },
+          select: { id: true },
+        });
+      if (!existingRegistration) {
+        return res.status(404).json({ error: "Registration not found" });
+      }
+
+      const updated = await prisma.tournamentregistrations.update({
+        where: { id: paramValue.id },
+        data: {
+          turneu_id,
+          ekipi_id,
+          statusi,
+          tarifa_paguar,
+        },
+        include: {
+          tournaments: {
+            select: { emertimi: true },
+          },
+          teams: {
+            select: { emertimi: true },
+          },
+        },
+      });
+
+      res.json(formatRegistration(updated));
+    } catch (err) {
+      handleRegistrationError(err, res);
+    }
+  },
+);
 
 // Route for deleting an existing registration by its ID. This route is protected and available to admins or the assigned organizer.
-router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
-  const idValidation = validateRouteId(req.params.id);
-  if (idValidation.error) {
-    return res.status(400).json({ error: idValidation.error });
-  }
+router.delete(
+  "/:id",
+  protect,
+  requireRole("is_admin", "is_organizer"),
+  async (req, res) => {
+    const idValidation = validateRouteId(req.params.id);
+    if (idValidation.error) {
+      return res.status(400).json({ error: idValidation.error });
+    }
 
-  try {
-    if (req.user.is_organizer) {
-      // Organizers can remove only team registrations from their own tournaments.
-      const ownsRegistration = await organizerOwnsRegistration(idValidation.value, req.user.id);
-      if (!ownsRegistration) {
-        return res.status(403).json({ error: "Forbidden" });
+    try {
+      if (req.user.is_organizer) {
+        // Organizers can remove only team registrations from their own tournaments.
+        const ownsRegistration = await organizerOwnsRegistration(
+          idValidation.value,
+          req.user.id,
+        );
+        if (!ownsRegistration) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
       }
+
+      const result = await fetchRegistrationById(idValidation.value);
+      if (!result) {
+        return res.status(404).json({ error: "Registration not found" });
+      }
+
+      await prisma.tournamentregistrations.delete({
+        where: { id: idValidation.value },
+      });
+
+      res.json({
+        message: "Registration deleted successfully",
+        deletedRegistration: formatRegistration(result),
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-
-    const result = await fetchRegistrationById(idValidation.value);
-    if (!result) {
-      return res.status(404).json({ error: "Registration not found" });
-    }
-
-    await prisma.tournamentregistrations.delete({
-      where: { id: idValidation.value },
-    });
-
-    res.json({
-      message: "Registration deleted successfully",
-      deletedRegistration: formatRegistration(result),
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // Exporting the router to be used in server.js
 export default router;
