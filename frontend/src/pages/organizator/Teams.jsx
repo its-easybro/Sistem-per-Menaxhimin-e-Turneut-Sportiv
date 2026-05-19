@@ -46,16 +46,17 @@ export default function OrganizerTeams() {
     setFormData(initialFormData);
     setFormErrors({});
   };
-    const loadData = async () => {
-      if (!user?.is_organizer) {
-        setLoading(false);
-        return;
-      }
 
+  useEffect(() => {
+    if (!user?.is_organizer) {
+      setLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
       try {
         setLoading(true);
         setError("");
-        // The organizer receives only their tournaments and registrations, while teams stay global.
         const [tournamentsRes, teamsRes, registrationsRes] = await Promise.all([
           api.get("/tournaments"),
           api.get("/teams"),
@@ -73,12 +74,7 @@ export default function OrganizerTeams() {
     };
 
     loadData();
-  } [user];
-
-  const resetForm = () => {
-    setFormData(initialFormData);
-    setFormErrors({});
-  };
+  }, [user]);
 
   const getTeamName = (id) => teams.find((item) => item.id === id)?.emertimi || "N/A";
   const selectedTournaments = tournaments.find((item) => String(item.id) === String(formData.turneu_id));
@@ -558,4 +554,4 @@ export default function OrganizerTeams() {
       )}
     </div>
   );
-
+}

@@ -162,7 +162,7 @@ export default function Matches() {
       });
 
       setScoreForm((prev) => {
-        if(!selectedMatch || selectedMatch.id !== matchId) return prev;
+        if (!selectedMatch || selectedMatch.id !== matchId) return prev;
 
         return {
           golat_shtepiak: homeScore,
@@ -332,26 +332,26 @@ export default function Matches() {
 
     setShowViewModal(true);
 
-    try{
+    try {
       const response = await api.get("/match-results");
       const results = Array.isArray(response.data) ? response.data : [];
       const existingResult = results.find((result) => result.ndeshja_id === id);
 
-      if(existingResult){
+      if (existingResult) {
         setScoreForm({
           golat_shtepiak: existingResult.golat_shtepiak ?? 0,
           golat_mysafir: existingResult.golat_mysafir ?? 0,
         });
 
         setSelectedMatch((prev) =>
-          prev 
+          prev
             ? {
                 ...prev,
                 score: {
                   golat_shtepiak: existingResult.golat_shtepiak ?? 0,
                   golat_mysafir: existingResult.golat_mysafir ?? 0,
                 },
-            }
+              }
             : prev,
         );
       }
@@ -359,21 +359,29 @@ export default function Matches() {
       try {
         const mrResp = await api.get(`/match-referees`);
         const mrs = Array.isArray(mrResp.data) ? mrResp.data : [];
-        const primary = mrs.find((r) => r.ndeshja_id === id && r.roli === "Kryegjyqtar");
+        const primary = mrs.find(
+          (r) => r.ndeshja_id === id && r.roli === "Kryegjyqtar",
+        );
         if (primary) {
-          const ref = referees.find((r) => r.id === primary.gjyqtari_id) || null;
-          setSelectedMatch((prev) => (prev ? { ...prev, primary_referee: ref } : prev));
+          const ref =
+            referees.find((r) => r.id === primary.gjyqtari_id) || null;
+          setSelectedMatch((prev) =>
+            prev ? { ...prev, primary_referee: ref } : prev,
+          );
         } else {
-          setSelectedMatch((prev) => (prev ? { ...prev, primary_referee: null } : prev));
+          setSelectedMatch((prev) =>
+            prev ? { ...prev, primary_referee: null } : prev,
+          );
         }
       } catch {
         // ignore referee fetch errors
       }
-    }catch(err){
+    } catch (err) {
       setAlert({
         type: "error",
-        message: "Error fetching match results: " +
-         (err.response?.data?.error || err.message),
+        message:
+          "Error fetching match results: " +
+          (err.response?.data?.error || err.message),
       });
     }
   };
@@ -546,29 +554,27 @@ export default function Matches() {
 
       setScoreForm(nextScore);
 
-      setSelectedMatch((prev) => 
+      setSelectedMatch((prev) =>
         prev
           ? {
               ...prev,
               score: nextScore,
-          }
-        : prev,
+            }
+          : prev,
       );
 
       setAlert({
         type: "success",
         message: "Score updated successfully!",
       });
-
     } catch (err) {
       setAlert({
-      type: "error",
-      message:
-        "Error updating score: " +
-        (err.response?.data?.error || err.message),
-    });
-  }
-};
+        type: "error",
+        message:
+          "Error updating score: " + (err.response?.data?.error || err.message),
+      });
+    }
+  };
 
   // Helper functions
   const getTournamentName = (id) => {
@@ -600,7 +606,11 @@ export default function Matches() {
     const referee = getPrimaryReferee(matchId);
     if (!referee) return "N/A";
 
-    return `${referee.emri || ""} ${referee.mbiemri || ""}`.trim() || referee.emertimi || "N/A";
+    return (
+      `${referee.emri || ""} ${referee.mbiemri || ""}`.trim() ||
+      referee.emertimi ||
+      "N/A"
+    );
   };
 
   const availableTeams = teams.filter((team) => {
@@ -799,9 +809,7 @@ export default function Matches() {
                         {m.statusi}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      {getPrimaryRefereeName(m.id)}
-                    </td>
+                    <td className="px-4 py-3">{getPrimaryRefereeName(m.id)}</td>
                     <td className="px-4 py-3 text-center">
                       <MatchTimer match={m} />
                     </td>

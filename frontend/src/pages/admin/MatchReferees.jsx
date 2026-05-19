@@ -1,10 +1,23 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Edit, Trash2, Eye } from "lucide-react";
 import socket from "../../socket";
+
+const matchRefereeSchema = yup.object().shape({
+  ndeshja_id: yup.string().required("Match is required"),
+  gjyqtari_id: yup.string().required("Referee is required"),
+  roli: yup.string().required("Role is required"),
+});
+
+const matchRefereeUpdateSchema = yup.object().shape({
+  ndeshja_id: yup.string().required("Match is required"),
+  gjyqtari_id: yup.string().required("Referee is required"),
+  roli: yup.string().required("Role is required"),
+});
 
 const initialFormData = {
   ndeshja_id: "",
