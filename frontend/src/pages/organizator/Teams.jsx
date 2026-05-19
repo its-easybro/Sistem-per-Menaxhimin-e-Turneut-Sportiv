@@ -14,15 +14,15 @@ const initialFormData = {
 };
 
 const registrationCreateSchema = yup.object().shape({
-  turneu_id: yup.string().required("Tournament is required"),
-  ekipi_id: yup.string().required("Team is required"),
+  turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
+  ekipi_id: yup.number().typeError("Team must be a number").required("Team is required"),
   statusi: yup.string().oneOf(["Në Pritje", "Aprovuar", "Refuzuar", "Anuluar"]).required("Status is required"),
   tarifa_paguar: yup.number().min(0, "Fee cannot be negative").typeError("Fee must be a number").required("Fee is required"),
 });
 
 const registrationUpdateSchema = yup.object().shape({
-  turneu_id: yup.string().required("Tournament is required"),
-  ekipi_id: yup.string().required("Team is required"),
+  turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
+  ekipi_id: yup.number().typeError("Team must be a number").required("Team is required"),
   statusi: yup.string().oneOf(["Në Pritje", "Aprovuar", "Refuzuar", "Anuluar"]).required("Status is required"),
   tarifa_paguar: yup.number().min(0, "Fee cannot be negative").typeError("Fee must be a number").required("Fee is required"),
 });

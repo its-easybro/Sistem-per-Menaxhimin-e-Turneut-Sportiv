@@ -45,6 +45,9 @@ const userUpdateSchema = Joi.object({
     .messages({
       "any.only": "Role must be admin, organizator, gjyqtar, or user",
     }),
+  password: Joi.string().min(6).optional().allow("", null).messages({
+    "string.min": "Password must be at least 6 characters",
+  }),
 });
 
 function parsePositiveInt(value) {
@@ -179,7 +182,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { email, username, full_name, roli } = value;
+    const { email, username, full_name, roli, password } = value;
 
     if (!req.user.is_admin && req.user.id !== userId) {
       return res.status(403).json({ error: "Forbidden" });
@@ -204,6 +207,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
         emri,
         mbiemri,
         roli: userRole,
+        ...(password ? { password: await bcrypt.hash(password, 10) } : {}),
       },
     });
 

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
@@ -39,6 +40,42 @@ const resolvePlayerFoto = (playerFoto) => {
   return `${API_BASE_URL}/players/uploads-players/${trimmed}`;
 };
 
+const playerCreateSchema = yup.object().shape({
+  emri: yup.string().min(2, "First name must be at least 2 characters").required("First name is required"),
+  mbiemri: yup.string().min(2, "Last name must be at least 2 characters").required("Last name is required"),
+  data_lindjes: yup.string().required("Date of birth is required"),
+  ekipi_id: yup.string().nullable(),
+  pozicioni: yup.string().required("Position is required"),
+  numri: yup
+    .number()
+    .integer()
+    .min(1, "Number must be between 1 and 99")
+    .max(99, "Number must be between 1 and 99")
+    .required("Number is required"),
+  gjatesia: yup.number().nullable(),
+  pesha: yup.number().nullable(),
+  kombesia: yup.string(),
+  foto: yup.string(),
+});
+
+const playerUpdateSchema = yup.object().shape({
+  emri: yup.string().min(2, "First name must be at least 2 characters"),
+  mbiemri: yup.string().min(2, "Last name must be at least 2 characters"),
+  data_lindjes: yup.string(),
+  ekipi_id: yup.string().nullable(),
+  pozicioni: yup.string(),
+  numri: yup
+    .number()
+    .integer()
+    .min(1, "Number must be between 1 and 99")
+    .max(99, "Number must be between 1 and 99")
+    .nullable(),
+  gjatesia: yup.number().nullable(),
+  pesha: yup.number().nullable(),
+  kombesia: yup.string(),
+  foto: yup.string(),
+});
+
 export default function Players() {
   // Uses auth context to gate access to player management operations.
   const { user } = useContext(AuthContext);
@@ -70,6 +107,7 @@ export default function Players() {
     kombesia: "",
     foto: "",
   });
+  const [formErrors, setFormErrors] = useState({});
 
   const currentFotoPreview = formData.foto ? resolvePlayerFoto(formData.foto) : "";
 
@@ -139,6 +177,13 @@ export default function Players() {
       ...prev,
       [name]: value,
     }));
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
+    }
   };
 
   const getTeamSelectValue = (teamValue) => {
@@ -166,6 +211,7 @@ export default function Players() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      await playerCreateSchema.validate(formData, { abortEarly: false });
       const response = await api.post(`/players`, buildPlayerPayload());
 
       const newPlayer = response.data;
@@ -184,13 +230,22 @@ export default function Players() {
         kombesia: "",
         foto: "",
       });
+      setFormErrors({});
       setSelectedSportId("");
       setShowModal(false);
       
       setAlert({ type: 'success', message: 'Player created successfully!' });
     } catch (err) {
-      const errorMessage = err?.response?.data?.error || err.message;
-      setAlert({ type: 'error', message: 'Error creating player: ' + errorMessage });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        const errorMessage = err?.response?.data?.error || err.message;
+        setAlert({ type: 'error', message: 'Error creating player: ' + errorMessage });
+      }
     }
   };
 
@@ -207,6 +262,7 @@ export default function Players() {
       kombesia: "",
       foto: "",
     });
+    setFormErrors({});
     setSelectedSportId("");
     setShowModal(false);
   };
@@ -285,6 +341,7 @@ export default function Players() {
     if (!selectedPlayer) return;
 
     try {
+      await playerUpdateSchema.validate(formData, { abortEarly: false });
       const response = await api.put(`/players/${selectedPlayer.id}`, buildPlayerPayload());
 
       const updatedPlayer = response.data;
@@ -305,14 +362,23 @@ export default function Players() {
         kombesia: "",
         foto: "",
       });
+      setFormErrors({});
       setSelectedSportId("");
 
       setSelectedPlayer(null);
       setShowEditModal(false);
       setAlert({ type: 'success', message: 'Player updated successfully!' });
     } catch (err) {
-      const errorMessage = err?.response?.data?.error || err.message;
-      setAlert({ type: 'error', message: 'Error updating player: ' + errorMessage });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        const errorMessage = err?.response?.data?.error || err.message;
+        setAlert({ type: 'error', message: 'Error updating player: ' + errorMessage });
+      }
     }
   };
 
@@ -639,10 +705,11 @@ export default function Players() {
                       name="emri"
                       value={formData.emri}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border borde-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.emri ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       placeholder="First Name"
                       required
                     />
+                    {formErrors.emri && <p className="text-sm text-red-500 mt-1">{formErrors.emri}</p>}
                   </div>
                   {/* Last name input field */}
                   <div>
@@ -654,10 +721,11 @@ export default function Players() {
                       name="mbiemri"
                       value={formData.mbiemri}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.mbiemri ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       placeholder="Last Name"
                       required
                     />
+                    {formErrors.mbiemri && <p className="text-sm text-red-500 mt-1">{formErrors.mbiemri}</p>}
                   </div>
 
                   {/* Date of Birth input field */}
@@ -670,10 +738,11 @@ export default function Players() {
                       name="data_lindjes"
                       value={formData.data_lindjes}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.data_lindjes ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       placeholder="****-**-**"
                       required
                     />
+                    {formErrors.data_lindjes && <p className="text-sm text-red-500 mt-1">{formErrors.data_lindjes}</p>}
                   </div>
                   {/* Team input field */}
                   <div>
@@ -752,10 +821,11 @@ export default function Players() {
                       name="gjatesia"
                       value={formData.gjatesia}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.gjatesia ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       placeholder="150cm..."
                       required
                     />
+                    {formErrors.gjatesia && <p className="text-sm text-red-500 mt-1">{formErrors.gjatesia}</p>}
                   </div>
                   {/* Weight input field */}
                   <div>
@@ -767,10 +837,11 @@ export default function Players() {
                       name="pesha"
                       value={formData.pesha}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.pesha ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       placeholder="Weight"
                       required
                     />
+                    {formErrors.pesha && <p className="text-sm text-red-500 mt-1">{formErrors.pesha}</p>}
                   </div>
                   {/* Nationality input field */}
                   <div>
@@ -782,10 +853,11 @@ export default function Players() {
                       name="kombesia"
                       value={formData.kombesia}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.kombesia ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       placeholder="Shqiptar..."
                       required
                     />
+                    {formErrors.kombesia && <p className="text-sm text-red-500 mt-1">{formErrors.kombesia}</p>}
                   </div>
                     </div>
                     {/* Form buttons */}

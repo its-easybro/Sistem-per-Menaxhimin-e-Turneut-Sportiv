@@ -69,6 +69,7 @@ function MatchRefereeFormFields({
   referees,
   getMatchLabel,
   onChange,
+  formErrors,
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -78,7 +79,7 @@ function MatchRefereeFormFields({
           name="ndeshja_id"
           value={formData.ndeshja_id}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border ${formErrors?.ndeshja_id ? 'border-red-500' : 'border-gray-300'} px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           <option value="">Select match</option>
@@ -88,6 +89,7 @@ function MatchRefereeFormFields({
             </option>
           ))}
         </select>
+        {formErrors?.ndeshja_id && <p className="text-sm text-red-500 mt-1">{formErrors.ndeshja_id}</p>}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -96,7 +98,7 @@ function MatchRefereeFormFields({
           name="gjyqtari_id"
           value={formData.gjyqtari_id}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border ${formErrors?.gjyqtari_id ? 'border-red-500' : 'border-gray-300'} px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           <option value="">Select referee</option>
@@ -106,6 +108,7 @@ function MatchRefereeFormFields({
             </option>
           ))}
         </select>
+        {formErrors?.gjyqtari_id && <p className="text-sm text-red-500 mt-1">{formErrors.gjyqtari_id}</p>}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -114,7 +117,7 @@ function MatchRefereeFormFields({
           name="roli"
           value={formData.roli}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border ${formErrors?.roli ? 'border-red-500' : 'border-gray-300'} px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           {roles.map((role) => (
@@ -123,6 +126,7 @@ function MatchRefereeFormFields({
             </option>
           ))}
         </select>
+        {formErrors?.roli && <p className="text-sm text-red-500 mt-1">{formErrors.roli}</p>}
       </label>
     </div>
   );
@@ -152,6 +156,7 @@ export default function MatchReferees() {
     golat_mysafir: 0,
   });
   const [formData, setFormData] = useState(initialFormData);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     const loadData = async () => {
@@ -228,6 +233,7 @@ export default function MatchReferees() {
 
   const resetForm = () => {
     setFormData(initialFormData);
+    setFormErrors({});
   };
 
   const getMatchById = (matchId) =>
@@ -344,6 +350,10 @@ export default function MatchReferees() {
       ...prev,
       [name]: value,
     }));
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleScoreInputChange = (e) => {
@@ -413,25 +423,30 @@ export default function MatchReferees() {
     e.preventDefault();
 
     try {
-      const validationError = validateForm();
-      if (validationError) {
-        setAlert({ type: "error", message: validationError });
-        return;
-      }
+      await matchRefereeSchema.validate(formData, { abortEarly: false });
 
       const response = await api.post("/match-referees", buildPayload());
       const data = response.data || {};
 
       setAssignments((prev) => [...prev, data]);
       handleCloseModal();
+      setFormErrors({});
       setAlert({ type: "success", message: "Assignment created successfully!" });
     } catch (err) {
-      setAlert({
-        type: "error",
-        message:
-          "Error creating assignment: " +
-          (err?.response?.data?.error || err.message),
-      });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({
+          type: "error",
+          message:
+            "Error creating assignment: " +
+            (err?.response?.data?.error || err.message),
+        });
+      }
     }
   };
 
@@ -441,11 +456,7 @@ export default function MatchReferees() {
     if (!selectedAssignment) return;
 
     try {
-      const validationError = validateForm();
-      if (validationError) {
-        setAlert({ type: "error", message: validationError });
-        return;
-      }
+      await matchRefereeUpdateSchema.validate(formData, { abortEarly: false });
 
       const response = await api.put(
         `/match-referees/${selectedAssignment.id}`,
@@ -715,6 +726,7 @@ export default function MatchReferees() {
                 referees={referees}
                 getMatchLabel={getMatchLabel}
                 onChange={handleInputChange}
+                formErrors={formErrors}
               />
               <div className="flex gap-4 pt-4">
                 <button
@@ -883,6 +895,7 @@ export default function MatchReferees() {
                 referees={referees}
                 getMatchLabel={getMatchLabel}
                 onChange={handleInputChange}
+                formErrors={formErrors}
               />
               <div className="flex gap-4 pt-4">
                 <button

@@ -16,8 +16,8 @@ const matchRefereeCreateSchema = Joi.object({
     "number.positive": "Referee ID must be a positive integer.",
     "any.required": "Referee ID is required.",
   }),
-  roli: Joi.string().valid("main", "assistant").required().messages({
-    "any.only": "Role must be either 'main' or 'assistant'.",
+  roli: Joi.string().valid("Kryegjyqtar", "Asistent 1", "Asistent 2", "Gjyqtar i 4-të", "VAR",).required().messages({
+    "any.only": "Role must be one of the allowed values.",
     "any.required": "Role is required.",
   }),
 });
@@ -31,8 +31,8 @@ const matchRefereeUpdateSchema = Joi.object({
     "number.base": "Referee ID must be a valid number.",
     "number.positive": "Referee ID must be a positive integer.",
   }),
-  roli: Joi.string().valid("main", "assistant").optional().messages({
-    "any.only": "Role must be either 'main' or 'assistant'.",
+  roli: Joi.string().valid("Kryegjyqtar", "Asistent 1", "Asistent 2", "Gjyqtar i 4-të", "VAR",).optional().messages({
+    "any.only": "Role must be one of the allowed values.",
   }),
 });
 

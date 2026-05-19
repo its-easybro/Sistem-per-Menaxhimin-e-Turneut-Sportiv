@@ -1,5 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import * as yup from "yup";
 import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
 import { Award, Plus, Search, Edit, Trash2, Spotlight } from "lucide-react";
@@ -29,7 +30,25 @@ const sportTerms = {
 
   const getTerms = (match) => {
     return sportTerms[match?.sport_emri] || { home: "Home Score", away: "Away Score" }
-  }
+  };
+
+const matchResultCreateSchema = yup.object().shape({
+  ndeshja_id: yup.string().required("Match is required"),
+  golat_shtepiak: yup.number().min(0, "Home score must be 0 or higher").required("Home score is required"),
+  golat_mysafir: yup.number().min(0, "Away score must be 0 or higher").required("Away score is required"),
+  fitues_id: yup.string().nullable(),
+  shenime: yup.string(),
+  mvp_id: yup.string().nullable(),
+});
+
+const matchResultUpdateSchema = yup.object().shape({
+  ndeshja_id: yup.string(),
+  golat_shtepiak: yup.number().min(0),
+  golat_mysafir: yup.number().min(0),
+  fitues_id: yup.string().nullable(),
+  shenime: yup.string(),
+  mvp_id: yup.string().nullable(),
+});
 
 const getSportNameForMatch = (match, tournaments, sports) => {
   if (!match) return null;
@@ -85,6 +104,7 @@ export default function MatchResults() {
     shenime: "",
     mvp_id: "",
   });
+  const [formErrors, setFormErrors] = useState({});
 
   // Loads results and all related entities used in winner/MVP/referee lookups.
   useEffect(() => {
@@ -165,12 +185,19 @@ export default function MatchResults() {
         fitues_id: "",
         mvp_id: "",
       }));
+      if (formErrors[name]) {
+        setFormErrors((prev) => ({ ...prev, [name]: undefined }));
+      }
       return;
     }
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
   const buildMatchResultPayload = () => ({
     ndeshja_id: Number(formData.ndeshja_id),
@@ -185,6 +212,7 @@ export default function MatchResults() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      await matchResultCreateSchema.validate(formData, { abortEarly: false });
       const response = await api.post(`/match-results`, buildMatchResultPayload());
 
       const newMatch = response.data;
@@ -199,11 +227,20 @@ export default function MatchResults() {
         shenime: "",
         mvp_id: "",
       });
+      setFormErrors({});
 
       setShowModal(false);
       setAlert({ type: "success", message: "Match result created successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error creating match result: " + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: "error", message: "Error creating match result: " + err.message });
+      }
     }
   };
 
@@ -217,6 +254,7 @@ export default function MatchResults() {
       shenime: "",
       mvp_id: "",
     });
+    setFormErrors({});
     setShowModal(false);
   };
 
@@ -229,6 +267,7 @@ export default function MatchResults() {
       shenime: "",
       mvp_id: "",
     });
+    setFormErrors({});
     setSelectedMatchResult(null);
     setShowEditModal(false);
   };
@@ -266,6 +305,7 @@ export default function MatchResults() {
     if (!selectedMatchResult) return;
 
     try {
+      await matchResultUpdateSchema.validate(formData, { abortEarly: false });
       const response = await api.put(`/match-results/${selectedMatchResult.id}`, buildMatchResultPayload())
 
       const updatedMatch = response.data;
@@ -283,11 +323,20 @@ export default function MatchResults() {
         mvp_id: "",
       });
 
+      setFormErrors({});
       setShowEditModal(false);
       setSelectedMatchResult(null);
       setAlert({ type: "success", message: "Match result updated successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error updating match result: " + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: "error", message: "Error updating match result: " + err.message });
+      }
     }
   };
 
@@ -612,7 +661,7 @@ export default function MatchResults() {
                     name="ndeshja_id"
                     value={formData.ndeshja_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   >
                     <option value="">Pick finished match</option>
@@ -624,6 +673,7 @@ export default function MatchResults() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.ndeshja_id && <p className="text-sm text-red-500 mt-1">{formErrors.ndeshja_id}</p>}
                   {eligibleMatches.length === 0 && (
                     <p className="text-xs text-amber-600 mt-2">
                       No finished matches available.
@@ -641,10 +691,11 @@ export default function MatchResults() {
                     name="golat_shtepiak"
                     value={formData.golat_shtepiak}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder={terms.home}
                     required
                   />
+                  {formErrors.golat_shtepiak && <p className="text-sm text-red-500 mt-1">{formErrors.golat_shtepiak}</p>}
                 </div>
 
                 {/* Golat vizitor */}
@@ -658,10 +709,11 @@ export default function MatchResults() {
                     name="golat_mysafir"
                     value={formData.golat_mysafir}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder={terms.away}
                     required
                   />
+                  {formErrors.golat_mysafir && <p className="text-sm text-red-500 mt-1">{formErrors.golat_mysafir}</p>}
                 </div>
 
                 
@@ -696,9 +748,10 @@ export default function MatchResults() {
                     name="shenime"
                     value={formData.shenime}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.shenime ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder="Notes"
                   />
+                  {formErrors.shenime && <p className="text-sm text-red-500 mt-1">{formErrors.shenime}</p>}
                 </div>
                 {/* MVP */}
                 <div>
@@ -710,7 +763,7 @@ export default function MatchResults() {
                     name="mvp_id"
                     value={formData.mvp_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder="MVP Player"
                   >
                     <option value="">Select MVP</option>
@@ -720,6 +773,7 @@ export default function MatchResults() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.mvp_id && <p className="text-sm text-red-500 mt-1">{formErrors.mvp_id}</p>}
                 </div>
               </div>
               {/* Form buttons */}
@@ -797,7 +851,7 @@ export default function MatchResults() {
                     name="ndeshja_id"
                     value={formData.ndeshja_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   >
                     <option value="">Select match</option>
@@ -815,6 +869,7 @@ export default function MatchResults() {
                         </option>
                       ))}
                   </select>
+                  {formErrors.ndeshja_id && <p className="text-sm text-red-500 mt-1">{formErrors.ndeshja_id}</p>}
                 </div>
 
                 <div>
@@ -827,9 +882,10 @@ export default function MatchResults() {
                     name="golat_shtepiak"
                     value={formData.golat_shtepiak}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   />
+                  {formErrors.golat_shtepiak && <p className="text-sm text-red-500 mt-1">{formErrors.golat_shtepiak}</p>}
                 </div>
 
                 <div>
@@ -842,9 +898,10 @@ export default function MatchResults() {
                     name="golat_mysafir"
                     value={formData.golat_mysafir}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   />
+                  {formErrors.golat_mysafir && <p className="text-sm text-red-500 mt-1">{formErrors.golat_mysafir}</p>}
                 </div>
 
                 <div>
@@ -876,8 +933,9 @@ export default function MatchResults() {
                     name="shenime"
                     value={formData.shenime}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.shenime ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                   />
+                  {formErrors.shenime && <p className="text-sm text-red-500 mt-1">{formErrors.shenime}</p>}
                 </div>
 
                 <div>
@@ -888,7 +946,7 @@ export default function MatchResults() {
                     name="mvp_id"
                     value={formData.mvp_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                   >
                     <option value="">Select MVP</option>
                     {players.map((player) => (

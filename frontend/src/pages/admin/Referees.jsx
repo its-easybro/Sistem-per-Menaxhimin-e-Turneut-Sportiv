@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
@@ -14,6 +15,26 @@ const initialFormData = {
   kategoria: "",
   pervoja_vitesh: "",
 };
+
+const refereeCreateSchema = yup.object().shape({
+  emri: yup.string().trim().min(2, "First name must be at least 2 characters").required("First name is required"),
+  mbiemri: yup.string().trim().min(2, "Last name must be at least 2 characters").required("Last name is required"),
+  email: yup.string().trim().email("Email must be valid").required("Email is required"),
+  telefoni: yup.string().trim(),
+  nr_licences: yup.string().trim(),
+  kategoria: yup.string().trim(),
+  pervoja_vitesh: yup.number().nullable(),
+});
+
+const refereeUpdateSchema = yup.object().shape({
+  emri: yup.string().trim().min(2, "First name must be at least 2 characters"),
+  mbiemri: yup.string().trim().min(2, "Last name must be at least 2 characters"),
+  email: yup.string().trim().email("Email must be valid"),
+  telefoni: yup.string().trim(),
+  nr_licences: yup.string().trim(),
+  kategoria: yup.string().trim(),
+  pervoja_vitesh: yup.number().nullable(),
+});
 
 export default function Referees() {
   const { user } = useContext(AuthContext);
@@ -30,6 +51,7 @@ export default function Referees() {
   const [selectedReferee, setSelectedReferee] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState(initialFormData);
+  const [formErrors, setFormErrors] = useState({});
   const [users, setUsers] = useState([]);
   const [promoteData, setPromoteData] = useState({
     user_id: "",
@@ -63,7 +85,10 @@ export default function Referees() {
     loadReferees();
   }, [user]);
 
-  const resetForm = () => setFormData(initialFormData);
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setFormErrors({});
+  };
 
   const handleCreate = () => {
     resetForm();
@@ -76,6 +101,13 @@ export default function Referees() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
+    }
   };
 
   const handleCloseModal = () => {
@@ -129,19 +161,33 @@ export default function Referees() {
 
   const buildPayload = () => ({
     ...formData,
+    emri: formData.emri?.trim(),
+    mbiemri: formData.mbiemri?.trim(),
+    email: formData.email?.trim() === "" ? null : formData.email?.trim(),
     pervoja_vitesh: formData.pervoja_vitesh === "" ? null : Number(formData.pervoja_vitesh),
-    telefoni: formData.telefoni?.trim() === "" ? null : formData.telefoni.trim(),
+    telefoni: formData.telefoni?.trim() === "" ? null : formData.telefoni?.trim(),
+    nr_licences: formData.nr_licences?.trim() === "" ? null : formData.nr_licences?.trim(),
+    kategoria: formData.kategoria?.trim() === "" ? null : formData.kategoria?.trim(),
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      await refereeCreateSchema.validate(formData, { abortEarly: false });
       const response = await api.post(`/referees`, buildPayload());
       setReferees((prev) => [...prev, response.data]);
       handleCloseModal();
       setAlert({ type: "success", message: "Referee created successfully" });
     } catch (err) {
-      setAlert({ type: "error", message: "Failed to create referee: " + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: "error", message: "Failed to create referee: " + err.message });
+      }
     }
   };
 
@@ -149,12 +195,21 @@ export default function Referees() {
     e.preventDefault();
     if (!selectedReferee) return;
     try {
+      await refereeUpdateSchema.validate(formData, { abortEarly: false });
       const response = await api.put(`/referees/${selectedReferee.id}`, buildPayload());
       setReferees((prev) => prev.map((item) => (item.id === response.data.id ? response.data : item)));
       handleCloseEditModal();
       setAlert({ type: "success", message: "Referee updated successfully" });
     } catch (err) {
-      setAlert({ type: "error", message: "Failed to update referee: " + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: "error", message: "Failed to update referee: " + err.message });
+      }
     }
   };
 
@@ -175,7 +230,7 @@ export default function Referees() {
     const res = await api.get("/users");
     const allUsers = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
 
-    // Merre referee ekzistues për të hequr ata që janë promovuar tashmë
+    // Merre referee ekzistues per te hequr ata qe jane promovuar tashme
     const refRes = await api.get("/referees");
     const existingUserIds = new Set(
       (Array.isArray(refRes.data) ? refRes.data : [])
@@ -183,7 +238,7 @@ export default function Referees() {
         .filter(Boolean)
     );
 
-    // Shfaq të gjithë userat që nuk janë promovuar ende
+    // Shfaq te gjithe userat qe nuk jane promovuar ende
     const available = allUsers.filter(
   (u) => u.roli === "user" && !existingUserIds.has(u.id)
 );

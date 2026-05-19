@@ -23,7 +23,8 @@ const sportCreateSchema = yup.object().shape({
   pershkrimi: yup
     .string()
     .min(5, 'Description must be at least 5 characters')
-    .required('Description is required'),
+    .nullable()
+    .notRequired(),
   numri_lojtareve: yup
     .number()
     .positive('Number of players must be positive')

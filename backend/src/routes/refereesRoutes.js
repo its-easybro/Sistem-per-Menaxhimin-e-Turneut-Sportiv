@@ -64,7 +64,7 @@ const refereeUpdateSchema = Joi.object({
   mbiemri: Joi.string().trim().optional().messages({
     "string.empty": "Last name cannot be empty.",
   }),
-  email: Joi.string().trim().email().optional().messages({
+  email: Joi.string().trim().email().optional().allow(null).messages({
     "string.email": "Email must be valid.",
   }),
   telefoni: Joi.string().trim().optional().allow("", null).messages({
@@ -183,6 +183,10 @@ router.post("/promote", protect, requireRole("is_admin"), async (req, res) => {
 
     res.status(201).json(referee);
   } catch (err) {
+    if (err.code === "P2002") {
+      const field = err.meta?.target?.[0] ?? 'field';
+      return res.status(409).json({ error: `A referee with this ${field} already exists.` });
+    }
     res.status(500).json({ error: err.message });
   }
 });
@@ -271,6 +275,10 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     });
     res.json(referee);
   } catch (err) {
+    if (err.code === "P2002") {
+      const field = err.meta?.target?.[0] ?? 'field';
+      return res.status(409).json({ error: `A referee with this ${field} already exists.` });
+    }
     res.status(500).json({ error: err.message });
   }
 });

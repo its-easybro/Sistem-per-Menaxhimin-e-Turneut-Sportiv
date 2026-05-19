@@ -30,9 +30,10 @@ const playerCreateSchema = Joi.object({
     "string.empty": "Position is required.",
     "any.required": "Position is required.",
   }),
-  numri: Joi.number().integer().min(0).required().messages({
+  numri: Joi.number().integer().min(1).max(99).required().messages({
     "number.base": "Number must be a valid integer.",
-    "number.min": "Number must be non-negative.",
+    "number.min": "Number must be between 1 and 99.",
+    "number.max": "Number must be between 1 and 99.",
     "any.required": "Number is required.",
   }),
   ekipi_id: Joi.number().integer().positive().optional().allow(null).messages({
@@ -66,9 +67,10 @@ const playerUpdateSchema = Joi.object({
   pozicioni: Joi.string().trim().optional().messages({
     "string.empty": "Position cannot be empty.",
   }),
-  numri: Joi.number().integer().min(0).optional().messages({
+  numri: Joi.number().integer().min(1).max(99).optional().messages({
     "number.base": "Number must be a valid integer.",
-    "number.min": "Number must be non-negative.",
+    "number.min": "Number must be between 1 and 99.",
+    "number.max": "Number must be between 1 and 99.",
   }),
   ekipi_id: Joi.number().integer().positive().optional().allow(null).messages({
     "number.base": "Team must be a valid number.",
@@ -151,6 +153,10 @@ const normalizePlayerPayload = (payload) => {
   const numri = parseOptionalInt(payload.numri);
   if (!numri.ok) {
     return { ok: false, error: "Number must be a valid integer." };
+  }
+
+  if (numri.value !== null && (numri.value < 1 || numri.value > 99)) {
+    return { ok: false, error: "Number must be between 1 and 99." };
   }
 
   const gjatesia = parseOptionalDecimal(payload.gjatesia);

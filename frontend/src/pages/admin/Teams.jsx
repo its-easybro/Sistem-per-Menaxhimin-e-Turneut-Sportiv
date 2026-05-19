@@ -1,5 +1,6 @@
 import {useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
@@ -42,7 +43,32 @@ const resolveTeamLogoUrl = (logoValue) => {
 
   return `${API_BASE_URL}/teams/uploads-teams/${migrated.replace(/^\/+/, "")}`;
 };
+const teamCreateSchema = yup.object().shape({
+  emertimi: yup
+    .string()
+    .min(2, "Team name must be at least 2 characters")
+    .required("Team name is required"),
+  trajneri: yup.string().min(2, "Trainer name must be at least 2 characters"),
+  kontakti: yup.string().min(6, "Contact must be at least 6 characters"),
+  email: yup.string().email("Email must be valid"),
+  qyteti: yup.string().min(2, "City must be at least 2 characters"),
+  data_themelimit: yup.string(),
+  sporti_id: yup.string().required("Sport is required"),
+  logoja: yup.string(),
+});
 
+const teamUpdateSchema = yup.object().shape({
+  emertimi: yup
+    .string()
+    .min(2, "Team name must be at least 2 characters"),
+  trajneri: yup.string(),
+  kontakti: yup.string(),
+  email: yup.string().email("Email must be valid"),
+  qyteti: yup.string(),
+  data_themelimit: yup.string(),
+  sporti_id: yup.string(),
+  logoja: yup.string(),
+});
 export default function Teams() {
     // Provides admin-only team CRUD with modal-driven forms.
     const { user } = useContext(AuthContext);
@@ -70,6 +96,7 @@ export default function Teams() {
                 data_themelimit : "",
                 sporti_id: "",
     });
+    const [formErrors, setFormErrors] = useState({});
 
     const handleLogoUpload = async (e) => {
       const file = e.target.files[0];
@@ -131,11 +158,19 @@ export default function Teams() {
             ...prev,
             [name]: value,
         }));
+
+        if (formErrors[name]) {
+          setFormErrors((prev) => ({
+            ...prev,
+            [name]: undefined,
+          }));
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try{
+            await teamCreateSchema.validate(formData, { abortEarly: false });
              
             const response = await api.post(`/teams`, formData)
             
@@ -152,16 +187,24 @@ export default function Teams() {
                 data_themelimit : "",
                 sporti_id: "",
             });
+            setFormErrors({});
             setShowModal(false);
             setAlert({ type: "success", message: "Team created successfully!" });
         } catch(err){
-            setAlert({
-              type: "error",
-              message:
-                "Error creating team: " +
-                (err.response?.data?.error || err.message),
-            });
-
+            if (err.inner) {
+              const validationErrors = {};
+              err.inner.forEach((error) => {
+                validationErrors[error.path] = error.message;
+              });
+              setFormErrors(validationErrors);
+            } else {
+              setAlert({
+                type: "error",
+                message:
+                  "Error creating team: " +
+                  (err.response?.data?.error || err.message),
+              });
+            }
         }
     };
     const handleCloseModal = () => {
@@ -175,6 +218,7 @@ export default function Teams() {
                 data_themelimit : "",
                 sporti_id: "",
         });
+        setFormErrors({});
         setShowModal(false);
 
     };
@@ -190,6 +234,7 @@ export default function Teams() {
                 data_themelimit : "",
                 sporti_id: "",
         });
+        setFormErrors({});
         setSelectedTeam(null);
         setShowEditModal(false);
 
@@ -237,6 +282,7 @@ export default function Teams() {
         e.preventDefault();
         if(!selectedTeam) return;
         try{
+          await teamUpdateSchema.validate(formData, { abortEarly: false });
           const response = await api.put(`teams/${selectedTeam.id}`, formData)
 
             const updatedTeam = response.data;
@@ -252,17 +298,25 @@ export default function Teams() {
                 data_themelimit : "",
                 sporti_id: "",
         });
-
+        setFormErrors({});
         setSelectedTeam(null);
         setShowEditModal(false);
         setAlert({ type: "success", message: "Team updated successfully!" });
         } catch(err) {
-            setAlert({
-              type: "error",
-              message:
-                "Error updating team: " +
-                (err.response?.data?.error || err.message),
-            });
+            if (err.inner) {
+              const validationErrors = {};
+              err.inner.forEach((error) => {
+                validationErrors[error.path] = error.message;
+              });
+              setFormErrors(validationErrors);
+            } else {
+              setAlert({
+                type: "error",
+                message:
+                  "Error updating team: " +
+                  (err.response?.data?.error || err.message),
+              });
+            }
         }
     };
 
@@ -577,10 +631,15 @@ export default function Teams() {
                       name="emertimi"
                       value={formData.emertimi}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                        formErrors.emertimi ? "border-red-500" : "border-gray-300"
+                      }`}
                       placeholder="Name of the team"
                       required
                     />
+                    {formErrors.emertimi && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.emertimi}</p>
+                    )}
                   </div>
                   {/* Trainer input field */}
                   <div>
@@ -608,11 +667,15 @@ export default function Teams() {
                       name="kontakti"
                       value={formData.kontakti}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                        formErrors.kontakti ? "border-red-500" : "border-gray-300"
+                      }`}
                       placeholder="+383 12 345 678"
-                      pattern="^\+383 \d{2} \d{3} \d{3}$"
                       required
                     />
+                    {formErrors.kontakti && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.kontakti}</p>
+                    )}
                   </div>
                   {/* Email input field */}
                   <div>
@@ -624,10 +687,15 @@ export default function Teams() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                        formErrors.email ? "border-red-500" : "border-gray-300"
+                      }`}
                       placeholder="Email"
                       required
                     />
+                    {formErrors.email && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                    )}
                   </div>
                   {/* City input field */}
                   <div>
@@ -639,10 +707,15 @@ export default function Teams() {
                       name="qyteti"
                       value={formData.qyteti}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                        formErrors.qyteti ? "border-red-500" : "border-gray-300"
+                      }`}
                       placeholder="City"
                       required
                     />
+                    {formErrors.qyteti && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.qyteti}</p>
+                    )}
                   </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -672,9 +745,14 @@ export default function Teams() {
                       name="data_themelimit"
                       value={formData.data_themelimit}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                        formErrors.data_themelimit ? "border-red-500" : "border-gray-300"
+                      }`}
                       required
                     />
+                    {formErrors.data_themelimit && (
+                      <p className="text-red-500 text-sm mt-1">{formErrors.data_themelimit}</p>
+                    )}
                   </div>
                 </div>
                 {/* Form buttons */}

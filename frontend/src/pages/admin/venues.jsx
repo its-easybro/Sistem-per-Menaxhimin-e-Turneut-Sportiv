@@ -33,7 +33,7 @@ const venueCreateSchema = yup.object().shape({
     .min(3, "Address must be at least 3 characters"),
   kapaciteti: yup
     .number()
-    .positive("Capacity must be positive")
+    .min(0, "Capacity must be zero or higher")
     .nullable(),
   lloji_siperfaqes: yup
     .string()
@@ -58,7 +58,7 @@ const venueUpdateSchema = yup.object().shape({
     .min(3, "Address must be at least 3 characters"),
   kapaciteti: yup
     .number()
-    .positive("Capacity must be positive")
+    .min(0, "Capacity must be zero or higher")
     .nullable(),
   lloji_siperfaqes: yup
     .string()

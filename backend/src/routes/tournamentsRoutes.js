@@ -409,9 +409,14 @@ router.get("/:id", protect, async (req, res) => {
 
 // Route for creating a new tournament. This route is protected and only admins can use it.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
-  const { error, value } = await tournamentCreateSchema.validateAsync(req.body);
-  if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+  let value;
+
+  try {
+    value = await tournamentCreateSchema.validateAsync(req.body, {
+      abortEarly: false,
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
   }
 
   const {
@@ -463,11 +468,14 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     return res.status(400).json({ error: paramError.details[0].message });
   }
 
-  const { error: bodyError, value: bodyValue } = await tournamentUpdateSchema.validateAsync(
-    req.body,
-  );
-  if (bodyError) {
-    return res.status(400).json({ error: bodyError.details[0].message });
+  let bodyValue;
+
+  try {
+    bodyValue = await tournamentUpdateSchema.validateAsync(req.body, {
+      abortEarly: false,
+    });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
   }
 
   const tournamentId = paramValue.id;

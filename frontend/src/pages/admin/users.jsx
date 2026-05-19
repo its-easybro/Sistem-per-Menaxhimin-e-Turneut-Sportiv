@@ -1,9 +1,52 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Trash2, Edit, Eye, EyeOff } from "lucide-react";
+
+const userCreateSchema = yup.object().shape({
+  email: yup
+    .string()
+    .email("Email must be a valid email address")
+    .required("Email is required"),
+  username: yup
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .required("Username is required"),
+  full_name: yup.string().optional(),
+  password: yup
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .required("Password is required"),
+  roli: yup
+    .string()
+    .oneOf(["user", "admin", "organizator", "gjyqtar"], "Invalid role")
+    .required("Role is required"),
+});
+
+const userUpdateSchema = yup.object().shape({
+  email: yup
+    .string()
+    .email("Email must be a valid email address")
+    .required("Email is required"),
+  username: yup
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .required("Username is required"),
+  full_name: yup.string().optional(),
+  password: yup
+    .string()
+    .transform((value, originalValue) => (originalValue === "" ? undefined : value))
+    .min(6, "Password must be at least 6 characters")
+    .nullable()
+    .notRequired(),
+  roli: yup
+    .string()
+    .oneOf(["user", "admin", "organizator", "gjyqtar"], "Invalid role")
+    .required("Role is required"),
+});
 
 export default function Users() {
   // Uses auth context to enforce admin-only access and guard UI render timing.
@@ -19,6 +62,7 @@ export default function Users() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [alert, setAlert ] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -58,6 +102,10 @@ export default function Users() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const resetForm = () => {
@@ -68,6 +116,7 @@ export default function Users() {
       password: "",
       roli: "user",
     });
+    setFormErrors({});
   };
 
   const handleCreate = () => {
@@ -110,8 +159,10 @@ export default function Users() {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
+    setFormErrors({});
 
     try {
+      await userCreateSchema.validate(formData, { abortEarly: false });
       const response = await api.post(`/users`, formData);
 
       const data = response.data;
@@ -120,7 +171,15 @@ export default function Users() {
       setAlert({ type: 'success', message: 'User created successfully!' });
       handleCloseCreateModal();
     } catch (err) {
-      setAlert({ type: 'error', message: `Error creating user: ${err.message}` });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: 'error', message: `Error creating user: ${err.message}` });
+      }
     }
   };
 
@@ -128,9 +187,14 @@ export default function Users() {
     e.preventDefault();
 
     if (!selectedUser) return;
+    setFormErrors({});
 
     try {
-      const response = await api.put(`/users/${selectedUser.id}`, formData)
+      await userUpdateSchema.validate(formData, { abortEarly: false });
+      const updateData = formData.password
+        ? formData
+        : { ...formData, password: undefined };
+      const response = await api.put(`/users/${selectedUser.id}`, updateData)
 
       const data = response.data;
 
@@ -138,7 +202,15 @@ export default function Users() {
       setAlert({ type: 'success', message: 'User updated successfully!' });
       handleCloseEditModal();
     } catch (err) {
-      setAlert({ type: 'error', message: `Error updating user: ${err.message}` });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: 'error', message: `Error updating user: ${err.message}` });
+      }
     }
   };
 
@@ -381,10 +453,12 @@ export default function Users() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.email ? "border-red-500" : "border-gray-300"
+                    }`}
                     placeholder="Enter email"
-                    required
                   />
+                  {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
                 </div>
 
                 <div>
@@ -394,10 +468,12 @@ export default function Users() {
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.username ? "border-red-500" : "border-gray-300"
+                    }`}
                     placeholder="Enter username"
-                    required
                   />
+                  {formErrors.username && <p className="text-red-500 text-sm mt-1">{formErrors.username}</p>}
                 </div>
 
                 <div>
@@ -420,9 +496,10 @@ export default function Users() {
                       name="password"
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                        formErrors.password ? "border-red-500" : "border-gray-300"
+                      }`}
                       placeholder="Enter password"
-                      required
                     />
                     <button
                       type="button"
@@ -433,6 +510,7 @@ export default function Users() {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
                 </div>
 
                 <div>
@@ -441,13 +519,16 @@ export default function Users() {
                     name="roli"
                     value={formData.roli}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.roli ? "border-red-500" : "border-gray-300"
+                    }`}
                   >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                     <option value="organizator">Organizer</option>
                     <option value="gjyqtar">Referee</option>
                   </select>
+                  {formErrors.roli && <p className="text-red-500 text-sm mt-1">{formErrors.roli}</p>}
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -488,10 +569,12 @@ export default function Users() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                      formErrors.email ? "border-red-500" : "border-gray-300"
+                    }`}
                     placeholder="Enter email"
-                    required
                   />
+                  {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
                 </div>
 
                 <div>
@@ -501,10 +584,12 @@ export default function Users() {
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                      formErrors.username ? "border-red-500" : "border-gray-300"
+                    }`}
                     placeholder="Enter username"
-                    required
                   />
+                  {formErrors.username && <p className="text-red-500 text-sm mt-1">{formErrors.username}</p>}
                 </div>
 
                 <div>
@@ -520,18 +605,46 @@ export default function Users() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                        formErrors.password ? "border-red-500" : "border-gray-300"
+                      }`}
+                      placeholder="Enter new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((value) => !value)}
+                      className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                   <select
                     name="roli"
                     value={formData.roli}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                      formErrors.roli ? "border-red-500" : "border-gray-300"
+                    }`}
                   >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                     <option value="organizator">Organizer</option>
                     <option value="gjyqtar">Referee</option>
                   </select>
+                  {formErrors.roli && <p className="text-red-500 text-sm mt-1">{formErrors.roli}</p>}
                 </div>
 
                 <div className="flex gap-4 pt-4">

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
@@ -36,6 +37,30 @@ const formatTime = (value) => {
 
   return text.slice(0, 5);
 };
+
+const matchCreateSchema = yup.object().shape({
+  turneu_id: yup.string().required("Tournament is required"),
+  ekipi_shtepiak_id: yup.string().required("Home team is required"),
+  ekipi_mysafir_id: yup.string().required("Away team is required"),
+  data_ndeshjes: yup.string().required("Match date is required"),
+  ora_fillimit: yup.string().required("Start time is required"),
+  fusha_id: yup.string().nullable(),
+  referi_id: yup.string().nullable(),
+  statusi: yup.string().required("Status is required"),
+  faza: yup.string(),
+});
+
+const matchUpdateSchema = yup.object().shape({
+  turneu_id: yup.string(),
+  ekipi_shtepiak_id: yup.string(),
+  ekipi_mysafir_id: yup.string(),
+  data_ndeshjes: yup.string(),
+  ora_fillimit: yup.string(),
+  fusha_id: yup.string().nullable(),
+  referi_id: yup.string().nullable(),
+  statusi: yup.string(),
+  faza: yup.string(),
+});
 
 export default function Matches() {
   // Central admin page for managing matches and linked tournament/team/venue data.
@@ -74,6 +99,7 @@ export default function Matches() {
     statusi: "Planifikuar",
     faza: "",
   });
+  const [formErrors, setFormErrors] = useState({});
 
   // Loads matches plus lookup datasets in one batch for form dropdowns.
   useEffect(() => {
@@ -219,15 +245,7 @@ export default function Matches() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (
-        !formData.turneu_id ||
-        !formData.ekipi_shtepiak_id ||
-        !formData.ekipi_mysafir_id ||
-        !formData.data_ndeshjes
-      ) {
-        alert("Please fill in all required fields");
-        return;
-      }
+      await matchCreateSchema.validate(formData, { abortEarly: false });
 
       // Convert IDs to integers
       const { referi_id, ...matchPayload } = formData;
@@ -268,14 +286,23 @@ export default function Matches() {
         statusi: "Planifikuar",
         faza: "",
       });
+      setFormErrors({});
       setAlert({ type: "success", message: "Match created successfully!" });
     } catch (err) {
-      console.error("Error creating match:", err);
-      const message = err.response?.data?.error || err.message;
-      setAlert({
-        type: "error",
-        message: "Error creating match: " + message,
-      });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        console.error("Error creating match:", err);
+        const message = err.response?.data?.error || err.message;
+        setAlert({
+          type: "error",
+          message: "Error creating match: " + message,
+        });
+      }
     }
   };
 
@@ -292,6 +319,7 @@ export default function Matches() {
       statusi: "Planifikuar",
       faza: "",
     });
+    setFormErrors({});
     setShowModal(false);
   };
 
@@ -307,6 +335,7 @@ export default function Matches() {
       statusi: "Planifikuar",
       faza: "",
     });
+    setFormErrors({});
     setSelectedMatch(null);
     setShowEditModal(false);
   };
@@ -423,15 +452,7 @@ export default function Matches() {
     if (!selectedMatch) return;
 
     try {
-      if (
-        !formData.turneu_id ||
-        !formData.ekipi_shtepiak_id ||
-        !formData.ekipi_mysafir_id ||
-        !formData.data_ndeshjes
-      ) {
-        alert("Please fill in all required fields");
-        return;
-      }
+      await matchUpdateSchema.validate(formData, { abortEarly: false });
 
       // Convert IDs to integers
       const { referi_id, ...matchPayload } = formData;
@@ -897,7 +918,7 @@ export default function Matches() {
                       name="turneu_id"
                       value={formData.turneu_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.turneu_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       required
                     >
                       <option value="">Select Tournament</option>
@@ -907,6 +928,7 @@ export default function Matches() {
                         </option>
                       ))}
                     </select>
+                    {formErrors.turneu_id && <p className="text-sm text-red-500 mt-1">{formErrors.turneu_id}</p>}
                   </div>
 
                   <div>
@@ -917,7 +939,7 @@ export default function Matches() {
                       name="ekipi_shtepiak_id"
                       value={formData.ekipi_shtepiak_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.ekipi_shtepiak_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       required
                     >
                       <option value="">Select Home Team</option>
@@ -927,6 +949,7 @@ export default function Matches() {
                         </option>
                       ))}
                     </select>
+                    {formErrors.ekipi_shtepiak_id && <p className="text-sm text-red-500 mt-1">{formErrors.ekipi_shtepiak_id}</p>}
                   </div>
 
                   <div>
@@ -937,7 +960,7 @@ export default function Matches() {
                       name="ekipi_mysafir_id"
                       value={formData.ekipi_mysafir_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.ekipi_mysafir_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       required
                     >
                       <option value="">Select Away Team</option>
@@ -947,6 +970,7 @@ export default function Matches() {
                         </option>
                       ))}
                     </select>
+                    {formErrors.ekipi_mysafir_id && <p className="text-sm text-red-500 mt-1">{formErrors.ekipi_mysafir_id}</p>}
                   </div>
 
                   <div>
@@ -958,9 +982,10 @@ export default function Matches() {
                       name="data_ndeshjes"
                       value={formData.data_ndeshjes}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.data_ndeshjes ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       required
                     />
+                    {formErrors.data_ndeshjes && <p className="text-sm text-red-500 mt-1">{formErrors.data_ndeshjes}</p>}
                   </div>
 
                   <div>
@@ -972,8 +997,9 @@ export default function Matches() {
                       name="ora_fillimit"
                       value={formData.ora_fillimit}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={`w-full px-4 py-2 border ${formErrors.ora_fillimit ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                     />
+                    {formErrors.ora_fillimit && <p className="text-sm text-red-500 mt-1">{formErrors.ora_fillimit}</p>}
                   </div>
 
                   <div>

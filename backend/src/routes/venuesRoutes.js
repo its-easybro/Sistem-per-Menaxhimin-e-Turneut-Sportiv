@@ -25,8 +25,8 @@ const venueCreateSchema = Joi.object({
   lloji_siperfaqes: Joi.string().trim().optional().allow("", null).messages({
     "string.base": "Surface type must be a string.",
   }),
-  ndricimi: Joi.string().trim().optional().allow("", null).messages({
-    "string.base": "Lighting must be a string.",
+  ndricimi: Joi.boolean().optional().allow(null).messages({
+    "boolean.base": "Lighting must be true or false.",
   }),
   statusi: Joi.string().trim().optional().allow("", null).messages({
     "string.base": "Status must be a string.",
@@ -49,8 +49,8 @@ const venueUpdateSchema = Joi.object({
   lloji_siperfaqes: Joi.string().trim().optional().allow("", null).messages({
     "string.base": "Surface type must be a string.",
   }),
-  ndricimi: Joi.string().trim().optional().allow("", null).messages({
-    "string.base": "Lighting must be a string.",
+  ndricimi: Joi.boolean().optional().allow(null).messages({
+    "boolean.base": "Lighting must be true or false.",
   }),
   statusi: Joi.string().trim().optional().allow("", null).messages({
     "string.base": "Status must be a string.",
@@ -115,7 +115,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
         qyteti,
         kapaciteti: kapaciteti || null,
         lloji_siperfaqes: lloji_siperfaqes || null,
-        ndricimi: ndricimi || null,
+        ndricimi: ndricimi ?? null,
         statusi: statusi || null,
       },
     });
@@ -153,7 +153,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
       ...(qyteti !== undefined && { qyteti }),
       ...(kapaciteti !== undefined && { kapaciteti: kapaciteti || null }),
       ...(lloji_siperfaqes !== undefined && { lloji_siperfaqes: lloji_siperfaqes || null }),
-      ...(ndricimi !== undefined && { ndricimi: ndricimi || null }),
+      ...(ndricimi !== undefined && { ndricimi: ndricimi ?? null }),
       ...(statusi !== undefined && { statusi: statusi || null }),
     };
 

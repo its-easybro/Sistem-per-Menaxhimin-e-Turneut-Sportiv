@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
@@ -32,48 +33,50 @@ const statusOptions = [
   "Anuluar",
 ];
 
-function validateTournamentForm(formData) {
-  // Validates required fields and business rules before API submission.
-  if (!formData.emertimi.trim()) {
-    return "Tournament name is required.";
-  }
+const tournamentCreateSchema = yup.object().shape({
+  emertimi: yup
+    .string()
+    .min(2, "Tournament name must be at least 2 characters")
+    .required("Tournament name is required"),
+  sporti_id: yup.number().required("Sport is required"),
+  lloji: yup
+    .string()
+    .oneOf(tournamentTypeOptions, "Invalid tournament format")
+    .required("Tournament format is required"),
+  statusi: yup
+    .string()
+    .oneOf(statusOptions, "Invalid status")
+    .required("Status is required"),
+  data_fillimit: yup.date().required("Start date is required"),
+  data_perfundimit: yup.date().required("End date is required"),
+  lokacioni: yup.string().min(2, "Location must be at least 2 characters"),
+  organizatori_id: yup.number().nullable(),
+  cmimi_regjistrimit: yup
+    .number()
+    .min(0, "Registration price cannot be negative")
+    .nullable(),
+  pershkrimi: yup.string(),
+});
 
-  if (!formData.sporti_id) {
-    return "Sport is required.";
-  }
-
-  if (!tournamentTypeOptions.includes(formData.lloji)) {
-    return "Please choose a valid tournament format.";
-  }
-
-  if (!statusOptions.includes(formData.statusi)) {
-    return "Please choose a valid tournament status.";
-  }
-
-  if (!formData.data_fillimit || !formData.data_perfundimit) {
-    return "Start date and end date are required.";
-  }
-
-  const startDate = new Date(formData.data_fillimit);
-  const endDate = new Date(formData.data_perfundimit);
-
-  if (
-    Number.isNaN(startDate.getTime()) ||
-    Number.isNaN(endDate.getTime())
-  ) {
-    return "Please provide valid tournament dates.";
-  }
-
-  if (endDate <= startDate) {
-    return "End date must be after the start date.";
-  }
-
-  const registrationPrice = Number(formData.cmimi_regjistrimit);
-
-  if (!Number.isFinite(registrationPrice) || registrationPrice < 0) {
-    return "Registration price must be a valid non-negative number.";
-  }
-}
+const tournamentUpdateSchema = yup.object().shape({
+  emertimi: yup
+    .string()
+    .min(2, "Tournament name must be at least 2 characters"),
+  sporti_id: yup.number(),
+  lloji: yup
+    .string()
+    .oneOf(tournamentTypeOptions, "Invalid tournament format"),
+  statusi: yup.string().oneOf(statusOptions, "Invalid status"),
+  data_fillimit: yup.date(),
+  data_perfundimit: yup.date(),
+  lokacioni: yup.string(),
+  organizatori_id: yup.number().nullable(),
+  cmimi_regjistrimit: yup
+    .number()
+    .min(0, "Registration price cannot be negative")
+    .nullable(),
+  pershkrimi: yup.string(),
+});
 
 function normalizeTournamentForm(formData) {
   // Trims text fields to keep saved tournament data consistent.
@@ -137,7 +140,7 @@ function isEligibleOrganizerUser(user) {
   return user?.roli === "user" || user?.roli === "organizator";
 }
 
-function TournamentFormFields({ formData, sports, users, onChange, canAssignOrganizer }) {
+function TournamentFormFields({ formData, sports, users, onChange, canAssignOrganizer, formErrors = {} }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <label className="flex flex-col gap-2">
@@ -147,9 +150,14 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="emertimi"
           value={formData.emertimi}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
+            formErrors.emertimi ? "border-red-500" : "border-gray-300"
+          }`}
           required
         />
+        {formErrors.emertimi && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.emertimi}</p>
+        )}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -158,7 +166,9 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="sporti_id"
           value={formData.sporti_id}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
+            formErrors.sporti_id ? "border-red-500" : "border-gray-300"
+          }`}
           required
         >
           <option value="">Select sport</option>
@@ -168,6 +178,9 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
             </option>
           ))}
         </select>
+        {formErrors.sporti_id && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.sporti_id}</p>
+        )}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -176,7 +189,9 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="lloji"
           value={formData.lloji}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
+            formErrors.lloji ? "border-red-500" : "border-gray-300"
+          }`}
           required
         >
           <option value="">Select format</option>
@@ -186,6 +201,9 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
             </option>
           ))}
         </select>
+        {formErrors.lloji && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.lloji}</p>
+        )}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -194,7 +212,9 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="statusi"
           value={formData.statusi}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
+            formErrors.statusi ? "border-red-500" : "border-gray-300"
+          }`}
         >
           {statusOptions.map((status) => (
             <option key={status} value={status}>
@@ -202,6 +222,9 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
             </option>
           ))}
         </select>
+        {formErrors.statusi && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.statusi}</p>
+        )}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -211,9 +234,14 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="data_fillimit"
           value={formData.data_fillimit}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
+            formErrors.data_fillimit ? "border-red-500" : "border-gray-300"
+          }`}
           required
         />
+        {formErrors.data_fillimit && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.data_fillimit}</p>
+        )}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -223,9 +251,14 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="data_perfundimit"
           value={formData.data_perfundimit}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
+            formErrors.data_perfundimit ? "border-red-500" : "border-gray-300"
+          }`}
           required
         />
+        {formErrors.data_perfundimit && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.data_perfundimit}</p>
+        )}
       </label>
 
       <label className="flex flex-col gap-2">
@@ -235,8 +268,13 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="lokacioni"
           value={formData.lokacioni}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
+            formErrors.lokacioni ? "border-red-500" : "border-gray-300"
+          }`}
         />
+        {formErrors.lokacioni && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.lokacioni}</p>
+        )}
       </label>
 
       {canAssignOrganizer && (
@@ -267,8 +305,13 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="cmimi_regjistrimit"
           value={formData.cmimi_regjistrimit}
           onChange={onChange}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
+            formErrors.cmimi_regjistrimit ? "border-red-500" : "border-gray-300"
+          }`}
         />
+        {formErrors.cmimi_regjistrimit && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.cmimi_regjistrimit}</p>
+        )}
       </label>
 
       <label className="flex flex-col gap-2 md:col-span-2">
@@ -306,6 +349,7 @@ export default function Tournaments() {
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [formErrors, setFormErrors] = useState({});
   const assignableUsers = users.filter(isEligibleOrganizerUser);
 
   // Loads tournaments and sports in parallel for table and form dropdowns.
@@ -352,6 +396,7 @@ export default function Tournaments() {
 
   const resetForm = () => {
     setFormData(initialFormData);
+    setFormErrors({});
   };
 
   const getSportName = (sportId) => {
@@ -453,11 +498,7 @@ export default function Tournaments() {
     e.preventDefault();
 
     try {
-      const validationError = validateTournamentForm(formData);
-      if (validationError) {
-        setAlert({ type: "error", message: validationError });
-        return;
-      }
+      await tournamentCreateSchema.validate(formData, { abortEarly: false });
 
       const organizerValidationError = validateOrganizerAssignment();
       if (organizerValidationError) {
@@ -472,8 +513,16 @@ export default function Tournaments() {
       handleCloseModal();
       setAlert({ type: 'success', message: 'Tournament created successfully!' });
     } catch (err) {
-      const message = err.response?.data?.error || err.message;
-      setAlert({ type: 'error', message: 'Error creating tournament: ' + message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        const message = err.response?.data?.error || err.message;
+        setAlert({ type: 'error', message: 'Error creating tournament: ' + message });
+      }
     }
   };
 
@@ -483,11 +532,7 @@ export default function Tournaments() {
     if (!selectedTournament) return;
 
     try {
-      const validationError = validateTournamentForm(formData);
-      if (validationError) {
-        setAlert({ type: "error", message: validationError });
-        return;
-      }
+      await tournamentUpdateSchema.validate(formData, { abortEarly: false });
 
       const organizerValidationError = validateOrganizerAssignment();
       if (organizerValidationError) {
@@ -505,8 +550,16 @@ export default function Tournaments() {
       handleCloseEditModal();
       setAlert({ type: 'success', message: 'Tournament updated successfully!' });
     } catch (err) {
-      const message = err.response?.data?.error || err.message;
-      setAlert({ type: 'error', message: 'Error updating tournament: ' + message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        const message = err.response?.data?.error || err.message;
+        setAlert({ type: 'error', message: 'Error updating tournament: ' + message });
+      }
     }
   };
 
@@ -535,6 +588,13 @@ export default function Tournaments() {
       ...prev,
       [name]: value,
     }));
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
+    }
   };
 
   // Applies search against tournament name, sport, location, and status.
@@ -743,6 +803,7 @@ export default function Tournaments() {
                 users={assignableUsers}
                 onChange={handleInputChange}
                 canAssignOrganizer={isAdmin}
+                formErrors={formErrors}
               />
               <div className="flex gap-4 pt-4">
                 <button
@@ -868,6 +929,7 @@ export default function Tournaments() {
                 users={assignableUsers}
                 onChange={handleInputChange}
                 canAssignOrganizer={isAdmin}
+                formErrors={formErrors}
               />
               <div className="flex gap-4 pt-4">
                 <button

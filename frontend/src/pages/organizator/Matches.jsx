@@ -20,12 +20,12 @@ const initialFormData = {
 };
 
 const matchCreateionSchema = yup.object().shape({
-  turneu_id: yup.string().required("Tournament is required"),
-  ekipi_shtepiak_id: yup.string().required("Home team is required"),
-  ekipi_mysafir_id: yup.string().required("Away team is required"),
+  turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
+  ekipi_shtepiak_id: yup.number().typeError("Home team must be a number").required("Home team is required"),
+  ekipi_mysafir_id: yup.number().typeError("Away team must be a number").required("Away team is required"),
   data_ndeshjes: yup.string().required("Match date is required"),
   ora_fillimit: yup.string().required("Start time is required"),
-  fusha_id: yup.string().optional(),
+  fusha_id: yup.number().typeError("Field must be a number").nullable().optional(),
   statusi: yup
     .string()
     .oneOf(["Planifikuar", "Live", "Përfunduar", "Shtyrë", "Anuluar"])
@@ -34,13 +34,12 @@ const matchCreateionSchema = yup.object().shape({
 });
 
 const matchUpdateSchema = yup.object().shape({
-  turneu_id: yup.string().required("Tournament is required"),
-  ekipi_shtepiak_id: yup.string().required("Home team is required"),
-  ekipi_mysafir_id: yup.string().required("Away team is required"),
+  turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
+  ekipi_shtepiak_id: yup.number().typeError("Home team must be a number").required("Home team is required"),
+  ekipi_mysafir_id: yup.number().typeError("Away team must be a number").required("Away team is required"),
   data_ndeshjes: yup.string().required("Match date is required"),
   ora_fillimit: yup.string().required("Start time is required"),
-
-  fusha_id: yup.string().optional(),
+  fusha_id: yup.number().typeError("Field must be a number").nullable().optional(),
   statusi: yup
     .string()
     .oneOf(["Planifikuar", "Live", "Përfunduar", "Shtyrë", "Anuluar"])
