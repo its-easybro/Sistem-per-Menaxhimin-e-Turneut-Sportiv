@@ -1,12 +1,12 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
 import { Edit, Trash2 } from "lucide-react";
-
 
 const initialFormData = {
   turneu_id: "",
@@ -18,6 +18,35 @@ const initialFormData = {
   statusi: "Planifikuar",
   faza: "",
 };
+
+const matchCreateionSchema = yup.object().shape({
+  turneu_id: yup.string().required("Tournament is required"),
+  ekipi_shtepiak_id: yup.string().required("Home team is required"),
+  ekipi_mysafir_id: yup.string().required("Away team is required"),
+  data_ndeshjes: yup.string().required("Match date is required"),
+  ora_fillimit: yup.string().required("Start time is required"),
+  fusha_id: yup.string().optional(),
+  statusi: yup
+    .string()
+    .oneOf(["Planifikuar", "Live", "Përfunduar", "Shtyrë", "Anuluar"])
+    .required(),
+  faza: yup.string().optional(),
+});
+
+const matchUpdateSchema = yup.object().shape({
+  turneu_id: yup.string().required("Tournament is required"),
+  ekipi_shtepiak_id: yup.string().required("Home team is required"),
+  ekipi_mysafir_id: yup.string().required("Away team is required"),
+  data_ndeshjes: yup.string().required("Match date is required"),
+  ora_fillimit: yup.string().required("Start time is required"),
+
+  fusha_id: yup.string().optional(),
+  statusi: yup
+    .string()
+    .oneOf(["Planifikuar", "Live", "Përfunduar", "Shtyrë", "Anuluar"])
+    .required(),
+  faza: yup.string().optional(),
+});
 
 // Organizer match page keeps its own form state separate from the admin matches page.
 function formatDate(value) {
@@ -62,6 +91,7 @@ export default function OrganizerMatches() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     const loadData = async () => {
@@ -110,17 +140,17 @@ export default function OrganizerMatches() {
 
   useEffect(() => {
     const handleMatchLive = ({ matchId }) => {
-      setMatches((prev) => 
-        prev.map((match) => 
-          match.id === matchId ? { ...match, statusi: "Live"} : match,
-      ),
-    );
+      setMatches((prev) =>
+        prev.map((match) =>
+          match.id === matchId ? { ...match, statusi: "Live" } : match,
+        ),
+      );
     };
 
     const handleMatchFinished = ({ matchId }) => {
       setMatches((prev) =>
-        prev.map((match) => 
-          match.id === matchId ? { ...match, statusi: "Përfunduar"} : match,
+        prev.map((match) =>
+          match.id === matchId ? { ...match, statusi: "Përfunduar" } : match,
         ),
       );
     };
@@ -128,12 +158,10 @@ export default function OrganizerMatches() {
     socket.on("match_live", handleMatchLive);
     socket.on("match_finished", handleMatchFinished);
 
-
     return () => {
       socket.off("match_live", handleMatchLive);
       socket.off("match_finished", handleMatchFinished);
     };
-
   }, []);
 
   const availableTeams = useMemo(() => {
@@ -186,6 +214,10 @@ export default function OrganizerMatches() {
 
       return next;
     });
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const buildPayload = () => ({
@@ -197,36 +229,43 @@ export default function OrganizerMatches() {
     fusha_id: formData.fusha_id ? Number(formData.fusha_id) : null,
   });
 
-  const validateForm = () => {
-    if (
-      !formData.turneu_id ||
-      !formData.ekipi_shtepiak_id ||
-      !formData.ekipi_mysafir_id ||
-      !formData.data_ndeshjes
-    ) {
-      return "Please fill in the required fields.";
+  const validateForm = async () => {
+    try {
+      setFormErrors({});
+      await matchCreateionSchema.validate(formData, { abortEarly: false });
+      return true;
+    } catch (err) {
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      }
+      return false;
     }
-
-    if (formData.ekipi_shtepiak_id === formData.ekipi_mysafir_id) {
-      return "Home team and away team must be different.";
-    }
-
-    return "";
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    const validationError = validateForm();
-    if (validationError) {
-      setAlert({ type: "error", message: validationError });
+
+    if (formData.ekipi_shtepiak_id === formData.ekipi_mysafir_id) {
+      setAlert({
+        type: "error",
+        message: "Home team and away team must be different.",
+      });
       return;
     }
+
+    const isValid = await validateForm();
+    if (!isValid) return;
 
     try {
       const response = await api.post("/matches", buildPayload());
       setMatches((prev) => [...prev, response.data]);
       setShowCreateModal(false);
       resetForm();
+      setFormErrors({});
       setAlert({ type: "success", message: "Match created successfully!" });
     } catch (err) {
       setAlert({
@@ -240,11 +279,16 @@ export default function OrganizerMatches() {
     e.preventDefault();
     if (!selectedMatch) return;
 
-    const validationError = validateForm();
-    if (validationError) {
-      setAlert({ type: "error", message: validationError });
+    if (formData.ekipi_shtepiak_id === formData.ekipi_mysafir_id) {
+      setAlert({
+        type: "error",
+        message: "Home team and away team must be different.",
+      });
       return;
     }
+
+    const isValid = await validateForm();
+    if (!isValid) return;
 
     try {
       const response = await api.put(
@@ -259,6 +303,7 @@ export default function OrganizerMatches() {
       setShowEditModal(false);
       setSelectedMatch(null);
       resetForm();
+      setFormErrors({});
       setAlert({ type: "success", message: "Match updated successfully!" });
     } catch (err) {
       setAlert({
@@ -334,7 +379,7 @@ export default function OrganizerMatches() {
             name="turneu_id"
             value={formData.turneu_id}
             onChange={handleInputChange}
-            className="rounded-lg border border-gray-300 px-3 py-2"
+            className={`rounded-lg border px-3 py-2 ${formErrors.turneu_id ? "border-red-500" : "border-gray-300"}`}
             required
           >
             <option value="">Select tournament</option>
@@ -345,6 +390,9 @@ export default function OrganizerMatches() {
               </option>
             ))}
           </select>
+          {formErrors.turneu_id && (
+            <p className="text-red-500 text-xs">{formErrors.turneu_id}</p>
+          )}
         </label>
 
         <label className="flex flex-col gap-2">
@@ -353,7 +401,7 @@ export default function OrganizerMatches() {
             name="fusha_id"
             value={formData.fusha_id}
             onChange={handleInputChange}
-            className="rounded-lg border border-gray-300 px-3 py-2"
+            className={`rounded-lg border px-3 py-2 ${formErrors.fusha_id ? "border-red-500" : "border-gray-300"}`}
           >
             <option value="">Select venue</option>
             {venues.map((item) => (
@@ -362,6 +410,9 @@ export default function OrganizerMatches() {
               </option>
             ))}
           </select>
+          {formErrors.fusha_id && (
+            <p className="text-red-500 text-xs">{formErrors.fusha_id}</p>
+          )}
         </label>
 
         <label className="flex flex-col gap-2">
@@ -370,7 +421,7 @@ export default function OrganizerMatches() {
             name="ekipi_shtepiak_id"
             value={formData.ekipi_shtepiak_id}
             onChange={handleInputChange}
-            className="rounded-lg border border-gray-300 px-3 py-2"
+            className={`rounded-lg border px-3 py-2 ${formErrors.ekipi_shtepiak_id ? "border-red-500" : "border-gray-300"}`}
             required
           >
             <option value="">Select home team</option>
@@ -381,6 +432,11 @@ export default function OrganizerMatches() {
               </option>
             ))}
           </select>
+          {formErrors.ekipi_shtepiak_id && (
+            <p className="text-red-500 text-xs">
+              {formErrors.ekipi_shtepiak_id}
+            </p>
+          )}
         </label>
 
         <label className="flex flex-col gap-2">
@@ -389,7 +445,7 @@ export default function OrganizerMatches() {
             name="ekipi_mysafir_id"
             value={formData.ekipi_mysafir_id}
             onChange={handleInputChange}
-            className="rounded-lg border border-gray-300 px-3 py-2"
+            className={`rounded-lg border px-3 py-2 ${formErrors.ekipi_mysafir_id ? "border-red-500" : "border-gray-300"}`}
             required
           >
             <option value="">Select away team</option>
@@ -400,6 +456,11 @@ export default function OrganizerMatches() {
               </option>
             ))}
           </select>
+          {formErrors.ekipi_mysafir_id && (
+            <p className="text-red-500 text-xs">
+              {formErrors.ekipi_mysafir_id}
+            </p>
+          )}
         </label>
 
         <label className="flex flex-col gap-2">
@@ -409,9 +470,12 @@ export default function OrganizerMatches() {
             name="data_ndeshjes"
             value={formData.data_ndeshjes}
             onChange={handleInputChange}
-            className="rounded-lg border border-gray-300 px-3 py-2"
+            className={`rounded-lg border px-3 py-2 ${formErrors.data_ndeshjes ? "border-red-500" : "border-gray-300"}`}
             required
           />
+          {formErrors.data_ndeshjes && (
+            <p className="text-red-500 text-xs">{formErrors.data_ndeshjes}</p>
+          )}
         </label>
 
         <label className="flex flex-col gap-2">
@@ -421,8 +485,11 @@ export default function OrganizerMatches() {
             name="ora_fillimit"
             value={formData.ora_fillimit}
             onChange={handleInputChange}
-            className="rounded-lg border border-gray-300 px-3 py-2"
+            className={`rounded-lg border px-3 py-2 ${formErrors.ora_fillimit ? "border-red-500" : "border-gray-300"}`}
           />
+          {formErrors.ora_fillimit && (
+            <p className="text-red-500 text-xs">{formErrors.ora_fillimit}</p>
+          )}
         </label>
 
         <label className="flex flex-col gap-2">
@@ -431,7 +498,7 @@ export default function OrganizerMatches() {
             name="statusi"
             value={formData.statusi}
             onChange={handleInputChange}
-            className="rounded-lg border border-gray-300 px-3 py-2"
+            className={`rounded-lg border px-3 py-2 ${formErrors.statusi ? "border-red-500" : "border-gray-300"}`}
           >
             <option value="Planifikuar">Planifikuar</option>
             <option value="Live">Live</option>
@@ -439,6 +506,9 @@ export default function OrganizerMatches() {
             <option value="Shtyrë">Shtyrë</option>
             <option value="Anuluar">Anuluar</option>
           </select>
+          {formErrors.statusi && (
+            <p className="text-red-500 text-xs">{formErrors.statusi}</p>
+          )}
         </label>
 
         <label className="flex flex-col gap-2">
@@ -448,9 +518,12 @@ export default function OrganizerMatches() {
             name="faza"
             value={formData.faza}
             onChange={handleInputChange}
-            className="rounded-lg border border-gray-300 px-3 py-2"
+            className={`rounded-lg border px-3 py-2 ${formErrors.faza ? "border-red-500" : "border-gray-300"}`}
             placeholder="e.g. Semi-final"
           />
+          {formErrors.faza && (
+            <p className="text-red-500 text-xs">{formErrors.faza}</p>
+          )}
         </label>
       </div>
 
@@ -465,6 +538,7 @@ export default function OrganizerMatches() {
           type="button"
           onClick={() => {
             resetForm();
+            setFormErrors({});
             setSelectedMatch(null);
             setShowCreateModal(false);
             setShowEditModal(false);

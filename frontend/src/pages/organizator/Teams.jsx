@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
@@ -11,6 +12,20 @@ const initialFormData = {
   statusi: "Në Pritje",
   tarifa_paguar: "0",
 };
+
+const registrationCreateSchema = yup.object().shape({
+  turneu_id: yup.string().required("Tournament is required"),
+  ekipi_id: yup.string().required("Team is required"),
+  statusi: yup.string().oneOf(["Në Pritje", "Aprovuar", "Refuzuar", "Anuluar"]).required("Status is required"),
+  tarifa_paguar: yup.number().min(0, "Fee cannot be negative").typeError("Fee must be a number").required("Fee is required"),
+});
+
+const registrationUpdateSchema = yup.object().shape({
+  turneu_id: yup.string().required("Tournament is required"),
+  ekipi_id: yup.string().required("Team is required"),
+  statusi: yup.string().oneOf(["Në Pritje", "Aprovuar", "Refuzuar", "Anuluar"]).required("Status is required"),
+  tarifa_paguar: yup.number().min(0, "Fee cannot be negative").typeError("Fee must be a number").required("Fee is required"),
+});
 
 export default function OrganizerTeams() {
   const { user } = useContext(AuthContext);
@@ -25,8 +40,12 @@ export default function OrganizerTeams() {
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
-  useEffect(() => {
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setFormErrors({});
+  };
     const loadData = async () => {
       if (!user?.is_organizer) {
         setLoading(false);
@@ -54,9 +73,12 @@ export default function OrganizerTeams() {
     };
 
     loadData();
-  }, [user]);
+  } [user];
 
-  const resetForm = () => setFormData(initialFormData);
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setFormErrors({});
+  };
 
   const getTeamName = (id) => teams.find((item) => item.id === id)?.emertimi || "N/A";
   const selectedTournaments = tournaments.find((item) => String(item.id) === String(formData.turneu_id));
@@ -75,13 +97,9 @@ export default function OrganizerTeams() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.turneu_id || !formData.ekipi_id) {
-      setAlert({ type: "error", message: "Please select a tournament and a team." });
-      return;
-    }
-
     try {
-      // Creates a tournament registration so the selected team becomes part of the organizer's tournament.
+      await registrationCreateSchema.validate(formData, { abortEarly: false });
+
       const response = await api.post("/tournament-registrations", {
         turneu_id: Number(formData.turneu_id),
         ekipi_id: Number(formData.ekipi_id),
@@ -94,14 +112,22 @@ export default function OrganizerTeams() {
       resetForm();
       setAlert({ type: "success", message: "Team added to tournament successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error adding team: " + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: "error", message: "Error adding team: " + err.message });
+      }
     }
   };
   const handleCloseEditModal = () => {
     setFormData(initialFormData);
+    setFormErrors({});
     setSelectedRegistration(null);
     setShowEditModal(false);
-    setSelectedRegistration(null);
   }
   const handleEdit = (id) => {
     const registration = registrations.find((item) => item.id === id);
@@ -119,7 +145,10 @@ export default function OrganizerTeams() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!selectedRegistration) return;
+
     try {
+      await registrationUpdateSchema.validate(formData, { abortEarly: false });
+
       const response = await api.put(`/tournament-registrations/${selectedRegistration.id}`, {
         turneu_id: Number(formData.turneu_id),
         ekipi_id: Number(formData.ekipi_id),
@@ -136,9 +165,17 @@ export default function OrganizerTeams() {
       resetForm();
       setAlert({ type: "success", message: "Team updated successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error updating team: " + err.message });
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({ type: "error", message: "Error updating team: " + err.message });
+      }
     }
-  }
+  };
 
   const handleDelete = (id) => {
     const registration = registrations.find((item) => item.id === id);
@@ -268,14 +305,17 @@ export default function OrganizerTeams() {
                   <select
                     name="turneu_id"
                     value={formData.turneu_id}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData((prev) => ({
                         ...prev,
                         turneu_id: e.target.value,
                         ekipi_id: "",
-                      }))
-                    }
-                    className="rounded-lg border border-gray-300 px-3 py-2"
+                      }));
+                      if (formErrors.turneu_id) {
+                        setFormErrors((prev) => ({ ...prev, turneu_id: "" }));
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 ${formErrors.turneu_id ? "border-red-500" : "border-gray-300"}`}
                     required
                   >
                     <option value="">Select tournament</option>
@@ -285,6 +325,9 @@ export default function OrganizerTeams() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.turneu_id && (
+                    <p className="text-red-500 text-xs">{formErrors.turneu_id}</p>
+                  )}
                 </label>
 
                 <label className="flex flex-col gap-2">
@@ -292,8 +335,13 @@ export default function OrganizerTeams() {
                   <select
                     name="ekipi_id"
                     value={formData.ekipi_id}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, ekipi_id: e.target.value }))}
-                    className="rounded-lg border border-gray-300 px-3 py-2"
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, ekipi_id: e.target.value }));
+                      if (formErrors.ekipi_id) {
+                        setFormErrors((prev) => ({ ...prev, ekipi_id: "" }));
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 ${formErrors.ekipi_id ? "border-red-500" : "border-gray-300"}`}
                     required
                   >
                     <option value="">Select team</option>
@@ -303,6 +351,9 @@ export default function OrganizerTeams() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.ekipi_id && (
+                    <p className="text-red-500 text-xs">{formErrors.ekipi_id}</p>
+                  )}
                 </label>
 
                 <label className="flex flex-col gap-2">
@@ -310,14 +361,22 @@ export default function OrganizerTeams() {
                   <select
                     name="statusi"
                     value={formData.statusi}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, statusi: e.target.value }))}
-                    className="rounded-lg border border-gray-300 px-3 py-2"
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, statusi: e.target.value }));
+                      if (formErrors.statusi) {
+                        setFormErrors((prev) => ({ ...prev, statusi: "" }));
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 ${formErrors.statusi ? "border-red-500" : "border-gray-300"}`}
                   >
                     <option value="Në Pritje">Në Pritje</option>
                     <option value="Aprovuar">Aprovuar</option>
                     <option value="Refuzuar">Refuzuar</option>
                     <option value="Anuluar">Anuluar</option>
                   </select>
+                  {formErrors.statusi && (
+                    <p className="text-red-500 text-xs">{formErrors.statusi}</p>
+                  )}
                 </label>
 
                 <label className="flex flex-col gap-2">
@@ -327,9 +386,17 @@ export default function OrganizerTeams() {
                     min="0"
                     step="0.01"
                     value={formData.tarifa_paguar}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, tarifa_paguar: e.target.value }))}
-                    className="rounded-lg border border-gray-300 px-3 py-2"
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, tarifa_paguar: e.target.value }));
+                      if (formErrors.tarifa_paguar) {
+                        setFormErrors((prev) => ({ ...prev, tarifa_paguar: "" }));
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 ${formErrors.tarifa_paguar ? "border-red-500" : "border-gray-300"}`}
                   />
+                  {formErrors.tarifa_paguar && (
+                    <p className="text-red-500 text-xs">{formErrors.tarifa_paguar}</p>
+                  )}
                 </label>
               </div>
 
@@ -337,7 +404,10 @@ export default function OrganizerTeams() {
                 <button type="submit" className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white">
                   Add Team
                 </button>
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white">
+                <button type="button" onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }} className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white">
                   Cancel
                 </button>
               </div>
@@ -356,8 +426,13 @@ export default function OrganizerTeams() {
                   <select
                     name="turneu_id"
                     value={formData.turneu_id}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, turneu_id: e.target.value }))}
-                    className="rounded-lg border border-gray-300 px-3 py-2"
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, turneu_id: e.target.value }));
+                      if (formErrors.turneu_id) {
+                        setFormErrors((prev) => ({ ...prev, turneu_id: "" }));
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 ${formErrors.turneu_id ? "border-red-500" : "border-gray-300"}`}
                     required
                   >
                     <option value="">Select tournament</option>
@@ -367,6 +442,9 @@ export default function OrganizerTeams() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.turneu_id && (
+                    <p className="text-red-500 text-xs">{formErrors.turneu_id}</p>
+                  )}
                 </label>
 
                 <label className="flex flex-col gap-2">
@@ -374,8 +452,13 @@ export default function OrganizerTeams() {
                   <select
                     name="ekipi_id"
                     value={formData.ekipi_id}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, ekipi_id: e.target.value }))}
-                    className="rounded-lg border border-gray-300 px-3 py-2"
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, ekipi_id: e.target.value }));
+                      if (formErrors.ekipi_id) {
+                        setFormErrors((prev) => ({ ...prev, ekipi_id: "" }));
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 ${formErrors.ekipi_id ? "border-red-500" : "border-gray-300"}`}
                     required
                   >
                     <option value="">Select team</option>
@@ -385,6 +468,9 @@ export default function OrganizerTeams() {
                       </option>
                     ))}
                   </select>
+                  {formErrors.ekipi_id && (
+                    <p className="text-red-500 text-xs">{formErrors.ekipi_id}</p>
+                  )}
                 </label>
 
                 <label className="flex flex-col gap-2">
@@ -392,14 +478,22 @@ export default function OrganizerTeams() {
                   <select
                     name="statusi"
                     value={formData.statusi}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, statusi: e.target.value }))}
-                    className="rounded-lg border border-gray-300 px-3 py-2"
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, statusi: e.target.value }));
+                      if (formErrors.statusi) {
+                        setFormErrors((prev) => ({ ...prev, statusi: "" }));
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 ${formErrors.statusi ? "border-red-500" : "border-gray-300"}`}
                   >
                     <option value="Në Pritje">Në Pritje</option>
                     <option value="Aprovuar">Aprovuar</option>
                     <option value="Refuzuar">Refuzuar</option>
                     <option value="Anuluar">Anuluar</option>
                   </select>
+                  {formErrors.statusi && (
+                    <p className="text-red-500 text-xs">{formErrors.statusi}</p>
+                  )}
                 </label>
 
                 <label className="flex flex-col gap-2">
@@ -409,9 +503,17 @@ export default function OrganizerTeams() {
                     min="0"
                     step="0.01"
                     value={formData.tarifa_paguar}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, tarifa_paguar: e.target.value }))}
-                    className="rounded-lg border border-gray-300 px-3 py-2"
+                    onChange={(e) => {
+                      setFormData((prev) => ({ ...prev, tarifa_paguar: e.target.value }));
+                      if (formErrors.tarifa_paguar) {
+                        setFormErrors((prev) => ({ ...prev, tarifa_paguar: "" }));
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 ${formErrors.tarifa_paguar ? "border-red-500" : "border-gray-300"}`}
                   />
+                  {formErrors.tarifa_paguar && (
+                    <p className="text-red-500 text-xs">{formErrors.tarifa_paguar}</p>
+                  )}
                 </label>
               </div>
 
@@ -419,7 +521,7 @@ export default function OrganizerTeams() {
                 <button type="submit" className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white">
                   Update Team
                 </button>
-                <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white">
+                <button type="button" onClick={handleCloseEditModal} className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white">
                   Cancel
                 </button>
               </div>
@@ -456,4 +558,4 @@ export default function OrganizerTeams() {
       )}
     </div>
   );
-}
+
