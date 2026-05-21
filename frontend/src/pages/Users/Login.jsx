@@ -60,7 +60,7 @@ const Login = () => {
         });
         setErrors(validationErrors);
       } else {
-        setError("Invalid email or password");
+        setError(err?.message || "Invalid email or password");
         console.log(err.message);
       }
     } finally {
@@ -83,7 +83,7 @@ const Login = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
               {error}
             </div>
           )}

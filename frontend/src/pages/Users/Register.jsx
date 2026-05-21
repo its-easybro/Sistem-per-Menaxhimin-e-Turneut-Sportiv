@@ -69,8 +69,7 @@ const Register = () => {
         });
         setErrors(validationErrors);
       } else {
-        setError("Error occurred while registering");
-        console.log(err.message);
+        setError( err?.response?.data?.message || err?.message || "Error occurred while registering");
       }
     } finally {
       setLoading(false);
@@ -92,7 +91,7 @@ const Register = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
               {error}
             </div>
           )}

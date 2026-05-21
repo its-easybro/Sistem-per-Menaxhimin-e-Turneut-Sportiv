@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import pool from "../config/db.js";
+import prisma from "../lib/prisma.js";
 
 // Middleware to protect routes and ensure that only authenticated users can access them. It checks for the presence of a JWT token in the cookies, verifies it, and then fetches the user's details from the database to attach to the request object for use in subsequent middleware or route handlers.
 export const protect = async (req, res, next) => {
@@ -12,36 +13,38 @@ export const protect = async (req, res, next) => {
     // Verify the token and extract the user ID from it. Then, fetch the user's details from the database and attach them to the request object for use in subsequent middleware or route handlers.
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await pool.query(
-      `SELECT id, email, emri, mbiemri, roli, statusi, created_at
-       FROM users
-       WHERE id = $1`,
-      [decoded.id],
-    );
+    const user = await prisma.user.findUnique({ 
+      where: { id: decoded.id } 
+    })
 
-    if(!user.rows[0]){
+    if(!user){
       return res.status(401).json({ message: "Not authorized, user not found" });
     }
     // Attaching the user's details to the request object, including computed properties for each role for easy role checking in subsequent middleware or route handlers.
     req.user = {
-      id: user.rows[0].id,
-      email: user.rows[0].email,
-      emri: user.rows[0].emri,
-      mbiemri: user.rows[0].mbiemri,
-      roli: user.rows[0].roli,
-      statusi: user.rows[0].statusi,
-      created_at: user.rows[0].created_at,
-      username: user.rows[0].emri,
-      full_name: [user.rows[0].emri, user.rows[0].mbiemri].filter(Boolean).join(" ") || null,
-      is_admin: user.rows[0].roli === "admin",
-      is_organizer: user.rows[0].roli === "organizator",
-      is_referee: user.rows[0].roli === "gjyqtar",
+      id: user.id,
+      email: user.email,
+      emri: user.emri,
+      mbiemri: user.mbiemri,
+      roli: user.roli,
+      statusi: user.statusi,
+      created_at: user.createdAt,
+      username: user.emri,
+      full_name: [user.emri, user.mbiemri].filter(Boolean).join(" ") || null,
+      is_admin: user.roli === "admin",
+      is_organizer: user.roli === "organizator",
+      is_referee: user.roli === "gjyqtar",
     };
     next();
 
   } catch (err){
-    console.error(err);
-    res.status(401).json({ message: "Not authorized, token failed" });
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token expired" });
+    }
+    if (err.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    res.status(500).json({ message: "Internal server error" });
   }
 }
 

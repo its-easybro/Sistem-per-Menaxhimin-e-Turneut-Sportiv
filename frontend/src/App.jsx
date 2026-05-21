@@ -23,6 +23,7 @@ import Tournaments from "./pages/admin/Tournaments";
 import Referees from "./pages/admin/Referees";
 import Standings from "./pages/admin/Standings";
 import AdminContactUs from "./pages/admin/ContactUs";
+import Sessions from "./pages/admin/Sessions";
 
 // Importing Organizer Pages
 import OrganizerDashboard from "./pages/organizator/Dashboard";
@@ -40,6 +41,7 @@ import ContactUs from "./pages/Users/ContactUs";
 import ForgotPassword from "./pages/Users/ForgotPassword";
 import ResetPassword from "./pages/Users/ResetPassword";
 import LiveMatches from "./pages/Users/LiveMatches";
+import NotFound from "./components/NotFound";
 
 function App() {
   // Waits for initial auth/session check before rendering app routes.
@@ -65,6 +67,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/live-matches" element={<LiveMatches />} />
+        <Route path="*" element={<NotFound />} />
 
         {/* ADMIN ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_admin"]} Layout={AdminRoute} />}>
@@ -82,6 +85,7 @@ function App() {
           <Route path="/referees" element={<Referees />} />
           <Route path="/standings" element={<Standings />} />
           <Route path="/contactUs" element={<AdminContactUs />} />
+          <Route path="/sessions" element={<Sessions />} />
         </Route>
 
         {/* ORGANIZER ROUTES */}

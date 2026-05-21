@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
   // Attempts server logout, then always clears local user state.
   const logout = async () => {
     try {
-      await fetch(`${AUTH_API_URL}/Logout`, {
+      await fetch(`${AUTH_API_URL}/logout`, {
         method: 'POST',
         credentials: 'include',
       });

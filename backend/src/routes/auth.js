@@ -6,6 +6,7 @@ import prisma from "../lib/prisma.js";
 import crypto, { hash } from "crypto";
 import { sendResetEmail } from "../lib/mailer.js";
 import Joi from "joi";
+import { authLimiter, forgotPwLimiter} from "../middleware/rateLimiter.js"
 
 const router = express.Router();
 
@@ -59,8 +60,8 @@ const accessCookieOptions = {
   sameSite: "strict",
   maxAge: 15 * 60 * 1000, // 15 minutes
 };
-// Cookie options for refresh token
-const refreshCookieOptions = {
+// Cookie options for the session identifier used to restore auth state.
+const sessionCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict",
@@ -78,16 +79,9 @@ const generateAccessToken = (user) => {
       is_referee: user.roli === "gjyqtar",
     },
     process.env.JWT_SECRET,
-    { expiresIn: "15m" },
+    { expiresIn: "1m" },
   );
 };
-// Helper function to generate JWT refresh token with user ID
-const generateRefreshToken = (user) => {
-  return jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: "30d",
-  });
-};
-
 // Helper function to build user response object
 const buildUserResponse = (user) => ({
   id: user.id,
@@ -105,7 +99,7 @@ const buildUserResponse = (user) => ({
 });
 
 //Register new user
-router.post("/register", async (req, res) => {
+router.post("/register", authLimiter, async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
     if (error) {
@@ -157,9 +151,15 @@ router.post("/register", async (req, res) => {
     });
 
     const accessToken = generateAccessToken(newUser);
-    const refreshToken = generateRefreshToken(newUser);
+    const session = await prisma.session.create({
+      data: {
+        userId: newUser.id,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+
     res.cookie("token", accessToken, accessCookieOptions);
-    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
+    res.cookie("sessionId", session.id, sessionCookieOptions);
 
     return res.status(201).json({
       message: "User created successfully",
@@ -172,7 +172,7 @@ router.post("/register", async (req, res) => {
 });
 
 //Login
-router.post("/login", async (req, res) => {
+router.post("/login", authLimiter, async (req, res) => {
   try {
     const { error, value } = loginSchema.validate(req.body);
     if (error) {
@@ -195,9 +195,16 @@ router.post("/login", async (req, res) => {
     }
 
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+
+    const session = await prisma.session.create({
+      data: {
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      }
+    });
+
+    res.cookie("sessionId", session.id, sessionCookieOptions);
     res.cookie("token", accessToken, accessCookieOptions);
-    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
 
     return res.status(200).json({
       message: "Login successful",
@@ -208,27 +215,30 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-// Route for refreshing JWT access token using the refresh token. It verifies the refresh token, generates a new access token if valid, and sets it in the cookie.
+// Route for refreshing the access token using the stored session identifier.
 router.post("/refresh", async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  const sessionId = req.cookies.sessionId;
 
-  if (!refreshToken) {
-    return res.status(401).json({ message: "No refresh token" });
+  if (!sessionId) {
+    return res.status(401).json({ message: "No Session" });
   }
 
   try {
-    // Verify the refresh token and extract the user ID from it. Then, fetch the user's details from the database to ensure they still exist and are valid before generating a new access token.
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: { user: true },
     });
 
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
+    if (!session || session.expiresAt < new Date()) {
+      if (session) {
+        await prisma.session.delete({
+          where: { id: sessionId }
+        })
+      }
+      return res.status(403).json({ message: "Session expired" });
     }
-    // Generate a new access token and set it in the cookie with appropriate options for security and expiration. If the refresh token is valid and the user exists, the client will receive a new access token without needing to log in again.
-    const newAccessToken = generateAccessToken(user);
+
+    const newAccessToken = generateAccessToken(session.user);
     res.cookie("token", newAccessToken, accessCookieOptions);
     res.json({ message: "Token refreshed" });
   } catch (err) {
@@ -248,16 +258,24 @@ router.get("/me", protect, async (req, res) => {
 });
 
 //Logout
-router.post("/Logout", async (req, res) => {
-  // Clear the token cookie by setting it to an empty value and expiring it immediately
-  res.cookie("token", "", { ...refreshCookieOptions, maxAge: 1 });
-  // Clear the refresh token cookie by setting it to an empty value and expiring it immediately
-  res.cookie("refreshToken", "", { ...refreshCookieOptions, maxAge: 1 });
+router.post("/logout", async (req, res) => {
+  const sessionId = req.cookies.sessionId;
+
+  if (sessionId) {
+    await prisma.session
+      .delete({
+        where: { id: sessionId },
+      })
+      .catch(() => null);
+  }
+  // Clear the token and sessionId cookies by setting them to an empty value and expiring them immediately.
+  res.cookie("token", "", { ...sessionCookieOptions, maxAge: 1 });
+  res.cookie("sessionId", "", { ...sessionCookieOptions, maxAge: 1 });
   res.json({ message: "Logged out successfully" });
 });
 
 // Forgot Password
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", forgotPwLimiter, async (req, res) => {
   try {
     const { error, value } = forgotPasswordSchema.validate(req.body);
     if (error) {

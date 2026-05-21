@@ -48,7 +48,7 @@ export default function ForgotPassword() {
       } else {
         setAlert({
           type: "error",
-          message: "Something went wrong. Please try again.",
+          message: err?.message || "Something went wrong. Please try again.",
         });
       }
     } finally {

@@ -22,6 +22,8 @@ import tournamentRegistrationsRoutes from "./routes/tournamentRegistrationsRoute
 import refereesRoutes from "./routes/refereesRoutes.js";
 import standingsRoutes from "./routes/standingsRoutes.js";
 import contactUsRoute from "./routes/contactUsRoute.js";
+import { apiLimiter } from "./middleware/rateLimiter.js";
+import sessionRoute from "./routes/sessionRoute.js"
 
 // Load environment variables
 dotenv.config();
@@ -52,6 +54,7 @@ app.use(
   }),
 );
 //app.use(cors());
+app.use(apiLimiter);
 app.use(express.json());
 app.use(cookieParser());
 app.use("/sports", sportRoutes);
@@ -68,6 +71,7 @@ app.use("/tournament-registrations", tournamentRegistrationsRoutes);
 app.use("/referees", refereesRoutes);
 app.use("/standings", standingsRoutes);
 app.use("/contactUs", contactUsRoute);
+app.use("/sessions", sessionRoute);
 
 // Start the server
 httpServer.listen(port, () => {
