@@ -154,7 +154,6 @@ export default function Sessions() {
             <table className="w-full text-left border-collapse min-w-[500px]">
               <thead className="bg-gray-800 text-white">
                 <tr>
-                  <th className="px-6 py-4 text-center font-semibold">ID</th>
                   <th className="px-6 py-4 text-left font-semibold">User</th>
                   <th className="px-6 py-4 text-left font-semibold">Created At</th>
                   <th className="px-6 py-4 text-left font-semibold">Expires At</th>
@@ -174,7 +173,6 @@ export default function Sessions() {
                 ) : (
                   filtered.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-100 transition-colors duration-150">
-                      <td className="px-6 py-4 text-gray-500 text-center">{s.id}</td>
                       <td className="px-6 py-4 text-gray-800 font-medium">
                         {s.user?.email
                           ? `${s.user.emri} ${s.user.mbiemri} — ${s.user.email}`
@@ -215,8 +213,10 @@ export default function Sessions() {
               <h3 className="text-2xl font-bold text-red-600 mb-4">Confirm delete</h3>
               <p className="text-gray-700 mb-6">
                 Delete session{" "}
-                <strong className="break-all">{selectedSession.id}</strong>{" "}
-                (userId: {selectedSession.userId})?
+                <strong className="break-all">
+                  {selectedSession.user?.id
+                          ? `${selectedSession.user.emri} ${selectedSession.user.mbiemri} — ${selectedSession.user.email}`
+                          : selectedSession.userId}</strong>{" "}
               </p>
               <div className="flex gap-4">
                 <button

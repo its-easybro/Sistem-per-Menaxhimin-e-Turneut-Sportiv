@@ -20,9 +20,11 @@ import {
   SquaresPlusIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
+import { Moon, Sun } from "lucide-react";
 import { ChevronDownIcon, PhoneIcon, PlayCircleIcon } from '@heroicons/react/20/solid'
 import { Link, useNavigate } from 'react-router-dom'
 import AuthContext from '../context/AuthContext'
+import { ThemeContext } from "../context/ThemeContext"
 
 const products = [
   { name: 'Analytics', description: 'Get a better understanding of your traffic', href: '#', icon: ChartPieIcon },
@@ -37,6 +39,7 @@ const callsToAction = [
 ]
 
 const Navbar = () => {
+  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
   // Tracks open/closed state for the mobile navigation drawer.
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   // Reads current session user and logout action from auth context.
@@ -138,22 +141,32 @@ const Navbar = () => {
         </PopoverGroup>
         {/* Desktop auth actions vary by user role. */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-          {!user ? (
-            <Link to="/login" className="text-sm/6 font-semibold text-white">
-              Log in <span aria-hidden="true">→</span>
-            </Link>
-          ) : (
-            <div className="flex items-center gap-4">
-              {rolePanel && (
-                <Link to={rolePanel.to} className="text-sm/6 font-semibold text-white">
-                  {rolePanel.label}
-                </Link>
-              )}
-              <button onClick={handleLogout} className="text-sm/6 font-semibold text-white">
-                Logout
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {!user ? (
+              <Link to="/login" className="text-sm/6 font-semibold text-white">
+                Log in <span aria-hidden="true">→</span>
+              </Link>
+            ) : (
+              <>
+                {rolePanel && (
+                  <Link to={rolePanel.to} className="text-sm/6 font-semibold text-white">
+                    {rolePanel.label}
+                  </Link>
+                )}
+                <button onClick={handleLogout} className="text-sm/6 font-semibold text-white">
+                  Logout
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle Dark Mode"
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
         </div>
       </nav>
       {/* Mobile navigation drawer for small screens. */}
@@ -237,6 +250,14 @@ const Navbar = () => {
                     </button>
                   </>
                 )}
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+                  aria-label="Toggle Dark Mode"
+                >
+                  {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+                </button>
               </div>
             </div>
           </div>

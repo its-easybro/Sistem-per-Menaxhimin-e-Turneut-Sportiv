@@ -79,7 +79,7 @@ const generateAccessToken = (user) => {
       is_referee: user.roli === "gjyqtar",
     },
     process.env.JWT_SECRET,
-    { expiresIn: "10seconds" },
+    { expiresIn: "1m" },
   );
 };
 // Helper function to build user response object

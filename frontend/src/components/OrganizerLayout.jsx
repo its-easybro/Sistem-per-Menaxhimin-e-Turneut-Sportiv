@@ -35,39 +35,48 @@ return (
               <Menu size={20} />
             </button>
           </div>
-          <nav className="space-y-2 h-110 overflow-y-auto sticky top-0">
+          <nav className="space-y-1 h-110 overflow-y-auto sticky top-0 pb-4">
+            {/* Overview */}
             <Link
               to="/organizer/dashboard"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors mb-2"
             >
               <LayoutDashboard size={20} />
               Dashboard
             </Link>
+            {/* Competitions */}
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Competitions</p>
+            </div>
             <Link
               to="/organizer/tournaments"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <ClipboardList size={20} />
               Tournaments
             </Link>
             <Link
               to="/organizer/matches"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <Swords size={20} />
               Matches
             </Link>
             <Link
               to="/organizer/live-matches"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <Radio size={20} />
               Live Matches
             </Link>
             {/* New organizer section for adding/removing teams inside the assigned tournament. */}
+            {/* Management */}
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Management</p>
+            </div>
             <Link
               to="/organizer/teams"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <ShieldPlus size={20} />
               Teams

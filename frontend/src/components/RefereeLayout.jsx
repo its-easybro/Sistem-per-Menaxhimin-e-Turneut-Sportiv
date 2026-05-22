@@ -27,31 +27,36 @@ return (
               <Menu size={20} />
             </button>
           </div>
-          <nav className="space-y-2 h-110 overflow-y-auto sticky top-0">
+          <nav className="space-y-2 h-110 overflow-y-auto sticky top-0 pb-4">
+            {/* Overview */}
             <Link
               to="/referee/dashboard"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors mb-2"
             >
               <LayoutDashboard size={20} />
               Dashboard
             </Link>
+            {/* Duties */}
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Match Duties</p>
+            </div>
             <Link
               to="/referee/matches"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <Swords size={20} />
               My Matches
             </Link>
             <Link
               to="/referee/live-matches"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <Radio size={20} />
               Live Matches
             </Link>
             <Link
               to="/referee/match-results"
-              className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <Flag size={20} />
               Match Results

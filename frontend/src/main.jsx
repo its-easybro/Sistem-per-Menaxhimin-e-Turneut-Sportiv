@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { AuthProvider } from './context/AuthContext'
 import './index.css'
 import App from './App.jsx'
+import { ThemeProvider } from './context/ThemeContext.jsx'
 
 // Bootstraps the React app into the root DOM container.
 createRoot(document.getElementById('root')).render(
@@ -10,7 +11,9 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     {/* Provides global auth state/actions to the full component tree. */}
     <AuthProvider>
-      <App />
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
     </AuthProvider>
   </StrictMode>,
 )

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer utilities {
 	/* Optional utility class for specific scroll containers */
 	.custom-scrollbar::-webkit-scrollbar {
