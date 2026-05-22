@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 const DEFAULT_MAX_MATCH_MINUTES = 60;
 
 function getMatchStartTime(match){
+    // Prefer the combined timestamp when the API provides one.
     if(match?.starts_at){
         const startTime = new Date(match.starts_at);
         return Number.isNaN(startTime.getTime()) ? null : startTime;
@@ -12,6 +13,7 @@ function getMatchStartTime(match){
         return null;
     }
 
+    // Fallback for older match data where date and start time are stored separately.
     const datePart = String(match.data_ndeshjes).slice(0, 10);
     const timePart = match.ora_fillimit
         ? String(match.ora_fillimit).slice(11, 19) || String(match.ora_fillimit)
@@ -24,6 +26,7 @@ export function useMatchTimer(match) {
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
     useEffect(() => {
+        // Only live matches should show a running timer.
         if(match?.statusi !== "Live"){
             setElapsedSeconds(0);
             return;
@@ -36,6 +39,7 @@ export function useMatchTimer(match) {
             return;
         }
 
+        // Keep elapsed time in sync with the match start time once per second.
         const updateElapsed = () => {
             const nextElapsed = Math.max(
                 0,
@@ -55,16 +59,19 @@ export function useMatchTimer(match) {
     const minutes = Math.floor(elapsedSeconds / 60);
     const seconds = elapsedSeconds % 60;
     
+    // Show a timer for live matches and a placeholder for every other status.
     const display =
         match?.statusi === "Live"
             ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
             : "--:--";
 
+    // Use the match duration when available, otherwise fall back to a standard length.
     const maxMinutes =
         typeof match?.kohezgjatja === "number"
             ? match.kohezgjatja
             : DEFAULT_MAX_MATCH_MINUTES;
 
+    // Mark the timer as over once it reaches the configured match length.
     const isFinished = match?.statusi === "Live" && minutes >= maxMinutes;
 
     return {

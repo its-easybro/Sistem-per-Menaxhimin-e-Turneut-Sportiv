@@ -4,6 +4,7 @@ import { startSimulator } from "./matchSimulator.js";
 
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 
+// Extracts only the date part from a Date object or stored date string.
 function getDatePart(value) {
   if (!value) return null;
   return value instanceof Date
@@ -11,6 +12,7 @@ function getDatePart(value) {
     : String(value).slice(0, 10);
 }
 
+// Extracts a HH:mm:ss time value, using midnight when no start time exists.
 function getTimePart(value) {
   if (!value) return "00:00:00";
 
@@ -20,6 +22,7 @@ function getTimePart(value) {
   return text.length === 5 ? `${text}:00` : text.slice(0, 8);
 }
 
+// Combines the stored match date and time into one JavaScript Date.
 function getMatchStartTime(match) {
   const datePart = getDatePart(match.data_ndeshjes);
   if (!datePart) return null;
@@ -28,15 +31,18 @@ function getMatchStartTime(match) {
   return Number.isNaN(startTime.getTime()) ? null : startTime;
 }
 
+// Uses the match duration if it is valid, otherwise falls back to the default.
 function getMatchDuration(match) {
   return Number.isInteger(match.kohezgjatja) && match.kohezgjatja > 0
     ? match.kohezgjatja
     : DEFAULT_MATCH_DURATION_MINUTES;
 }
 
+// Runs every minute to move matches between Planned, Live, and Finished states.
 export function startMatchCron(io, simulatorMap) {
   cron.schedule("* * * * *", async () => {
     try {
+      // Find planned matches that may need to become live.
       const plannedMatches = await prisma.matches.findMany({
         where: { statusi: "Planifikuar" },
         select: {
@@ -53,8 +59,10 @@ export function startMatchCron(io, simulatorMap) {
 
       for (const match of plannedMatches) {
         const startTime = getMatchStartTime(match);
+        // Leave the match planned until its start time arrives.
         if (!startTime || startTime > now) continue;
 
+        // Update only if it is still planned, so duplicate cron runs do not conflict.
         const updateResult = await prisma.matches.updateMany({
           where: { id: match.id, statusi: "Planifikuar" },
           data: { statusi: "Live" },
@@ -62,6 +70,7 @@ export function startMatchCron(io, simulatorMap) {
 
         if (updateResult.count === 0) continue;
 
+        // Make sure every live match has an initial result row.
         await prisma.matchresults.upsert({
           where: { ndeshja_id: match.id },
           update: {},
@@ -72,6 +81,7 @@ export function startMatchCron(io, simulatorMap) {
           },
         });
 
+        // Load both teams' players so the simulator can create random card events.
         const players = await prisma.players.findMany({
           where: {
             ekipi_id: {
@@ -86,6 +96,7 @@ export function startMatchCron(io, simulatorMap) {
           },
         });
 
+        // Start and remember the simulator so it can be stopped later.
         const cancelSimulator = startSimulator(
           io,
           match.id,
@@ -95,11 +106,13 @@ export function startMatchCron(io, simulatorMap) {
 
         simulatorMap.set(match.id, cancelSimulator);
 
+        // Notify connected clients that this match is now live.
         io.emit("match_live", {
           matchId: match.id,
         });
       }
 
+      // Find live matches that may need to be reverted or finished.
       const liveMatches = await prisma.matches.findMany({
         where: { statusi: "Live" },
         select: {
@@ -114,6 +127,7 @@ export function startMatchCron(io, simulatorMap) {
         const startTime = getMatchStartTime(match);
         if (!startTime) continue;
 
+        // If a live match was rescheduled into the future, move it back to planned.
         if (startTime > now) {
           const updateResult = await prisma.matches.updateMany({
             where: { id: match.id, statusi: "Live" },
@@ -121,6 +135,7 @@ export function startMatchCron(io, simulatorMap) {
           });
 
           if (updateResult.count > 0) {
+            // Stop the simulator because the match is no longer live.
             const cancelSimulator = simulatorMap.get(match.id);
             if (cancelSimulator) {
               cancelSimulator();
@@ -131,12 +146,14 @@ export function startMatchCron(io, simulatorMap) {
           continue;
         }
 
+        // Calculate when the match should finish based on start time and duration.
         const finishTime = new Date(
           startTime.getTime() + getMatchDuration(match) * 60 * 1000,
         );
 
         if (finishTime > now) continue;
 
+        // Finish only matches that are still live at this moment.
         const updateResult = await prisma.matches.updateMany({
           where: { id: match.id, statusi: "Live" },
           data: { statusi: "Përfunduar" },
@@ -144,12 +161,14 @@ export function startMatchCron(io, simulatorMap) {
 
         if (updateResult.count === 0) continue;
 
+        // Stop simulated events once the match has ended.
         const cancelSimulator = simulatorMap.get(match.id);
         if (cancelSimulator) {
           cancelSimulator();
           simulatorMap.delete(match.id);
         }
 
+        // Notify connected clients that this match has finished.
         io.emit("match_finished", {
           matchId: match.id,
         });
