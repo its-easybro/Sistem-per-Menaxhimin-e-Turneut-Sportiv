@@ -5,6 +5,7 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Edit, Trash2, Eye } from "lucide-react";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const initialFormData = {
   emertimi: "",
@@ -617,11 +618,9 @@ export default function Tournaments() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-gray-50 px-4">
-        <div className="rounded-xl bg-white px-6 py-4 text-sm font-medium text-gray-700 shadow-sm">
-          Loading tournaments...
+        <div className="delay-skeleton">
+          <TableSkeleton />
         </div>
-      </div>
     );
   }
 

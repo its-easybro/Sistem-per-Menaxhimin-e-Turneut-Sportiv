@@ -5,6 +5,7 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Trash2, Edit } from "lucide-react";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const initialFormData = {
   turneu_id: "",
@@ -197,7 +198,9 @@ export default function OrganizerTeams() {
   }
 
   if (loading) {
-    return <div className="rounded-xl bg-white p-6 text-sm text-gray-600 shadow-sm">Loading teams...</div>;
+    return <div className="delay-skeleton">
+      <TableSkeleton />
+    </div>;
   }
 
   if (error) {

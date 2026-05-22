@@ -6,6 +6,7 @@ import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Edit, Trash2, Eye } from "lucide-react";
 import socket from "../../socket";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const matchRefereeSchema = yup.object().shape({
   ndeshja_id: yup.string().required("Match is required"),
@@ -525,10 +526,8 @@ export default function MatchReferees() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-gray-50 px-4">
-        <div className="rounded-xl bg-white px-6 py-4 text-sm font-medium text-gray-700 shadow-sm">
-          Loading match assignments...
-        </div>
+      <div className="delay-skeleton">
+        <TableSkeleton />
       </div>
     );
   }

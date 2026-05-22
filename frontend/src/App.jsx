@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, lazy, Suspense } from "react";
 import AuthContext from "./context/AuthContext";
 
 // Route Protection
@@ -8,40 +8,45 @@ import AdminRoute from "./components/AdminLayout";
 import OrganizerLayout from "./components/OrganizerLayout";
 import RefereeLayout from "./components/RefereeLayout";
 
+// Skeleton loaders importer
+import CardSkeleton from "./components/Skeletons/CardSkeleton"
+import TableSkeleton from "./components/Skeletons/TableSkeleton"
+import PageLoader from "./components/Skeletons/PageLoader"
+
 // Importing Admin Pages
-import Sports from "./pages/admin/Sports";
-import Matches from "./pages/admin/matches";
-import Teams from "./pages/admin/Teams";
-import Home from "./pages/Users/Home";
-import Users from "./pages/admin/users";
-import Dashboard from "./pages/admin/Dashboard";
-import Players from "./pages/admin/Players";
-import Venues from "./pages/admin/venues";
-import MatchResults from "./pages/admin/MatchResults";
-import MatchReferees from "./pages/admin/MatchReferees";
-import Tournaments from "./pages/admin/Tournaments";
-import Referees from "./pages/admin/Referees";
-import Standings from "./pages/admin/Standings";
-import AdminContactUs from "./pages/admin/ContactUs";
-import Sessions from "./pages/admin/Sessions";
+const Sports = lazy(() => import("./pages/admin/Sports"))
+const Matches = lazy(() => import("./pages/admin/matches"))
+const Teams = lazy(() => import("./pages/admin/Teams"))
+const Users = lazy(() => import("./pages/admin/Users"))
+const Dashboard = lazy(() => import("./pages/admin/Dashboard"))
+const Players = lazy(() => import("./pages/admin/Players"))
+const Venues = lazy(() => import("./pages/admin/Venues"))
+const MatchResults = lazy(() => import("./pages/admin/MatchResults"))
+const MatchReferees = lazy(() => import("./pages/admin/MatchReferees"))
+const Tournaments = lazy(() => import("./pages/admin/Tournaments"))
+const Referees = lazy(() => import("./pages/admin/Referees"))
+const Standings = lazy(() => import("./pages/admin/Standings"))
+const ContactUs = lazy(() => import("./pages/admin/ContactUs"))
+const Sessions = lazy(() => import("./pages/admin/Sessions"))
 
 // Importing Organizer Pages
-import OrganizerDashboard from "./pages/organizator/Dashboard";
-import OrganizerMatches from "./pages/organizator/Matches";
-import OrganizerTeams from "./pages/organizator/Teams";
-import RefereeDashboard from "./pages/gjyqtar/Dashboard";
+const OrganizerDashboard = lazy(() => import("./pages/organizator/Dashboard"))
+const OrganizerMatches = lazy(() => import("./pages/organizator/Matches"))
+const OrganizerTeams = lazy(() => import("./pages/organizator/Teams"))
+const RefereeDashboard = lazy(() => import("./pages/gjyqtar/Dashboard"))
 
 // Importing User Pages
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import Login from "./pages/Users/Login";
-import Register from "./pages/Users/Register";
-import AboutUs from "./pages/Users/AboutUs";
-import ContactUs from "./pages/Users/ContactUs";
-import ForgotPassword from "./pages/Users/ForgotPassword";
-import ResetPassword from "./pages/Users/ResetPassword";
-import LiveMatches from "./pages/Users/LiveMatches";
-import NotFound from "./components/NotFound";
+const Home = lazy(() => import("./pages/Users/Home"))
+const Navbar = lazy(() => import("./components/Navbar"))
+const Footer = lazy(() => import("./components/Footer"))
+const NotFound = lazy(() => import("./components/NotFound"))
+const Login = lazy(() => import("./pages/Users/Login"))
+const Register = lazy(() => import("./pages/Users/Register"))
+const AboutUs = lazy(() => import("./pages/Users/AboutUs"))
+const UserContactUs = lazy(() => import("./pages/Users/ContactUs"))
+const ForgotPassword = lazy(() => import("./pages/Users/ForgotPassword"))
+const ResetPassword = lazy(() => import("./pages/Users/ResetPassword"))
+const LiveMatches = lazy(() => import("./pages/Users/LiveMatches"))
 
 function App() {
   // Waits for initial auth/session check before rendering app routes.
@@ -57,57 +62,59 @@ function App() {
     <BrowserRouter>
       {/* Shared top navigation shown on all routes. */}
       <Navbar />
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public routes. */}
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/contact-us" element={<ContactUs />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/contact-us" element={<UserContactUs />} />
+        <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/live-matches" element={<LiveMatches />} />
-        <Route path="*" element={<NotFound />} />
 
         {/* ADMIN ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_admin"]} Layout={AdminRoute} />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/players" element={<Players />} />
-          <Route path="/sports" element={<Sports />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/venues" element={<Venues />} />
-          <Route path="/matches" element={<Matches />} />
-          <Route path="/admin/live-matches" element={<LiveMatches />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="/match-results" element={<MatchResults />} />
-          <Route path="/match-referees" element={<MatchReferees />} />
-          <Route path="/tournaments" element={<Tournaments />} />
-          <Route path="/referees" element={<Referees />} />
-          <Route path="/standings" element={<Standings />} />
-          <Route path="/contactUs" element={<AdminContactUs />} />
-          <Route path="/sessions" element={<Sessions />} />
+          <Route path="/dashboard" element={<Suspense fallback={<TableSkeleton />}> <Dashboard /> </Suspense>}/>
+          <Route path="/players" element={<Suspense fallback={<TableSkeleton />}><Players /></Suspense>}/>
+          <Route path="/sports" element={<Suspense fallback={<TableSkeleton />}><Sports /></Suspense>}/>
+          <Route path="/users" element={<Suspense fallback={<TableSkeleton />}> <Users /></Suspense>}/>
+          <Route path="/venues" element={<Suspense fallback={<TableSkeleton />}><Venues /></Suspense>}/>
+          <Route path="/matches" element={<Suspense fallback={<TableSkeleton />}><Matches /></Suspense>}/>
+          <Route path="/admin/live-matches" element={<Suspense fallback={<TableSkeleton />}><LiveMatches /></Suspense>}/>
+          <Route path="/teams" element={<Suspense fallback={<TableSkeleton />}><Teams /></Suspense>}/>
+          <Route path="/match-results" element={<Suspense fallback={<TableSkeleton />}><MatchResults /></Suspense>}/>
+          <Route path="/match-referees" element={<Suspense fallback={<TableSkeleton />}><MatchReferees /></Suspense>}/>
+          <Route path="/tournaments" element={<Suspense fallback={<TableSkeleton />}><Tournaments /></Suspense>}/>
+          <Route path="/referees" element={<Suspense fallback={<TableSkeleton />}><Referees /></Suspense>}/>
+          <Route path="/standings" element={<Suspense fallback={<TableSkeleton />}><Standings /></Suspense>}/>
+          <Route path="/contactUs" element={<Suspense fallback={<TableSkeleton />}><ContactUs /></Suspense>}/>
+          <Route path="/sessions" element={<Suspense fallback={<TableSkeleton />}><Sessions /></Suspense>}/>
         </Route>
 
         {/* ORGANIZER ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_organizer"]} Layout={OrganizerLayout} />}>
-          <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+          <Route path="/organizer/dashboard" element={<Suspense fallback={<TableSkeleton />}><OrganizerDashboard /></Suspense>}/>
           {/* Organizer reuses tournament page but now gets only assigned tournaments from the backend. */}
-          <Route path="/organizer/tournaments" element={<Tournaments />} />
+          <Route path="/organizer/tournaments" element={<Suspense fallback={<TableSkeleton />}><Tournaments /></Suspense>}/>
           {/* Dedicated organizer pages for match scheduling and team registration inside owned tournaments. */}
-          <Route path="/organizer/matches" element={<OrganizerMatches />} />
-          <Route path="/organizer/live-matches" element={<LiveMatches />} />
-          <Route path="/organizer/teams" element={<OrganizerTeams />} />
-          <Route path="/organizer/standings" element={<Standings />} />
+          <Route path="/organizer/matches" element={<Suspense fallback={<TableSkeleton />}><OrganizerMatches /></Suspense>}/>
+          <Route path="/organizer/live-matches" element={<Suspense fallback={<TableSkeleton />}><LiveMatches /></Suspense>}/>
+          <Route path="/organizer/teams" element={<Suspense fallback={<TableSkeleton />}><OrganizerTeams /></Suspense>}/>
+          <Route path="/organizer/standings" element={<Suspense fallback={<TableSkeleton />}><Standings /></Suspense>}/>
         </Route>
 
         {/* REFEREE ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_referee"]} Layout={RefereeLayout} />}>
-          <Route path="/referee/dashboard" element={<RefereeDashboard />} />
-          <Route path="/referee/matches" element={<MatchReferees />} />
-          <Route path="/referee/live-matches" element={<LiveMatches />} />
-          <Route path="/referee/match-results" element={<MatchResults />} />
+          <Route path="/referee/dashboard" element={<Suspense fallback={<TableSkeleton />}><RefereeDashboard /></Suspense>}/>
+          <Route path="/referee/matches" element={<Suspense fallback={<TableSkeleton />}><MatchReferees /></Suspense>}/>
+          <Route path="/referee/live-matches" element={<Suspense fallback={<TableSkeleton />}><LiveMatches /></Suspense>}/>
+          <Route path="/referee/match-results" element={<Suspense fallback={<TableSkeleton />}><MatchResults /></Suspense>}/>
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
       {/* Shared footer shown on all routes. */}
       <Footer />
     </BrowserRouter>

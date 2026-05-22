@@ -112,7 +112,7 @@ const AdminRoute = () => {
               Venues
             </Link>
             <Link
-              to="/Teams"
+              to="/teams"
               className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <ShieldHalf size={20} />
@@ -128,7 +128,7 @@ const AdminRoute = () => {
             </Link>
 
             <Link
-              to="/Standings"
+              to="/standings"
               className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg font-medium transition-colors"
             >
               <ListOrdered size={20} />

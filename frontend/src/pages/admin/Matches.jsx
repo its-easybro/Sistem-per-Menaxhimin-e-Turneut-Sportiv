@@ -7,6 +7,7 @@ import { Alert } from "../../components/Alert";
 import { Edit, Trash2, Eye } from "lucide-react";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -645,52 +646,14 @@ export default function Matches() {
     );
   });
 
-  // Skeleton loading
-  function renderSkeleton() {
-    return (
-      <div className="bg-gray-50 p-4">
-        <div className="w-full mx-auto animate-pulse">
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <div className="h-8 bg-gray-300 rounded w-64"></div>
-              <div className="h-10 bg-gray-300 rounded w-32"></div>
-            </div>
-            <div className="relative">
-              <div className="h-12 bg-gray-300 rounded-lg w-full"></div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-800">
-                <tr>
-                  {[...Array(8)].map((_, i) => (
-                    <th key={i} className="px-4 py-3">
-                      <div className="h-4 bg-gray-600 rounded w-20"></div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {[...Array(5)].map((_, idx) => (
-                  <tr key={idx} className="bg-white">
-                    {[...Array(8)].map((_, i) => (
-                      <td key={i} className="px-4 py-3">
-                        <div className="h-4 bg-gray-200 rounded w-20"></div>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Renders skeleton placeholders while initial API requests are in flight.
-  if (loading) return renderSkeleton();
+  if (loading) {
+    return (
+      <div className="delay-skeleton">
+        <TableSkeleton />
+      </div>
+    )
+  }
 
   // Redirects any non-admin user away from this protected page.
   if (!user || !user.is_admin) {

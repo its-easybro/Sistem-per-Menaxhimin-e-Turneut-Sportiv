@@ -3,6 +3,7 @@ import api from "../../config/axiosInstance";
 import socket from "../../socket";
 import MatchTimer from "../../components/MatchTimer";
 import { Alert } from "../../components/Alert";
+import CardSkeleton from "../../components/Skeletons/CardSkeleton"
 
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 
@@ -164,8 +165,8 @@ export default function LiveMatches() {
         )}
 
         {loading ? (
-          <div className="rounded-lg bg-white p-6 text-gray-600 shadow">
-            Loading live matches...
+          <div className="delay-skeleton">
+            <CardSkeleton />
           </div>
         ) : matches.length === 0 ? (
           <div className="rounded-lg bg-white p-6 text-gray-600 shadow">

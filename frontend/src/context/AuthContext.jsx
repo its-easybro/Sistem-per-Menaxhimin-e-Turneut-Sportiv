@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { AUTH_API_URL } from '../config/api';
 
 const AuthContext = createContext();
@@ -57,7 +58,12 @@ export const AuthProvider = ({ children }) => {
       throw new Error(data.message || 'Login failed');
     }
 
-    setUser(data.userData || data.user || null);
+    const nextUser = data.userData || data.user || null;
+
+    // Commit the user state before the caller navigates to a protected route.
+    flushSync(() => {
+      setUser(nextUser);
+    });
     return data;
   };
 

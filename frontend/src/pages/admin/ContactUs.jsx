@@ -4,6 +4,7 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Trash2, Eye, Check } from "lucide-react";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -118,10 +119,8 @@ export default function AdminContactUs() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center bg-gray-50 px-4">
-        <div className="rounded-xl bg-white px-6 py-4 text-sm font-medium text-gray-700 shadow-sm">
-          Loading messages...
-        </div>
+      <div className="delay-skeleton">
+        <TableSkeleton />
       </div>
     );
   }

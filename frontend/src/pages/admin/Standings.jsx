@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 export default function Standings() {
   const { user, loading: authLoading } = useContext(AuthContext);
@@ -110,8 +111,8 @@ export default function Standings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-lg text-gray-600">Loading standings...</p>
+      <div className="delay-skeleton">
+        <TableSkeleton />
       </div>
     );
   }

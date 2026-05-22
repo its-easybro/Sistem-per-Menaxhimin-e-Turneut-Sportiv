@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
+import PageLoader from "../../components/Skeletons/PageLoader"
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -67,7 +68,13 @@ const Login = () => {
       setLoading(false);
     }
   };
-
+  if (loading) {
+    return (
+      <div className="delay-skeleton">
+        <PageLoader />
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
       <div className="w-full max-w-md">

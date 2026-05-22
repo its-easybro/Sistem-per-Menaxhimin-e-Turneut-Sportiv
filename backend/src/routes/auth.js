@@ -79,7 +79,7 @@ const generateAccessToken = (user) => {
       is_referee: user.roli === "gjyqtar",
     },
     process.env.JWT_SECRET,
-    { expiresIn: "1m" },
+    { expiresIn: "10seconds" },
   );
 };
 // Helper function to build user response object
@@ -154,7 +154,7 @@ router.post("/register", authLimiter, async (req, res) => {
     const session = await prisma.session.create({
       data: {
         userId: newUser.id,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       },
     });
 

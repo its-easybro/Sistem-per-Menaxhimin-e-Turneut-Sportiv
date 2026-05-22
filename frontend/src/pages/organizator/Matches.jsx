@@ -7,6 +7,7 @@ import { Alert } from "../../components/Alert";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
 import { Edit, Trash2 } from "lucide-react";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const initialFormData = {
   turneu_id: "",
@@ -355,8 +356,8 @@ export default function OrganizerMatches() {
 
   if (loading) {
     return (
-      <div className="rounded-xl bg-white p-6 text-sm text-gray-600 shadow-sm">
-        Loading matches...
+      <div className="delay-skeleton">
+        <TableSkeleton />
       </div>
     );
   }

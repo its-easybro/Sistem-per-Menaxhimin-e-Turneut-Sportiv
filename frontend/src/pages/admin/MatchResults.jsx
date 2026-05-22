@@ -5,6 +5,7 @@ import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
 import { Award, Plus, Search, Edit, Trash2, Spotlight } from "lucide-react";
 import { Alert } from "../../components/Alert";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 // Format data from ISO String to readable format
 const formatDate = (isoDate) => {
@@ -446,19 +447,8 @@ export default function MatchResults() {
 
   if (loading) {
     return (
-      <div className="flex flex-col flex-1 p-8">
-        <div className="flex justify-between items-center mb-6">
-          <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="h-40 bg-gray-100 rounded-xl animate-pulse"
-            ></div>
-          ))}
-        </div>
+      <div className="delay-skeleton">
+        <TableSkeleton />
       </div>
     );
   }
