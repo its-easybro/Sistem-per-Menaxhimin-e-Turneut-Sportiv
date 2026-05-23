@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Trash2, Edit, Eye, EyeOff } from "lucide-react";
+import { Trash2, Edit, Eye, EyeOff, Search, ChevronLeft, ChevronRight, Plus, SlidersHorizontal } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const userCreateSchema = yup.object().shape({
@@ -48,6 +48,18 @@ const userUpdateSchema = yup.object().shape({
     .oneOf(["user", "admin", "organizator", "gjyqtar"], "Invalid role")
     .required("Role is required"),
 });
+// Normalizes user objects from API responses to a consistent format for the UI.
+const normalizeUser = (user) => ({
+  id: user.id,
+  email: user.email,
+  username: user.username ?? user.emri ?? "",
+  full_name: user.full_name ?? ([user.emri, user.mbiemri].filter(Boolean).join(" ") || ""),
+  roli: user.roli ?? "user",
+  is_admin: user.is_admin ?? user.roli === "admin",
+  is_organizer: user.is_organizer ?? user.roli === "organizator",
+  is_referee: user.is_referee ?? user.roli === "gjyqtar",
+  created_at: user.created_at ?? user.createdAt ?? null,
+});
 
 export default function Users() {
   // Uses auth context to enforce admin-only access and guard UI render timing.
@@ -64,6 +76,9 @@ export default function Users() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [alert, setAlert ] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({ roli: "", search: ""});
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -72,30 +87,55 @@ export default function Users() {
     roli: "user",
   });
 
+  // Fetches users from the API with pagination and optional filters, normalizes data, and handles loading/error states.
+  const loadUsersPage = useCallback(async (pageNum, filtersObj) => {
+    try {
+      // Always show loading while fetching; removed `isFiltering` state as it was unused.
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: pageNum,
+        limit: 10,
+        ...(filtersObj.roli && { roli: filtersObj.roli }),
+        ...(filtersObj.search && { search: filtersObj.search }),
+      });
+      const response = await api.get(`/users?${params}`);
+
+      let rows = [];
+      let pagination = null;
+      // Handles both paginated and non-paginated API responses by checking for a "data" array or using the response directly.
+      if (Array.isArray(response.data?.data)) {
+        rows = response.data.data.map(normalizeUser);
+        pagination = response.data?.pagination ?? null;
+      } else if (Array.isArray(response.data)) {
+        rows = response.data.map(normalizeUser);
+        pagination = null;
+      }
+
+      setPagination(pagination);
+      setUsers(rows);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Loads all users after confirming the current user is an admin.
   useEffect(() => {
-    const loadUsers = async () => {
-      if (!user?.is_admin) {
-        setLoading(false);
-        return;
-      }
+    if (!user?.is_admin) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        setLoading(true);
-        const response = await api.get(`/users`);
-
-        const data = response.data;
-        setUsers(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUsers();
-  }, [user]);
-
+    loadUsersPage(page, filters);
+  }, [user, loadUsersPage, page, filters]);
+  // Handles changes to filter inputs by updating the filters state and resetting to the first page to show relevant results.
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    const newFilters = { ...filters, [name]: value };
+    setFilters(newFilters);
+    setPage(1);
+  }
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -164,13 +204,11 @@ export default function Users() {
 
     try {
       await userCreateSchema.validate(formData, { abortEarly: false });
-      const response = await api.post(`/users`, formData);
+      await api.post(`/users`, formData);
 
-      const data = response.data;
-
-      setUsers((prev) => [...prev, data]);
       setAlert({ type: 'success', message: 'User created successfully!' });
       handleCloseCreateModal();
+      await loadUsersPage(1, filters);
     } catch (err) {
       if (err.inner) {
         const validationErrors = {};
@@ -195,13 +233,11 @@ export default function Users() {
       const updateData = formData.password
         ? formData
         : { ...formData, password: undefined };
-      const response = await api.put(`/users/${selectedUser.id}`, updateData)
+      await api.put(`/users/${selectedUser.id}`, updateData)
 
-      const data = response.data;
-
-      setUsers((prev) => prev.map((item) => (item.id === data.id ? data : item)));
       setAlert({ type: 'success', message: 'User updated successfully!' });
       handleCloseEditModal();
+      await loadUsersPage(page, filters);
     } catch (err) {
       if (err.inner) {
         const validationErrors = {};
@@ -221,22 +257,25 @@ export default function Users() {
     try {
       await api.delete(`users/${selectedUser.id}`)
 
-      setUsers((prev) => prev.filter((item) => item.id !== selectedUser.id));
       setAlert({ type: 'success', message: 'User deleted successfully!' });
       handleCloseDeleteModal();
+      await loadUsersPage(page > 1 ? page - 1 : 1, filters);
     } catch (err) {
       setAlert({ type: 'error', message: `Error deleting user: ${err.message}` });
     }
   };
 
-  // Filters users by email, username, or full name from search input.
-  const filteredUsers = users.filter((item) => {
+  
+  const userList = Array.isArray(users) ? users : [];
+
+  const filteredUsers = userList.filter((item) => {
     const query = searchQuery.toLowerCase();
 
     return (
-      item.email?.toLowerCase().includes(query) ||
-      item.username?.toLowerCase().includes(query) ||
-      item.full_name?.toLowerCase().includes(query)
+      // Checks if email, username, or full name contains the search query (case-insensitive).
+      (item.email || "").toLowerCase().includes(query) ||
+      (item.username || "").toLowerCase().includes(query) ||
+      (item.full_name || "").toLowerCase().includes(query)
     );
   });
 
@@ -254,14 +293,6 @@ export default function Users() {
     return <Navigate to="/login" replace />;
   }
 
-  if (loading) {
-    return (
-      <div className="delay-skeleton">
-        <TableSkeleton />
-      </div>
-    )
-  }
-
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -271,7 +302,7 @@ export default function Users() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
         <Alert 
           type={alert.type} 
@@ -279,46 +310,65 @@ export default function Users() {
           onClose={() => setAlert(null)}
         />
       )}
+      {loading ? (
+          <div className="delay-skeleton mt-4">
+            <TableSkeleton />
+          </div>
+        ) : (
       <div className="w-full mx-auto">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800">Users Management</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">Users Management</h2>
+
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-2xl">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by email, username..."
+                  value={filters.search}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+                />
+              </div>
+
+              <div className="relative min-w-[160px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="roli"
+                  value={filters.roli}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All Roles</option>
+                  <option value="admin">Admin</option>
+                  <option value="organizator">Organizer</option>
+                  <option value="gjyqtar">Referee</option>
+                  <option value="user">User</option>
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
 
             <button
               onClick={handleCreate}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
             >
-              + Add User
+              <Plus size={18} />
+              Add User
             </button>
-          </div>
-
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search by email, username..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
-            />
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
           </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-lg shadow-md overflow-x-auto">
+        <div className={`flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto ${loading ? 'opacity-60' : ''}`}>
           <table className="w-full text-left border-collapse min-w-[500px]">
-            <thead className="bg-gray-800 text-white">
+            <thead className="bg-gray-800 dark:bg-slate-800 text-white">
               <tr>
                 <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Email</th>
@@ -330,20 +380,20 @@ export default function Users() {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-500 text-center">{item.id}</td>
-                    <td className="px-6 py-4 text-gray-700">{item.email}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{item.username}</td>
-                    <td className="px-6 py-4 text-gray-700 font-semibold">{item.full_name || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 text-center">
+                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">{item.id}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">{item.email}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-100 font-semibold">{item.username}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300 font-semibold">{item.full_name || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 text-center">
                       <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        item.roli === 'admin' ? 'bg-red-100 text-red-800' :
-                        item.roli === 'organizator' ? 'bg-blue-100 text-blue-800' :
-                        item.roli === 'gjyqtar' ? 'bg-purple-100 text-purple-800' :
-                        'bg-gray-100 text-gray-800'
+                        item.roli === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400' :
+                        item.roli === 'organizator' ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400' :
+                        item.roli === 'gjyqtar' ? 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400' :
+                        'bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-slate-300'
                       }`}>
                         {item.roli === 'admin' ? 'Admin' :
                          item.roli === 'organizator' ? 'Organizer' :
@@ -351,7 +401,7 @@ export default function Users() {
                          'User'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-700 text-center">
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-400 text-center">
                       {item.created_at ? new Date(item.created_at).toLocaleString() : "-"}
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -376,7 +426,7 @@ export default function Users() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-6 py-4 text-center text-gray-600">
+                  <td colSpan="7" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
                     {searchQuery
                       ? `No users match "${searchQuery}". Try a different search.`
                       : "No users found."}
@@ -387,14 +437,89 @@ export default function Users() {
           </table>
         </div>
 
+        {pagination && (
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(page - 1)}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Close
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Forward
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  {pagination.total && (
+                    <>
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> users)
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+
         {showCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseCreateModal}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Add New User</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Add New User</h3>
 
               <form onSubmit={handleCreateSubmit} className="space-y-4">
                 <div>
@@ -507,10 +632,10 @@ export default function Users() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseEditModal}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Update User</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Update User</h3>
 
               <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div>
@@ -623,11 +748,11 @@ export default function Users() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseDeleteModal}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Delete User</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Delete User</h3>
+              <p className="text-gray-600 dark:text-slate-300 mb-6">
                 Are you sure you want to delete <span className="font-semibold">{selectedUser.username}</span>?
               </p>
 
@@ -650,6 +775,7 @@ export default function Users() {
           </div>
         )}
       </div>
+      )}
     </div>
     );
   }

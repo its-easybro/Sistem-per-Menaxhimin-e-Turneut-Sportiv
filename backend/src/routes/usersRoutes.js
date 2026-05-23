@@ -114,11 +114,52 @@ async function ensureRefereeRecord(user) {
 
 // Route for getting all users. This route is protected and only admins can use it.
 router.get("/", protect, requireRole("is_admin"), async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.max(1, parseInt(req.query.limit) || 10)
+  const skip = (page - 1) * limit;
+  const { roli, search } = req.query;
+
+  const where = {};
+
+  if (roli) where.roli=roli;
+  if(search) {
+    where.OR = [
+      { emri: { contains: search, mode: "insensitive"} },
+      { mbiemri: { contains: search, mode: "insensitive"} },
+      { email: { contains: search, mode: "insensitive"} },
+    ]
+  }
+
   try {
-    const users = await prisma.user.findMany({
-      orderBy: { id: "asc" },
-    });
-    res.json(users.map(formatUserResponse));
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { id: "asc" },
+        select: {
+          id: true,
+          emri: true,
+          mbiemri: true,
+          email: true,
+          roli: true,
+          statusi: true,
+          createdAt: true,
+        }
+      })
+    ])
+    res.json({
+      data: users,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      }
+    })
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

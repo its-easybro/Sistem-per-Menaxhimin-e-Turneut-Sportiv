@@ -60,9 +60,9 @@ function App() {
   return (
     // Enables client-side routing across all pages.
     <BrowserRouter>
+      <Suspense fallback={<PageLoader />}>
       {/* Shared top navigation shown on all routes. */}
       <Navbar />
-      <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public routes. */}
         <Route path="/" element={<Home />} />
@@ -114,9 +114,9 @@ function App() {
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-      </Suspense>
       {/* Shared footer shown on all routes. */}
       <Footer />
+      </Suspense>
     </BrowserRouter>
   );
 }
