@@ -34,7 +34,7 @@ const matchCreateionSchema = yup.object().shape({
   faza: yup.string().optional(),
 });
 
-const matchUpdateSchema = yup.object().shape({
+const _matchUpdateSchema = yup.object().shape({
   turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
   ekipi_shtepiak_id: yup.number().typeError("Home team must be a number").required("Home team is required"),
   ekipi_mysafir_id: yup.number().typeError("Away team must be a number").required("Away team is required"),
@@ -73,6 +73,14 @@ function formatTime(value) {
   }
 
   return text.slice(0, 5);
+}
+
+function getFieldClassName(hasError) {
+  return `rounded-lg border px-3 py-2 bg-white text-gray-900 transition focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-400 ${
+    hasError
+      ? "border-red-500 dark:border-red-500"
+      : "border-gray-300 dark:border-slate-700"
+  }`;
 }
 
 export default function OrganizerMatches() {
@@ -364,7 +372,7 @@ export default function OrganizerMatches() {
 
   if (error) {
     return (
-      <div className="rounded-xl bg-white p-6 text-sm text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400">
+      <div className="rounded-xl border border-gray-100 bg-white p-6 text-sm text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400 dark:border-slate-800 dark:bg-slate-900 dark:text-red-400">
         Error: {error}
       </div>
     );
@@ -374,7 +382,9 @@ export default function OrganizerMatches() {
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Tournament</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
+            Tournament
+          </span>
           <select
             name="turneu_id"
             value={formData.turneu_id}
@@ -391,12 +401,16 @@ export default function OrganizerMatches() {
             ))}
           </select>
           {formErrors.turneu_id && (
-            <p className="text-red-500 text-xs">{formErrors.turneu_id}</p>
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {formErrors.turneu_id}
+            </p>
           )}
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Venue</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
+            Venue
+          </span>
           <select
             name="fusha_id"
             value={formData.fusha_id}
@@ -411,12 +425,16 @@ export default function OrganizerMatches() {
             ))}
           </select>
           {formErrors.fusha_id && (
-            <p className="text-red-500 text-xs">{formErrors.fusha_id}</p>
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {formErrors.fusha_id}
+            </p>
           )}
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Home Team</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
+            Home Team
+          </span>
           <select
             name="ekipi_shtepiak_id"
             value={formData.ekipi_shtepiak_id}
@@ -433,14 +451,16 @@ export default function OrganizerMatches() {
             ))}
           </select>
           {formErrors.ekipi_shtepiak_id && (
-            <p className="text-red-500 text-xs">
+            <p className="text-xs text-red-500 dark:text-red-400">
               {formErrors.ekipi_shtepiak_id}
             </p>
           )}
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Away Team</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
+            Away Team
+          </span>
           <select
             name="ekipi_mysafir_id"
             value={formData.ekipi_mysafir_id}
@@ -457,14 +477,16 @@ export default function OrganizerMatches() {
             ))}
           </select>
           {formErrors.ekipi_mysafir_id && (
-            <p className="text-red-500 text-xs">
+            <p className="text-xs text-red-500 dark:text-red-400">
               {formErrors.ekipi_mysafir_id}
             </p>
           )}
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Match Date</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
+            Match Date
+          </span>
           <input
             type="date"
             name="data_ndeshjes"
@@ -474,12 +496,16 @@ export default function OrganizerMatches() {
             required
           />
           {formErrors.data_ndeshjes && (
-            <p className="text-red-500 text-xs">{formErrors.data_ndeshjes}</p>
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {formErrors.data_ndeshjes}
+            </p>
           )}
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Start Time</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
+            Start Time
+          </span>
           <input
             type="time"
             name="ora_fillimit"
@@ -488,12 +514,16 @@ export default function OrganizerMatches() {
             className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.ora_fillimit ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
           />
           {formErrors.ora_fillimit && (
-            <p className="text-red-500 text-xs">{formErrors.ora_fillimit}</p>
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {formErrors.ora_fillimit}
+            </p>
           )}
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Status</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
+            Status
+          </span>
           <select
             name="statusi"
             value={formData.statusi}
@@ -507,12 +537,16 @@ export default function OrganizerMatches() {
             <option value="Anuluar">Anuluar</option>
           </select>
           {formErrors.statusi && (
-            <p className="text-red-500 text-xs">{formErrors.statusi}</p>
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {formErrors.statusi}
+            </p>
           )}
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Phase</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
+            Phase
+          </span>
           <input
             type="text"
             name="faza"
@@ -522,7 +556,9 @@ export default function OrganizerMatches() {
             placeholder="e.g. Semi-final"
           />
           {formErrors.faza && (
-            <p className="text-red-500 text-xs">{formErrors.faza}</p>
+            <p className="text-xs text-red-500 dark:text-red-400">
+              {formErrors.faza}
+            </p>
           )}
         </label>
       </div>
@@ -530,7 +566,7 @@ export default function OrganizerMatches() {
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white"
+          className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white transition hover:bg-green-700"
         >
           {submitLabel}
         </button>
@@ -543,7 +579,7 @@ export default function OrganizerMatches() {
             setShowCreateModal(false);
             setShowEditModal(false);
           }}
-          className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white"
+          className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white transition hover:bg-gray-500 dark:bg-slate-700 dark:hover:bg-slate-600"
         >
           Cancel
         </button>
@@ -552,7 +588,7 @@ export default function OrganizerMatches() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-900 dark:text-slate-100">
       {alert && (
         <Alert
           type={alert.type}
@@ -561,13 +597,13 @@ export default function OrganizerMatches() {
         />
       )}
 
-      <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-slate-900 dark:border dark:border-slate-800">
+      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm dark:bg-slate-900 dark:border dark:border-slate-800 dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 dark:text-slate-100">
               Tournament Matches
             </h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
+            <p className="mt-1 text-sm text-gray-600 dark:text-slate-400 dark:text-slate-400">
               Create and manage matches only for your tournaments.
             </p>
           </div>
@@ -587,12 +623,12 @@ export default function OrganizerMatches() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by tournament or team"
-          className="mb-4 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          className="mb-4 w-full rounded-lg border border-gray-300 bg-white bg-white px-4 py-3 text-gray-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-gray-900 transition focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-400"
         />
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-slate-800">
           <table className="w-full border-collapse text-left">
-            <thead className="bg-gray-800 text-white dark:bg-slate-800">
+            <thead className="bg-gray-800 text-white dark:bg-slate-800 dark:bg-slate-800">
               <tr>
                 <th className="px-4 py-3">Tournament</th>
                 <th className="px-4 py-3">Home Team</th>
@@ -609,7 +645,7 @@ export default function OrganizerMatches() {
                 <tr>
                   <td
                     colSpan="8"
-                    className="px-4 py-8 text-center text-gray-600 dark:text-slate-400"
+                    className="px-4 py-8 text-center text-gray-600 dark:text-slate-400 dark:bg-slate-900 dark:text-slate-400"
                   >
                     No matches found for your tournaments.
                   </td>
@@ -620,18 +656,22 @@ export default function OrganizerMatches() {
                     <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
                       {getTournamentName(item.turneu_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200">
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200 text-gray-700 dark:text-slate-300">
                       {getTeamName(item.ekipi_shtepiak_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200">
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200 text-gray-700 dark:text-slate-300">
                       {getTeamName(item.ekipi_mysafir_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200">
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200 text-gray-700 dark:text-slate-300">
                       {formatDate(item.data_ndeshjes)}
                     </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200">{getVenueName(item.fusha_id)}</td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200">{item.statusi || "N/A"}</td>
-                    <td className="px-4 py-3 text-center text-gray-700 dark:text-slate-200">
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200 text-gray-700 dark:text-slate-300">
+                      {getVenueName(item.fusha_id)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200 text-gray-700 dark:text-slate-300">
+                      {item.statusi || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700 dark:text-slate-200 text-gray-700 dark:text-slate-300">
                       <MatchTimer match={item} />
                     </td>
                     <td className="px-4 py-3">
@@ -662,14 +702,16 @@ export default function OrganizerMatches() {
 
       {showCreateModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm dark:bg-slate-950/80"
           onClick={() => setShowCreateModal(false)}
         >
           <div
-            className="w-full max-w-3xl rounded-xl bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            className="w-full max-w-3xl rounded-xl border border-transparent bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-slate-100">Add Match</h2>
+            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-slate-100 dark:text-slate-100">
+              Add Match
+            </h2>
             <MatchForm onSubmit={handleCreate} submitLabel="Create Match" />
           </div>
         </div>
@@ -677,13 +719,14 @@ export default function OrganizerMatches() {
 
       {showEditModal && selectedMatch && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm dark:bg-slate-950/80"
           onClick={() => setShowEditModal(false)}
         >
           <div
             className="w-full max-w-3xl rounded-xl bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
             onClick={(e) => e.stopPropagation()}
           >
+            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-slate-100">
             <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-slate-100">
               Edit Match
             </h2>
@@ -694,7 +737,7 @@ export default function OrganizerMatches() {
 
       {showDeleteModal && selectedMatch && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm dark:bg-slate-950/80"
           onClick={() => setShowDeleteModal(false)}
         >
           <div
@@ -702,8 +745,10 @@ export default function OrganizerMatches() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-slate-100">
+            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-slate-100">
               Delete Match
             </h2>
+            <p className="mb-6 text-gray-600 dark:text-slate-300">
             <p className="mb-6 text-gray-600 dark:text-slate-300">
               Delete match{" "}
               <strong>
@@ -721,7 +766,7 @@ export default function OrganizerMatches() {
               </button>
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white"
+                className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white transition hover:bg-gray-500 dark:bg-slate-700 dark:hover:bg-slate-600"
               >
                 Cancel
               </button>
