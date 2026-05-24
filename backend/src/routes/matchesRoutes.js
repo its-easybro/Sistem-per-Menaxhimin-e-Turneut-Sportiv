@@ -86,12 +86,51 @@ const matchScoreSchema = Joi.object({
   }),
 });
 
+const matchStatusSchema = Joi.object({
+  statusi: Joi.string()
+    .valid("Planifikuar", "Live", "HalfTime", "Shtyrë", "Anuluar")
+    .required()
+    .messages({
+      "any.only": "Status must be one of: Planifikuar, Live, HalfTime, Shtyrë, Anuluar.",
+      "any.required": "Status is required.",
+    }),
+});
+
 function parsePositiveInt(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
     return null;
   }
   return parsed;
+}
+
+function isLiveStatus(statusi) {
+  return statusi === "Live";
+}
+
+function isPlayableStatus(statusi) {
+  return statusi === "Live" || statusi === "HalfTime";
+}
+
+function getCurrentTimeValue() {
+  const now = new Date();
+  const time = now.toTimeString().slice(0, 8);
+
+  return new Date(`1970-01-01T${time}Z`);
+}
+
+function calculateWinner(match, result) {
+  if (!result) return null;
+
+  if (result.golat_shtepiak > result.golat_mysafir) {
+    return match.ekipi_shtepiak_id;
+  }
+
+  if (result.golat_mysafir > result.golat_shtepiak) {
+    return match.ekipi_mysafir_id;
+  }
+
+  return null;
 }
 
 function toMatchTimeValue(value) {
@@ -227,6 +266,49 @@ async function organizerOwnsMatch(matchId, organizerId) {
   return Boolean(match);
 }
 
+async function userCanManageLiveMatch(matchId, user) {
+  if (user?.is_admin) {
+    return true;
+  }
+
+  if (user?.is_organizer) {
+    return organizerOwnsMatch(matchId, user.id);
+  }
+
+  if (user?.is_referee) {
+    const assignedMatch = await prisma.matches.findFirst({
+      where: {
+        id: matchId,
+        matchreferees: {
+          some: {
+            referees: {
+              user_id: user.id,
+            },
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    return Boolean(assignedMatch);
+  }
+
+  return false;
+}
+
+function normalizeMatchEventType(eventType) {
+  const types = {
+    Goal: "Goal",
+    Gol: "Goal",
+    YellowCard: "YellowCard",
+    "E verdhe": "YellowCard",
+    RedCard: "RedCard",
+    "E kuqe": "RedCard",
+  };
+
+  return types[eventType] || eventType;
+}
+
 function formatPublicMatch(match){
   const result = match.matchresults;
 
@@ -250,20 +332,26 @@ function formatPublicMatch(match){
       golat_shtepiak: result?.golat_shtepiak ?? 0,
       golat_mysafir: result?.golat_mysafir ?? 0,
     },
-    cards: match.matchevents.map((event) => ({
-      id: event.id,
-      matchId: event.ndeshja_id,
-      playerId: event.lojtari_id,
-      playerName: event.players
-        ? `${event.players.emri} ${event.players.mbiemri}`
-        : null,
-      teamId: event.ekipi_id,
-      teamName: event.teams?.emertimi ?? null,
-      card: event.lloji,
-      minuta: event.minuta,
-      created_at: event.created_at,
+    cards: match.matchevents.map((event) => {
+      const eventType = normalizeMatchEventType(event.lloji);
 
-    })),
+      return {
+        id: event.id,
+        matchId: event.ndeshja_id,
+        playerId: event.lojtari_id,
+        playerName: event.players
+          ? `${event.players.emri} ${event.players.mbiemri}`
+          : null,
+        teamId: event.ekipi_id,
+        teamName: event.teams?.emertimi ?? null,
+        card: eventType,
+        eventType,
+        rawEventType: event.lloji,
+        minute: event.minuta,
+        minuta: event.minuta,
+        created_at: event.created_at,
+      };
+    }),
   };
 }
 
@@ -276,6 +364,7 @@ router.get("/public/live", async (req, res) => {
       where: {
         OR: [
           { statusi: "Live" },
+          { statusi: "HalfTime" },
           {
             statusi: "Përfunduar",
             data_ndeshjes: {
@@ -595,6 +684,180 @@ router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (r
   }
 });
 
+router.patch("/:id/status", protect, requireRole("is_admin", "is_organizer", "is_referee"), async (req, res) => {
+  const matchId = parsePositiveInt(req.params.id);
+  if (!matchId) {
+    return res.status(400).json({ error: "Invalid match id" });
+  }
+
+  try {
+    const { error, value } = matchStatusSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const canManage = await userCanManageLiveMatch(matchId, req.user);
+    if (!canManage) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    if (
+      req.user.is_referee &&
+      !["Live", "HalfTime"].includes(value.statusi)
+    ) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const match = await prisma.matches.findUnique({
+      where: { id: matchId },
+      select: { id: true, statusi: true },
+    });
+
+    if (!match) {
+      return res.status(404).json({ error: "Match not found" });
+    }
+
+    if (match.statusi === "P\u00ebrfunduar") {
+      return res.status(400).json({ error: "Finished matches cannot be updated." });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const isStartingPeriod = value.statusi === "Live";
+      const updatedMatch = await tx.matches.update({
+        where: { id: matchId },
+        data: {
+          statusi: value.statusi,
+          ...(isStartingPeriod && {
+            data_ndeshjes: new Date(),
+            ora_fillimit: getCurrentTimeValue(),
+          }),
+        },
+      });
+
+      if (value.statusi === "Live") {
+        await tx.matchresults.upsert({
+          where: { ndeshja_id: matchId },
+          update: {},
+          create: {
+            ndeshja_id: matchId,
+            golat_shtepiak: 0,
+            golat_mysafir: 0,
+          },
+        });
+      }
+
+      return updatedMatch;
+    });
+
+    const io = req.app.get("io");
+
+    io.emit("match-status-updated", {
+      matchId,
+      statusi: updated.statusi,
+      status: updated.statusi,
+    });
+
+    if (updated.statusi === "Live") {
+      io.emit("match_live", { matchId });
+    }
+
+    res.json({ message: "Match status updated successfully", match: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/:id/finish", protect, requireRole("is_admin", "is_organizer", "is_referee"), async (req, res) => {
+  const matchId = parsePositiveInt(req.params.id);
+  if (!matchId) {
+    return res.status(400).json({ error: "Invalid match id" });
+  }
+
+  try {
+    const canManage = await userCanManageLiveMatch(matchId, req.user);
+    if (!canManage) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const match = await prisma.matches.findUnique({
+      where: { id: matchId },
+      select: {
+        id: true,
+        statusi: true,
+        ekipi_shtepiak_id: true,
+        ekipi_mysafir_id: true,
+        matchresults: true,
+      },
+    });
+
+    if (!match) {
+      return res.status(404).json({ error: "Match not found" });
+    }
+
+    if (!isPlayableStatus(match.statusi)) {
+      return res
+        .status(400)
+        .json({ error: "Only live or half-time matches can be finished." });
+    }
+
+    const currentResult =
+      match.matchresults ??
+      (await prisma.matchresults.create({
+        data: {
+          ndeshja_id: matchId,
+          golat_shtepiak: 0,
+          golat_mysafir: 0,
+        },
+      }));
+    const winnerTeamId = calculateWinner(match, currentResult);
+
+    const { updatedMatch, updatedResult } = await prisma.$transaction(async (tx) => {
+      const result = await tx.matchresults.update({
+        where: { ndeshja_id: matchId },
+        data: {
+          fitues_id: winnerTeamId,
+        },
+      });
+
+      const finishedMatch = await tx.matches.update({
+        where: { id: matchId },
+        data: {
+          statusi: "P\u00ebrfunduar",
+        },
+      });
+
+      return {
+        updatedMatch: finishedMatch,
+        updatedResult: result,
+      };
+    });
+
+    const io = req.app.get("io");
+
+    io.emit("match_finished", { matchId });
+    io.emit("match-finished", {
+      matchId,
+      winnerTeamId,
+      homeScore: updatedResult.golat_shtepiak,
+      awayScore: updatedResult.golat_mysafir,
+    });
+    io.emit("match-status-updated", {
+      matchId,
+      statusi: updatedMatch.statusi,
+      status: updatedMatch.statusi,
+    });
+
+    res.json({
+      message: "Match finished successfully",
+      match: updatedMatch,
+      result: updatedResult,
+      winnerTeamId,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.patch("/:id/score", protect, requireRole("is_admin", "is_organizer", "is_referee"), async (req, res) => {
   const matchId = parsePositiveInt(req.params.id);
   if(!matchId){
@@ -645,6 +908,12 @@ router.patch("/:id/score", protect, requireRole("is_admin", "is_organizer", "is_
 
     if (!match) {
       return res.status(404).json({ error: "Match not found" });
+    }
+
+    if (!isLiveStatus(match.statusi)) {
+      return res
+        .status(400)
+        .json({ error: "The match must be live before updating the score." });
     }
 
     const result = await prisma.matchresults.upsert({

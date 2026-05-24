@@ -39,6 +39,54 @@ const formatTime = (value) => {
   return text.slice(0, 5);
 };
 
+const initialEventForm = {
+  lloji: "Goal",
+  ekipi_id: "",
+};
+
+const teamRequiredEventTypes = ["Goal", "YellowCard", "RedCard"];
+
+function getEventMinute(event) {
+  const minute = event.minute ?? event.minuta;
+  return minute === null || minute === undefined || minute === "" ? "-" : `${minute}'`;
+}
+
+function getEventTypeLabel(type) {
+  const labels = {
+    Goal: "Goal",
+    YellowCard: "Yellow card",
+    RedCard: "Red card",
+  };
+
+  return labels[type] || type || "Event";
+}
+
+function sortMatchEvents(events) {
+  return [...events].sort((a, b) => {
+    const minuteA = Number.isFinite(Number(a.minute ?? a.minuta))
+      ? Number(a.minute ?? a.minuta)
+      : Number.MAX_SAFE_INTEGER;
+    const minuteB = Number.isFinite(Number(b.minute ?? b.minuta))
+      ? Number(b.minute ?? b.minuta)
+      : Number.MAX_SAFE_INTEGER;
+
+    if (minuteA !== minuteB) return minuteA - minuteB;
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+}
+
+function isLiveMatch(match) {
+  return match?.statusi === "Live";
+}
+
+function isHalfTimeMatch(match) {
+  return match?.statusi === "HalfTime";
+}
+
+function isFinishedMatch(match) {
+  return match?.statusi === "Përfunduar" || match?.statusi === "PÃ«rfunduar";
+}
+
 const matchCreateSchema = yup.object().shape({
   turneu_id: yup.string().required("Tournament is required"),
   ekipi_shtepiak_id: yup.string().required("Home team is required"),
@@ -89,6 +137,8 @@ export default function Matches() {
     golat_shtepiak: 0,
     golat_mysafir: 0,
   });
+  const [matchEvents, setMatchEvents] = useState([]);
+  const [eventForm, setEventForm] = useState(initialEventForm);
   const [formData, setFormData] = useState({
     turneu_id: "",
     ekipi_shtepiak_id: "",
@@ -159,6 +209,15 @@ export default function Matches() {
   }, [user]);
 
   useEffect(() => {
+    const appendMatchEvent = (event) => {
+      setMatchEvents((prev) => {
+        if (!selectedMatch || event.matchId !== selectedMatch.id) return prev;
+        if (prev.some((item) => item.id === event.id)) return prev;
+
+        return sortMatchEvents([...prev, event]);
+      });
+    };
+
     const handleMatchLive = ({ matchId }) => {
       setMatches((prev) =>
         prev.map((match) =>
@@ -198,14 +257,40 @@ export default function Matches() {
       });
     };
 
+    const handleMatchEventCreated = (event) => {
+      appendMatchEvent(event);
+    };
+
+    const handleMatchStatusUpdated = ({ matchId, statusi, status }) => {
+      const nextStatus = statusi || status;
+
+      setMatches((prev) =>
+        prev.map((match) =>
+          match.id === matchId ? { ...match, statusi: nextStatus } : match,
+        ),
+      );
+
+      setSelectedMatch((prev) =>
+        prev && prev.id === matchId ? { ...prev, statusi: nextStatus } : prev,
+      );
+    };
+
     socket.on("match_live", handleMatchLive);
     socket.on("match_finished", handleMatchFinished);
     socket.on("score_update", handleScoreUpdate);
+    socket.on("score-updated", handleScoreUpdate);
+    socket.on("match-event-created", handleMatchEventCreated);
+    socket.on("match-status-updated", handleMatchStatusUpdated);
+    socket.on("match-finished", handleMatchFinished);
 
     return () => {
       socket.off("match_live", handleMatchLive);
       socket.off("match_finished", handleMatchFinished);
       socket.off("score_update", handleScoreUpdate);
+      socket.off("score-updated", handleScoreUpdate);
+      socket.off("match-event-created", handleMatchEventCreated);
+      socket.off("match-status-updated", handleMatchStatusUpdated);
+      socket.off("match-finished", handleMatchFinished);
     };
   }, [selectedMatch]);
 
@@ -343,6 +428,8 @@ export default function Matches() {
 
   const handleCloseViewModal = () => {
     setSelectedMatch(null);
+    setMatchEvents([]);
+    setEventForm(initialEventForm);
     setShowViewModal(false);
   };
 
@@ -355,6 +442,8 @@ export default function Matches() {
   const handleView = async (id) => {
     const match = matches.find((m) => m.id === id);
     setSelectedMatch(match);
+    setMatchEvents([]);
+    setEventForm(initialEventForm);
     setScoreForm({
       golat_shtepiak: 0,
       golat_mysafir: 0,
@@ -363,9 +452,19 @@ export default function Matches() {
     setShowViewModal(true);
 
     try {
-      const response = await api.get("/match-results");
-      const results = Array.isArray(response.data) ? response.data : [];
+      const [resultsResponse, eventsResponse] = await Promise.all([
+        api.get("/match-results"),
+        api.get(`/matches/${id}/events`),
+      ]);
+      const results = Array.isArray(resultsResponse.data)
+        ? resultsResponse.data
+        : [];
+      const events = Array.isArray(eventsResponse.data)
+        ? eventsResponse.data
+        : [];
       const existingResult = results.find((result) => result.ndeshja_id === id);
+
+      setMatchEvents(sortMatchEvents(events));
 
       if (existingResult) {
         setScoreForm({
@@ -410,7 +509,7 @@ export default function Matches() {
       setAlert({
         type: "error",
         message:
-          "Error fetching match results: " +
+          "Error fetching match details: " +
           (err.response?.data?.error || err.message),
       });
     }
@@ -556,12 +655,40 @@ export default function Matches() {
     }));
   };
 
+  const handleEventInputChange = (e) => {
+    const { name, value } = e.target;
+
+    setEventForm((prev) => {
+      const next = {
+        ...prev,
+        [name]: value,
+      };
+
+      if (
+        name === "lloji" &&
+        !teamRequiredEventTypes.includes(value)
+      ) {
+        next.ekipi_id = "";
+      }
+
+      return next;
+    });
+  };
+
   const handleScoreSubmit = async (e) => {
     e.preventDefault();
 
     if (!selectedMatch) return;
 
     try {
+      if (!isLiveMatch(selectedMatch)) {
+        setAlert({
+          type: "error",
+          message: "The match must be live before updating the score.",
+        });
+        return;
+      }
+
       const response = await api.patch(`/matches/${selectedMatch.id}/score`, {
         golat_shtepiak: Number(scoreForm.golat_shtepiak),
         golat_mysafir: Number(scoreForm.golat_mysafir),
@@ -594,6 +721,143 @@ export default function Matches() {
         type: "error",
         message:
           "Error updating score: " + (err.response?.data?.error || err.message),
+      });
+    }
+  };
+
+  const handleEventSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!selectedMatch) return;
+
+    try {
+      if (!isLiveMatch(selectedMatch)) {
+        setAlert({
+          type: "error",
+          message: "The match must be live before adding events.",
+        });
+        return;
+      }
+
+      const requiresTeam = teamRequiredEventTypes.includes(eventForm.lloji);
+      if (requiresTeam && !eventForm.ekipi_id) {
+        setAlert({
+          type: "error",
+          message: "Please select a team for this event.",
+        });
+        return;
+      }
+
+      const response = await api.post(`/matches/${selectedMatch.id}/events`, {
+        lloji: eventForm.lloji,
+        ekipi_id: eventForm.ekipi_id ? Number(eventForm.ekipi_id) : null,
+      });
+
+      const createdEvent = response.data.event;
+      if (createdEvent) {
+        setMatchEvents((prev) => {
+          if (prev.some((item) => item.id === createdEvent.id)) return prev;
+          return sortMatchEvents([...prev, createdEvent]);
+        });
+      }
+
+      if (response.data.score) {
+        const nextScore = {
+          golat_shtepiak: response.data.score.golat_shtepiak ?? 0,
+          golat_mysafir: response.data.score.golat_mysafir ?? 0,
+        };
+
+        setScoreForm(nextScore);
+        setSelectedMatch((prev) =>
+          prev
+            ? {
+                ...prev,
+                score: nextScore,
+              }
+            : prev,
+        );
+      }
+
+      setEventForm(initialEventForm);
+      setAlert({ type: "success", message: "Match event added successfully!" });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error adding match event: " +
+          (err.response?.data?.error || err.message),
+      });
+    }
+  };
+
+  const applyMatchStatus = (matchId, statusi) => {
+    setMatches((prev) =>
+      prev.map((match) =>
+        match.id === matchId ? { ...match, statusi } : match,
+      ),
+    );
+
+    setSelectedMatch((prev) =>
+      prev && prev.id === matchId ? { ...prev, statusi } : prev,
+    );
+  };
+
+  const handleStatusUpdate = async (statusi) => {
+    if (!selectedMatch) return;
+
+    try {
+      const response = await api.patch(`/matches/${selectedMatch.id}/status`, {
+        statusi,
+      });
+      const nextStatus = response.data.match?.statusi || statusi;
+
+      applyMatchStatus(selectedMatch.id, nextStatus);
+      setAlert({ type: "success", message: "Match status updated successfully!" });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error updating match status: " +
+          (err.response?.data?.error || err.message),
+      });
+    }
+  };
+
+  const handleFinishMatch = async () => {
+    if (!selectedMatch) return;
+
+    try {
+      const response = await api.post(`/matches/${selectedMatch.id}/finish`);
+      const result = response.data.result;
+      const nextStatus = response.data.match?.statusi || "PÃ«rfunduar";
+
+      applyMatchStatus(selectedMatch.id, nextStatus);
+
+      if (result) {
+        const nextScore = {
+          golat_shtepiak: result.golat_shtepiak ?? 0,
+          golat_mysafir: result.golat_mysafir ?? 0,
+        };
+
+        setScoreForm(nextScore);
+        setSelectedMatch((prev) =>
+          prev
+            ? {
+                ...prev,
+                score: nextScore,
+                winnerTeamId: response.data.winnerTeamId ?? null,
+              }
+            : prev,
+        );
+      }
+
+      setAlert({ type: "success", message: "Match finished successfully!" });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error finishing match: " +
+          (err.response?.data?.error || err.message),
       });
     }
   };
@@ -1143,6 +1407,45 @@ export default function Matches() {
                   </p>
                 </div>
               </div>
+              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
+                <h4 className="mb-4 text-lg font-semibold text-gray-800">
+                  Match Status Controls
+                </h4>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <button
+                    type="button"
+                    onClick={() => handleStatusUpdate("Live")}
+                    disabled={isLiveMatch(selectedMatch) || isFinishedMatch(selectedMatch)}
+                    className="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                  >
+                    {isHalfTimeMatch(selectedMatch) ? "Resume Match" : "Start Match"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStatusUpdate("HalfTime")}
+                    disabled={!isLiveMatch(selectedMatch)}
+                    className="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-gray-400"
+                  >
+                    Half Time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinishMatch}
+                    disabled={!isLiveMatch(selectedMatch) && !isHalfTimeMatch(selectedMatch)}
+                    className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                  >
+                    Finish Match
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStatusUpdate("Anuluar")}
+                    disabled={isFinishedMatch(selectedMatch)}
+                    className="rounded-lg bg-slate-600 px-4 py-2 font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                  >
+                    Cancel Match
+                  </button>
+                </div>
+              </div>
               <form
                 onSubmit={handleScoreSubmit}
                 className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
@@ -1150,6 +1453,11 @@ export default function Matches() {
                 <h4 className="mb-4 text-lg font-semibold text-gray-800">
                   Update Live Score
                 </h4>
+                {!isLiveMatch(selectedMatch) && (
+                  <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    The match must be live before score or event updates are allowed.
+                  </p>
+                )}
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
@@ -1162,6 +1470,7 @@ export default function Matches() {
                       name="golat_shtepiak"
                       value={scoreForm.golat_shtepiak}
                       onChange={handleScoreInputChange}
+                      disabled={!isLiveMatch(selectedMatch)}
                       className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -1176,6 +1485,7 @@ export default function Matches() {
                       name="golat_mysafir"
                       value={scoreForm.golat_mysafir}
                       onChange={handleScoreInputChange}
+                      disabled={!isLiveMatch(selectedMatch)}
                       className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -1183,11 +1493,100 @@ export default function Matches() {
 
                 <button
                   type="submit"
-                  className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700"
+                  disabled={!isLiveMatch(selectedMatch)}
+                  className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400"
                 >
                   Update Score
                 </button>
               </form>
+              <form
+                onSubmit={handleEventSubmit}
+                className="mt-6 rounded-lg border border-gray-200 bg-white p-4"
+              >
+                <h4 className="mb-4 text-lg font-semibold text-gray-800">
+                  Add Match Event
+                </h4>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Event Type
+                    </label>
+                    <select
+                      name="lloji"
+                      value={eventForm.lloji}
+                      onChange={handleEventInputChange}
+                      disabled={!isLiveMatch(selectedMatch)}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Goal">Goal</option>
+                      <option value="YellowCard">Yellow card</option>
+                      <option value="RedCard">Red card</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Team
+                    </label>
+                    <select
+                      name="ekipi_id"
+                      value={eventForm.ekipi_id}
+                      onChange={handleEventInputChange}
+                      disabled={
+                        !isLiveMatch(selectedMatch) ||
+                        !teamRequiredEventTypes.includes(eventForm.lloji)
+                      }
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                    >
+                      <option value="">No team</option>
+                      <option value={selectedMatch.ekipi_shtepiak_id}>
+                        {getTeamName(selectedMatch.ekipi_shtepiak_id)}
+                      </option>
+                      <option value={selectedMatch.ekipi_mysafir_id}>
+                        {getTeamName(selectedMatch.ekipi_mysafir_id)}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!isLiveMatch(selectedMatch)}
+                  className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                >
+                  Add Event
+                </button>
+              </form>
+
+              <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h4 className="mb-4 text-lg font-semibold text-gray-800">
+                  Match Timeline
+                </h4>
+
+                {matchEvents.length > 0 ? (
+                  <div className="space-y-2">
+                    {matchEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3"
+                      >
+                        <span className="font-semibold text-gray-900">
+                          {getEventMinute(event)} - {getEventTypeLabel(event.eventType)}
+                        </span>
+                        <span className="text-sm text-gray-600">
+                          {event.playerName || "No player"}
+                          {event.teamName ? ` - ${event.teamName}` : ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    No match events yet.
+                  </p>
+                )}
+              </div>
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
