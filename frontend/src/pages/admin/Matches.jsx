@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
+import { ThemeContext } from "../../context/ThemeContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Edit, Trash2, Eye } from "lucide-react";
@@ -111,9 +112,48 @@ const matchUpdateSchema = yup.object().shape({
   faza: yup.string(),
 });
 
+function getModalOverlayClassName(isDarkMode) {
+  return `fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm ${
+    isDarkMode ? "bg-slate-950/80" : "bg-black/50"
+  }`;
+}
+
+function getModalSurfaceClassName(isDarkMode) {
+  return `w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg p-8 shadow-2xl ${
+    isDarkMode
+      ? "border border-slate-700 bg-slate-950 text-slate-100 shadow-slate-900/40"
+      : "bg-white text-gray-900"
+  }`;
+}
+
+function getModalLabelClassName(isDarkMode) {
+  return `mb-2 block text-sm font-medium ${
+    isDarkMode ? "text-slate-200" : "text-gray-700"
+  }`;
+}
+
+function getModalFieldClassName(isDarkMode, hasError = false) {
+  const borderClass = hasError
+    ? "border-red-500"
+    : isDarkMode
+    ? "border-slate-700"
+    : "border-gray-300";
+
+  const toneClass = isDarkMode
+    ? "bg-slate-900 text-slate-100"
+    : "bg-white text-gray-900";
+
+  return `w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 ${borderClass} ${toneClass}`;
+}
+
+function getModalErrorClassName(isDarkMode) {
+  return `mt-1 text-sm ${isDarkMode ? "text-red-400" : "text-red-500"}`;
+}
+
 export default function Matches() {
   // Central admin page for managing matches and linked tournament/team/venue data.
   const { user } = useContext(AuthContext);
+  const { isDarkMode } = useContext(ThemeContext);
   const navigate = useNavigate();
 
   // State Variables
@@ -131,7 +171,14 @@ export default function Matches() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [filters, setFilters] = useState({
+    search: "",
+    statusi: "",
+    turneu_id: "",
+    team_id: "",
+  });
   const [alert, setAlert] = useState(null);
   const [scoreForm, setScoreForm] = useState({
     golat_shtepiak: 0,
@@ -159,9 +206,20 @@ export default function Matches() {
         setLoading(false);
         return;
       }
+
       try {
         setLoading(true);
         setError("");
+
+        const params = {
+          page,
+          limit: 50,
+          ...(filters.search && { search: filters.search }),
+          ...(filters.statusi && { statusi: filters.statusi }),
+          ...(filters.turneu_id && { turneu_id: filters.turneu_id }),
+          ...(filters.team_id && { team_id: filters.team_id }),
+        };
+
         const [
           matchesResponse,
           tournamentsResponse,
@@ -171,7 +229,7 @@ export default function Matches() {
           refereesResponse,
           venuesResponse,
         ] = await Promise.all([
-          api.get(`/matches`),
+          api.get(`/matches`, { params }),
           api.get(`tournaments`),
           api.get(`teams`),
           api.get(`/tournament-registrations`),
@@ -180,15 +238,20 @@ export default function Matches() {
           api.get(`/venues`),
         ]);
 
-        const matchesData = matchesResponse.data;
+        const matchesData = Array.isArray(matchesResponse.data?.data)
+          ? matchesResponse.data.data
+          : Array.isArray(matchesResponse.data)
+          ? matchesResponse.data
+          : [];
         const tournamentsData = tournamentsResponse.data;
         const teamsData = teamsResponse.data;
         const registrationsData = registrationsResponse.data;
         const matchRefereesData = matchRefereesResponse.data;
         const refereesData = refereesResponse.data;
         const venuesData = venuesResponse.data;
+
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
-        setMatches(Array.isArray(matchesData) ? matchesData : []);
+        setMatches(matchesData);
         setTeams(Array.isArray(teamsData) ? teamsData : []);
         setRegistrations(
           Array.isArray(registrationsData) ? registrationsData : [],
@@ -198,6 +261,10 @@ export default function Matches() {
         );
         setReferees(Array.isArray(refereesData) ? refereesData : []);
         setVenues(Array.isArray(venuesData) ? venuesData : []);
+
+        setPagination(
+          matchesResponse.data?.pagination ?? null,
+        );
       } catch (err) {
         console.error("Error loading data:", err);
         setError(err.message);
@@ -205,8 +272,9 @@ export default function Matches() {
         setLoading(false);
       }
     };
+
     loadData();
-  }, [user]);
+  }, [user, filters, page]);
 
   useEffect(() => {
     const appendMatchEvent = (event) => {
@@ -295,6 +363,25 @@ export default function Matches() {
   }, [selectedMatch]);
 
   // Create match handler
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      search: "",
+      statusi: "",
+      turneu_id: "",
+      team_id: "",
+    });
+    setPage(1);
+  };
+
   const handleCreate = () => {
     setFormData({
       turneu_id: "",
@@ -926,28 +1013,32 @@ export default function Matches() {
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <p className="text-lg text-red-600">Error: {error}</p>
+      <div className="flex justify-center items-center h-screen bg-slate-950 text-slate-100">
+        <p className="text-lg text-red-400">Error: {error}</p>
       </div>
     );
   }
 
   // Filter matches based on search
-  const filteredMatches = matches.filter(
-    (match) =>
+  const filteredMatches = matches.filter((match) => {
+    const query = filters.search.toLowerCase();
+    if (!query) return true;
+
+    return (
       getTournamentName(match.turneu_id)
         .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
+        .includes(query) ||
       getTeamName(match.ekipi_shtepiak_id)
         .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
+        .includes(query) ||
       getTeamName(match.ekipi_mysafir_id)
         .toLowerCase()
-        .includes(searchQuery.toLowerCase()),
-  );
+        .includes(query)
+    );
+  });
 
   return (
-    <div className="bg-gray-50 p-4">
+    <div className={`p-4 ${isDarkMode ? "bg-slate-950 text-slate-100" : "bg-gray-50 text-gray-900"}`}>
       {alert && (
         <Alert
           type={alert.type}
@@ -958,7 +1049,7 @@ export default function Matches() {
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
               Match Management
             </h2>
             <button
@@ -970,21 +1061,22 @@ export default function Matches() {
           </div>
 
           {/* SEARCH BAR */}
-          <div className="relative">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search by tournament or team"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
-            />
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                type="text"
+                name="search"
+                placeholder="Search by tournament or team"
+                value={filters.search}
+                onChange={handleFilterChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-400" : "border-gray-300 bg-white text-gray-900 placeholder:text-gray-400"}`}
+              />
+              <svg
+                className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -993,12 +1085,101 @@ export default function Matches() {
               />
             </svg>
           </div>
+          </div>
+
+          <div className={`grid gap-4 lg:grid-cols-4 mt-4 ${isDarkMode ? "text-slate-100" : "text-gray-900"}`}>
+            <div>
+              <label className="block text-sm font-medium mb-2">Status</label>
+              <select
+                name="statusi"
+                value={filters.statusi}
+                onChange={handleFilterChange}
+                className={`w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-300 bg-white text-gray-900"}`}
+              >
+                <option value="">All statuses</option>
+                <option value="Planifikuar">Planifikuar</option>
+                <option value="Live">Live</option>
+                <option value="HalfTime">HalfTime</option>
+                <option value="Shtyrë">Shtyrë</option>
+                <option value="Anuluar">Anuluar</option>
+                <option value="Përfunduar">Përfunduar</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Tournament</label>
+              <select
+                name="turneu_id"
+                value={filters.turneu_id}
+                onChange={handleFilterChange}
+                className={`w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-300 bg-white text-gray-900"}`}
+              >
+                <option value="">All tournaments</option>
+                {tournaments.map((tournament) => (
+                  <option key={tournament.id} value={tournament.id}>
+                    {tournament.emertimi}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Team</label>
+              <select
+                name="team_id"
+                value={filters.team_id}
+                onChange={handleFilterChange}
+                className={`w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-300 bg-white text-gray-900"}`}
+              >
+                <option value="">All teams</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.emertimi}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end gap-2">
+              <button
+                onClick={handleClearFilters}
+                type="button"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                Clear filters
+              </button>
+            </div>
+          </div>
+
+          {pagination && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 text-sm text-gray-700 dark:text-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+              <span>
+                Showing page {pagination.page} of {pagination.totalPages} ({pagination.total} matches)
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={!pagination.hasPrev}
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:border-slate-800 dark:disabled:bg-slate-950 dark:disabled:text-slate-500"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => prev + 1)}
+                  disabled={!pagination.hasNext}
+                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:border-slate-800 dark:disabled:bg-slate-950 dark:disabled:text-slate-500"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* Matches table section */}
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
+        <div className={`flex rounded-lg shadow-md overflow-x-auto ${isDarkMode ? "bg-slate-900 border border-slate-700" : "bg-white"}`}>
           <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-800 text-white">
+            <thead className="bg-gray-800 dark:bg-slate-800 text-white">
               <tr>
                 <th className="px-4 py-3 text-center font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">
@@ -1015,50 +1196,52 @@ export default function Matches() {
               </tr>
             </thead>
             {/* Table Body */}
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {filteredMatches.length > 0 ? (
                 filteredMatches.map((m) => (
                   <tr
                     key={m.id}
-                    className="hover:bg-gray-100 transition-colors duration-150"
+                    className="hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors duration-150"
                   >
-                    <td className="px-4 py-3 text-gray-500 text-center">
+                    <td className="px-4 py-3 text-gray-500 dark:text-slate-300 text-center">
                       {m.id}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
+                    <td className="px-4 py-3 text-gray-900 dark:text-slate-100 font-semibold">
                       {getTournamentName(m.turneu_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
+                    <td className="px-4 py-3 text-gray-900 dark:text-slate-100 font-semibold">
                       {getTeamName(m.ekipi_shtepiak_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
+                    <td className="px-4 py-3 text-gray-900 dark:text-slate-100 font-semibold">
                       {getTeamName(m.ekipi_mysafir_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold text-center">
+                    <td className="px-4 py-3 text-gray-900 dark:text-slate-100 font-semibold text-center">
                       {formatDate(m.data_ndeshjes)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
+                    <td className="px-4 py-3 text-gray-900 dark:text-slate-100 font-semibold">
                       {formatTime(m.ora_fillimit) || "N/A"}
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-semibold ${
                           m.statusi === "Përfunduar"
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-green-100 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-200"
                             : m.statusi === "Live"
-                              ? "bg-red-100 text-red-800"
+                              ? "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200"
                               : m.statusi === "Shtyrë"
-                                ? "bg-yellow-100 text-yellow-800"
+                                ? "bg-yellow-100 text-yellow-800 dark:bg-amber-500/20 dark:text-amber-200"
                                 : m.statusi === "Anuluar"
-                                  ? "bg-gray-100 text-gray-800"
-                                  : "bg-blue-100 text-blue-800"
+                                  ? "bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-slate-200"
+                                  : "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-100"
                         }`}
                       >
                         {m.statusi}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{getPrimaryRefereeName(m.id)}</td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-300">
+                      {getPrimaryRefereeName(m.id)}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700 dark:text-slate-300">
                       <MatchTimer match={m} />
                     </td>
                     <td className="px-4 py-3">
@@ -1110,10 +1293,10 @@ export default function Matches() {
                 <tr>
                   <td
                     colSpan="9"
-                    className="px-6 py-4 text-center text-gray-600"
+                    className="px-6 py-4 text-center text-gray-600 dark:text-slate-300"
                   >
-                    {searchQuery
-                      ? `No matches match "${searchQuery}". Try a different search.`
+                    {filters.search
+                      ? `No matches match "${filters.search}". Try a different search.`
                       : 'No matches found. Click "Add New Match" to add a new one.'}
                   </td>
                 </tr>
@@ -1125,27 +1308,34 @@ export default function Matches() {
         {/* ADD NEW MATCH MODAL */}
         {showModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            className={getModalOverlayClassName(isDarkMode)}
             onClick={handleCloseModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className={getModalSurfaceClassName(isDarkMode)}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              <h3
+                className={`mb-6 text-2xl font-bold ${
+                  isDarkMode ? "text-slate-100" : "text-gray-800"
+                }`}
+              >
                 Add New Match
               </h3>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Tournament *
                     </label>
                     <select
                       name="turneu_id"
                       value={formData.turneu_id}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.turneu_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={getModalFieldClassName(
+                        isDarkMode,
+                        Boolean(formErrors.turneu_id),
+                      )}
                       required
                     >
                       <option value="">Select Tournament</option>
@@ -1155,18 +1345,25 @@ export default function Matches() {
                         </option>
                       ))}
                     </select>
-                    {formErrors.turneu_id && <p className="text-sm text-red-500 mt-1">{formErrors.turneu_id}</p>}
+                    {formErrors.turneu_id && (
+                      <p className={getModalErrorClassName(isDarkMode)}>
+                        {formErrors.turneu_id}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Home Team *
                     </label>
                     <select
                       name="ekipi_shtepiak_id"
                       value={formData.ekipi_shtepiak_id}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.ekipi_shtepiak_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={getModalFieldClassName(
+                        isDarkMode,
+                        Boolean(formErrors.ekipi_shtepiak_id),
+                      )}
                       required
                     >
                       <option value="">Select Home Team</option>
@@ -1176,18 +1373,25 @@ export default function Matches() {
                         </option>
                       ))}
                     </select>
-                    {formErrors.ekipi_shtepiak_id && <p className="text-sm text-red-500 mt-1">{formErrors.ekipi_shtepiak_id}</p>}
+                    {formErrors.ekipi_shtepiak_id && (
+                      <p className={getModalErrorClassName(isDarkMode)}>
+                        {formErrors.ekipi_shtepiak_id}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Away Team *
                     </label>
                     <select
                       name="ekipi_mysafir_id"
                       value={formData.ekipi_mysafir_id}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.ekipi_mysafir_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={getModalFieldClassName(
+                        isDarkMode,
+                        Boolean(formErrors.ekipi_mysafir_id),
+                      )}
                       required
                     >
                       <option value="">Select Away Team</option>
@@ -1197,11 +1401,15 @@ export default function Matches() {
                         </option>
                       ))}
                     </select>
-                    {formErrors.ekipi_mysafir_id && <p className="text-sm text-red-500 mt-1">{formErrors.ekipi_mysafir_id}</p>}
+                    {formErrors.ekipi_mysafir_id && (
+                      <p className={getModalErrorClassName(isDarkMode)}>
+                        {formErrors.ekipi_mysafir_id}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Match Date *
                     </label>
                     <input
@@ -1209,14 +1417,21 @@ export default function Matches() {
                       name="data_ndeshjes"
                       value={formData.data_ndeshjes}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.data_ndeshjes ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={getModalFieldClassName(
+                        isDarkMode,
+                        Boolean(formErrors.data_ndeshjes),
+                      )}
                       required
                     />
-                    {formErrors.data_ndeshjes && <p className="text-sm text-red-500 mt-1">{formErrors.data_ndeshjes}</p>}
+                    {formErrors.data_ndeshjes && (
+                      <p className={getModalErrorClassName(isDarkMode)}>
+                        {formErrors.data_ndeshjes}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Start Time
                     </label>
                     <input
@@ -1224,20 +1439,27 @@ export default function Matches() {
                       name="ora_fillimit"
                       value={formData.ora_fillimit}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.ora_fillimit ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={getModalFieldClassName(
+                        isDarkMode,
+                        Boolean(formErrors.ora_fillimit),
+                      )}
                     />
-                    {formErrors.ora_fillimit && <p className="text-sm text-red-500 mt-1">{formErrors.ora_fillimit}</p>}
+                    {formErrors.ora_fillimit && (
+                      <p className={getModalErrorClassName(isDarkMode)}>
+                        {formErrors.ora_fillimit}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Venue
                     </label>
                     <select
                       name="fusha_id"
                       value={formData.fusha_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={getModalFieldClassName(isDarkMode)}
                     >
                       <option value="">Select Venue</option>
                       {venues.map((v) => (
@@ -1249,14 +1471,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Referee
                     </label>
                     <select
                       name="referi_id"
                       value={formData.referi_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={getModalFieldClassName(isDarkMode)}
                     >
                       <option value="">Select Referee</option>
                       {referees.map((r) => (
@@ -1268,14 +1490,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Status
                     </label>
                     <select
                       name="statusi"
                       value={formData.statusi}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={getModalFieldClassName(isDarkMode)}
                     >
                       <option value="Planifikuar">Planifikuar</option>
                       <option value="Live">Live</option>
@@ -1286,7 +1508,7 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className={getModalLabelClassName(isDarkMode)}>
                       Phase
                     </label>
                     <input
@@ -1294,7 +1516,7 @@ export default function Matches() {
                       name="faza"
                       value={formData.faza}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className={getModalFieldClassName(isDarkMode)}
                       placeholder="e.g., Final, Semi-final"
                     />
                   </div>
@@ -1327,10 +1549,10 @@ export default function Matches() {
             onClick={handleCloseViewModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white text-gray-900 p-8 shadow-2xl dark:bg-slate-900 dark:text-slate-100 dark:border dark:border-slate-700"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 dark:text-slate-100">
                 Match Details
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1338,7 +1560,7 @@ export default function Matches() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tournament
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg dark:bg-slate-800 dark:text-slate-100">
                     {getTournamentName(selectedMatch.turneu_id)}
                   </p>
                 </div>
@@ -1407,8 +1629,8 @@ export default function Matches() {
                   </p>
                 </div>
               </div>
-              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
-                <h4 className="mb-4 text-lg font-semibold text-gray-800">
+              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:bg-slate-900 dark:border-slate-700">
+                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                   Match Status Controls
                 </h4>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -1448,9 +1670,9 @@ export default function Matches() {
               </div>
               <form
                 onSubmit={handleScoreSubmit}
-                className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
+                className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:bg-slate-900 dark:border-slate-700"
               >
-                <h4 className="mb-4 text-lg font-semibold text-gray-800">
+                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                   Update Live Score
                 </h4>
                 {!isLiveMatch(selectedMatch) && (
@@ -1607,23 +1829,23 @@ export default function Matches() {
             onClick={handleCloseEditModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white text-gray-900 p-8 shadow-2xl dark:bg-slate-900 dark:text-slate-100 dark:border dark:border-slate-700"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 mb-6 dark:text-slate-100">
                 Edit Match
               </h3>
               <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Tournament *
                     </label>
                     <select
                       name="turneu_id"
                       value={formData.turneu_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       required
                     >
                       <option value="">Select Tournament</option>
@@ -1636,14 +1858,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Home Team *
                     </label>
                     <select
                       name="ekipi_shtepiak_id"
                       value={formData.ekipi_shtepiak_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       required
                     >
                       <option value="">Select Home Team</option>
@@ -1656,14 +1878,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Away Team *
                     </label>
                     <select
                       name="ekipi_mysafir_id"
                       value={formData.ekipi_mysafir_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       required
                     >
                       <option value="">Select Away Team</option>
@@ -1676,7 +1898,7 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Match Date *
                     </label>
                     <input
@@ -1684,13 +1906,13 @@ export default function Matches() {
                       name="data_ndeshjes"
                       value={formData.data_ndeshjes}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Start Time
                     </label>
                     <input
@@ -1698,19 +1920,19 @@ export default function Matches() {
                       name="ora_fillimit"
                       value={formData.ora_fillimit}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Venue
                     </label>
                     <select
                       name="fusha_id"
                       value={formData.fusha_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     >
                       <option value="">Select Venue</option>
                       {venues.map((v) => (
@@ -1722,14 +1944,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Referee
                     </label>
                     <select
                       name="referi_id"
                       value={formData.referi_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     >
                       <option value="">Select Referee</option>
                       {referees.map((r) => (
@@ -1741,14 +1963,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Status
                     </label>
                     <select
                       name="statusi"
                       value={formData.statusi}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     >
                       <option value="Planifikuar">Planifikuar</option>
                       <option value="Live">Live</option>
@@ -1759,7 +1981,7 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                       Phase
                     </label>
                     <input
@@ -1767,7 +1989,7 @@ export default function Matches() {
                       name="faza"
                       value={formData.faza}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       placeholder="e.g., Final, Semi-final"
                     />
                   </div>
@@ -1800,10 +2022,10 @@ export default function Matches() {
             onClick={handleCloseDeleteModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white text-gray-900 p-8 shadow-2xl dark:bg-slate-900 dark:text-slate-100 dark:border dark:border-slate-700"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-red-600 mb-4">
+              <h3 className="text-2xl font-bold text-red-600 mb-4 dark:text-red-400">
                 Delete Match?
               </h3>
               <p className="text-gray-700 mb-6">
