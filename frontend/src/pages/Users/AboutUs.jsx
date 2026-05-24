@@ -17,49 +17,50 @@ const AboutUs = () => {
                 }
             `}</style>
       {/* Intro heading and short project mission statement. */}
-      <h1 className="text-3xl font-semibold text-center mx-auto mt-8">About us</h1>
-      <p className="text-sm text-slate-500 text-center mt-2 max-w-md mx-auto">
+      <div className="bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100">
+      <h1 className="text-3xl font-semibold text-center mx-auto">About us</h1>
+      <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2 max-w-md mx-auto">
         This Sports Tournament Management System was created to facilitate the organization and smooth running of sports activities.
       </p>
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-center gap-8 px-4 md:px-0 py-10">
         <img
-          className="max-w-sm w-full rounded-xl h-auto"
+          className="max-w-sm w-full rounded-xl h-auto ring-1 ring-black/5 dark:ring-white/10"
           src="https://images.unsplash.com/photo-1555212697-194d092e3b8f?q=80&w=830&h=844&auto=format&fit=crop"
           alt=""
         />
         <div>
           {/* Highlights the platform's core capabilities. */}
-          <h1 className="text-3xl font-semibold">Core Features</h1>
-          <p className="text-sm text-slate-500 mt-2">
+          <h1 className="text-3xl font-semibold text-gray-900 dark:text-slate-100">Core Features</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
             Provides an exceptional experience for organizers, players, and referees with advanced features.
           </p>
 
           <div className="flex flex-col gap-10 mt-6">
             <div className="flex items-center gap-4">
-              <div className="size-9 p-2 bg-indigo-50 border border-indigo-200 rounded">
+              <div className="size-9 p-2 bg-indigo-50 border border-indigo-200 rounded dark:bg-indigo-500/10 dark:border-indigo-400/20">
                 <img src="https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/aboutSection/flashEmoji.png" alt="" />
               </div>
               <div>
-                <h3 className="text-base font-medium text-slate-600">Effective Management</h3>
-                <p className="text-sm text-slate-500">The registration of teams and the organization of matches is done with ease and speed.</p>
+                <h3 className="text-base font-medium text-slate-600 dark:text-slate-200">Effective Management</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">The registration of teams and the organization of matches is done with ease and speed.</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="size-9 p-2 bg-indigo-50 border border-indigo-200 rounded">
+              <div className="size-9 p-2 bg-indigo-50 border border-indigo-200 rounded dark:bg-indigo-500/10 dark:border-indigo-400/20">
                 <img src="https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/aboutSection/colorsEmoji.png" alt="" />
               </div>
               <div>
-                <h3 className="text-base font-medium text-slate-600">Statistics and Results</h3>
-                <p className="text-sm text-slate-500">Track results in real-time and update the tournament standings.</p>
+                <h3 className="text-base font-medium text-slate-600 dark:text-slate-200">Statistics and Results</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Track results in real-time and update the tournament standings.</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="size-9 p-2 bg-indigo-50 border border-indigo-200 rounded">
+              <div className="size-9 p-2 bg-indigo-50 border border-indigo-200 rounded dark:bg-indigo-500/10 dark:border-indigo-400/20">
                 <img src="https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/aboutSection/puzzelEmoji.png" alt="" />
               </div>
               <div>
-                <h3 className="text-base font-medium text-slate-600">Full Administration Panel</h3>
-                <p className="text-sm text-slate-500">Complete control over sports, referees, and user roles within the platform.</p>
+                <h3 className="text-base font-medium text-slate-600 dark:text-slate-200">Full Administration Panel</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Complete control over sports, referees, and user roles within the platform.</p>
               </div>
             </div>
           </div>
@@ -67,10 +68,10 @@ const AboutUs = () => {
       </div>
       {/* Team member cards with roles and profile links. */}
       <div className="flex flex-col items-center text-center gap-3 py-8">
-        <h1 className="text-3xl md:text-4xl font-semibold mb-4 text-gray-800">
+        <h1 className="text-3xl md:text-4xl font-semibold mb-4 text-gray-800 dark:text-slate-100">
           Meet the Team
         </h1>
-        <p className="w-3/5 mb-14 text-gray-500 text-sm">
+        <p className="w-3/5 mb-14 text-gray-500 dark:text-slate-400 text-sm">
           Discover the people behind this project who made its realization possible and provide the right solutions for the platform.
         </p>
         <div className="flex flex-wrap gap-8 items-center justify-center">
@@ -106,6 +107,7 @@ const AboutUs = () => {
             linkedinUrl="https://www.linkedin.com/in/ermir-krosa/"
           />
         </div>
+      </div>
       </div>
     </>
   );

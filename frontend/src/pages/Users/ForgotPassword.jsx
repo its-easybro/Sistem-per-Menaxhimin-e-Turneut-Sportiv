@@ -57,16 +57,16 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 py-10 flex items-center justify-center">
-      <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 py-10 flex items-center justify-center dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8 dark:border-slate-800 dark:bg-slate-900/95">
         <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-300">
             Account access
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
+          <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl dark:text-slate-100">
             Forgot Password?
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
+          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             Enter your email and we'll send a reset link right away.
           </p>
         </div>
@@ -75,8 +75,8 @@ export default function ForgotPassword() {
           <div
             className={`mb-6 rounded-2xl border px-4 py-4 text-sm text-center shadow-sm ${
               alert.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-rose-200 bg-rose-50 text-rose-800"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200"
+                  : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
             }`}
           >
             <p className="leading-6">{alert.message}</p>
@@ -85,7 +85,7 @@ export default function ForgotPassword() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
               Email
             </label>
             <input
@@ -94,10 +94,10 @@ export default function ForgotPassword() {
               value={formData.email}
               onChange={handleChange}
               placeholder="your@email.com"
-              className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+              className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 dark:bg-slate-950 dark:text-slate-100 ${
                 errors.email
                   ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20"
-                  : "border-slate-300 focus:border-emerald-500 focus:ring-emerald-500/20"
+                  : "border-slate-300 focus:border-emerald-500 focus:ring-emerald-500/20 dark:border-slate-700"
               }`}
             />
             {errors.email && (
@@ -117,7 +117,7 @@ export default function ForgotPassword() {
           Remembered it?{" "}
           <Link
             to="/login"
-            className="font-medium text-emerald-600 hover:text-emerald-700"
+            className="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200"
           >
             Back to Login
           </Link>

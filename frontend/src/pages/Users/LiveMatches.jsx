@@ -422,7 +422,7 @@ function LiveMatches() {
 
   if (!selectedMatch) {
     return (
-      <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 dark:bg-slate-950 dark:text-white">
+      <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 dark:bg-slate-900 dark:text-white">
         <div className="mx-auto max-w-7xl rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
           <h1 className="text-2xl font-black">Live Match Center</h1>
           <p className="mt-2 text-gray-500 dark:text-slate-400">No live or recent matches found.</p>
@@ -432,7 +432,7 @@ function LiveMatches() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-[#071018] dark:text-slate-100">
+    <main className="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8">
         {alert && (
           <div className="mb-4">

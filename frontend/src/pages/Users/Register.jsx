@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import axios from "axios";
@@ -77,21 +77,21 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl bg-white/95 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="rounded-2xl bg-white/95 p-8 shadow-2xl backdrop-blur-sm dark:bg-slate-900/95 dark:border dark:border-slate-800">
           <div className="mb-8 text-center">
-            <h1 className="mb-2 text-3xl font-bold text-gray-800">
+            <h1 className="mb-2 text-3xl font-bold text-gray-800 dark:text-slate-100">
               Create Account
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-slate-400">
               Join the platform by filling in your details
             </p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center dark:bg-rose-500/15 dark:border-rose-400/40 dark:text-rose-200">
               {error}
             </div>
           )}
@@ -100,7 +100,7 @@ const Register = () => {
             <div>
               <label
                 htmlFor="username"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200"
               >
                 Username
               </label>
@@ -112,10 +112,10 @@ const Register = () => {
                 value={formData.username}
                 onChange={handleChange}
                 placeholder="Your username"
-                className={`w-full rounded-lg border px-4 py-3 text-gray-800 outline-none transition focus:ring-2 ${
+                className={`w-full rounded-lg border px-4 py-3 text-gray-800 outline-none transition focus:ring-2 dark:bg-slate-950 dark:text-slate-100 ${
                   errors.username
                     ? "border-red-500 focus:border-red-500 focus:ring-red-200"
-                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-200 dark:border-slate-700"
                 }`}
               />
               {errors.username && (
@@ -126,7 +126,7 @@ const Register = () => {
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200"
               >
                 Email Address
               </label>
@@ -138,10 +138,10 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="you@example.com"
-                className={`w-full rounded-lg border px-4 py-3 text-gray-800 outline-none transition focus:ring-2 ${
+                className={`w-full rounded-lg border px-4 py-3 text-gray-800 outline-none transition focus:ring-2 dark:bg-slate-950 dark:text-slate-100 ${
                   errors.email
                     ? "border-red-500 focus:border-red-500 focus:ring-red-200"
-                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-200 dark:border-slate-700"
                 }`}
               />
               {errors.email && (
@@ -152,7 +152,7 @@ const Register = () => {
             <div>
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200"
               >
                 Password
               </label>
@@ -164,16 +164,16 @@ const Register = () => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
-                  className={`w-full rounded-lg border px-4 py-3 pr-12 text-gray-800 outline-none transition focus:ring-2 ${
+                  className={`w-full rounded-lg border px-4 py-3 pr-12 text-gray-800 outline-none transition focus:ring-2 dark:bg-slate-950 dark:text-slate-100 ${
                     errors.password
                       ? "border-red-500 focus:border-red-500 focus:ring-red-200"
-                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200 dark:border-slate-700"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((value) => !value)}
-                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -193,14 +193,14 @@ const Register = () => {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-6 text-center text-sm text-gray-600 dark:text-slate-400">
             Already have an account?{" "}
-            <a
-              href="/login"
-              className="font-semibold text-blue-600 hover:text-blue-700"
+            <Link
+              to="/login"
+              className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
             >
               Sign In
-            </a>
+            </Link>
           </p>
         </div>
       </div>

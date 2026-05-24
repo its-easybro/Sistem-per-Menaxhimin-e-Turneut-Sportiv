@@ -131,14 +131,26 @@ function formatCurrency(value) {
   const amount = Number(value);
   return Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
 }
-//NEW 
+function normalizeUserRecord(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    username: user.username ?? user.emri ?? "",
+    full_name: user.full_name ?? ([user.emri, user.mbiemri].filter(Boolean).join(" ") || ""),
+    roli: user.roli ?? "user",
+    is_admin: user.is_admin ?? user.roli === "admin",
+    is_organizer: user.is_organizer ?? user.roli === "organizator",
+    is_referee: user.is_referee ?? user.roli === "gjyqtar",
+  };
+}
+
 function getOrganizerName(users, organizerId) {
-  const organizer = users.find ((item) => item.id === organizerId);
+  const organizer = users.find((item) => item.id === organizerId);
   return organizer?.full_name || organizer?.username || "N/A";
 }
 
 function isEligibleOrganizerUser(user) {
-  return user?.roli === "user" || user?.roli === "organizator";
+  return user?.is_organizer || user?.roli === "organizator";
 }
 
 function TournamentFormFields({ formData, sports, users, onChange, canAssignOrganizer, formErrors = {} }) {
@@ -288,11 +300,13 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
             className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
           >
             <option value="">No organizer</option>
-            {users.map((organizer) => (
+            {users
+              .filter(isEligibleOrganizerUser)
+              .map((organizer) => (
               <option key={organizer.id} value={organizer.id}>
                 {organizer.full_name || organizer.username} ({organizer.email})
               </option>
-            ))}
+              ))}
           </select>
         </label>
       )}
@@ -341,7 +355,10 @@ export default function Tournaments() {
   const [sports, setSports] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -350,7 +367,7 @@ export default function Tournaments() {
   const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
-  const [pagination, setPagination] = useState(null);
+  const [_pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     search: "",
@@ -399,17 +416,38 @@ export default function Tournaments() {
       setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
       setPagination(paginationData);
       setSports(Array.isArray(sportsRes.data) ? sportsRes.data : []);
-      setUsers(Array.isArray(usersRes?.data) ? usersRes.data : []);
+      const usersPayload = usersRes?.data?.data ?? usersRes?.data ?? [];
+      setUsers(Array.isArray(usersPayload) ? usersPayload.map(normalizeUserRecord) : []);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
   }, [canManageTournaments, isAdmin]);
 
   useEffect(() => {
     loadTournaments(page, filters);
   }, [loadTournaments, page, filters]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }))
+      if (searchQuery !== filters.search) {
+        setPage(1);
+      }
+    }, 400);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, filters.search])
 
   const resetForm = () => {
     setFormData(initialFormData);
@@ -623,14 +661,30 @@ export default function Tournaments() {
     }
   };
 
-  const filteredTournaments = Array.isArray(tournaments) ? tournaments : [];
+  const tournamentList = Array.isArray(tournaments) ? tournaments : [];
+  const filteredTournaments = tournamentList.filter((item) => {
+    if (!debouncedSearch) {
+      return true;
+    }
+
+    const query = debouncedSearch.toLowerCase();
+    return [
+      item.emertimi,
+      getSportName(item.sporti_id),
+      item.lloji,
+      item.statusi,
+      item.lokacioni,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query));
+  });
 
   // Organizers can open this page too, but only for their assigned tournament data.
   if (!user || !canManageTournaments) {
     return <Navigate to="/login" replace />;
   }
 
-  if (loading) {
+  if (loading && !hasLoaded) {
     return (
         <div className="delay-skeleton">
           <TableSkeleton />
@@ -649,7 +703,7 @@ export default function Tournaments() {
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-slate-950 p-4">
+    <div className="bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
         <Alert 
           type={alert.type} 
@@ -659,53 +713,34 @@ export default function Tournaments() {
       )}
       <div className="w-full mx-auto space-y-6">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">
-              Tournament Management
-            </h2>
-
-            {/* Only admins can create tournaments or assign organizers. */}
-            {isAdmin && (
-              <button
-                onClick={handleCreate}
-                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
-              >
-                + Add Tournament
-              </button>
-            )}
-          </div>
-
-          <div className="relative">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">Tournament Management</h2>
+          
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-gray-400 dark:text-gray-500" />
+              </div>
             <input
               type="text"
               name="search"
-              value={filters.search}
-              onChange={handleFilterChange}
-              placeholder="Search by name, sport, format, location, or status"
-              className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 dark:placeholder:text-slate-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by Sport, Format, Location, or Status"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
             />
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
           </div>
-          <div className="grid gap-4 mt-4 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Sport</span>
+
+          <div className="flex gap-3 mt-4 sm:mt-0 sm:flex-nowrap flex-wrap overflow-x-auto">
+            <div className="relative min-w-[160px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                <SlidersHorizontal size={14} />
+              </div>
               <select
                 name="sporti_id"
                 value={filters.sporti_id}
                 onChange={handleFilterChange}
-                className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+                className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
               >
                 <option value="">All sports</option>
                 {sports.map((sport) => (
@@ -714,15 +749,17 @@ export default function Tournaments() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Format</span>
+            <div className="relative min-w-[160px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                <SlidersHorizontal size={14} />
+              </div>
               <select
                 name="lloji"
                 value={filters.lloji}
                 onChange={handleFilterChange}
-                className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+                className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
               >
                 <option value="">All formats</option>
                 {tournamentTypeOptions.map((type) => (
@@ -731,15 +768,17 @@ export default function Tournaments() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Status</span>
+            <div className="relative min-w-[160px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                <SlidersHorizontal size={14} />
+              </div>
               <select
                 name="statusi"
                 value={filters.statusi}
                 onChange={handleFilterChange}
-                className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+                className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
               >
                 <option value="">All statuses</option>
                 {statusOptions.map((status) => (
@@ -748,35 +787,48 @@ export default function Tournaments() {
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
+          </div>
 
             {isAdmin && (
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Organizer</span>
+              <div className="relative min-w-[160px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
                 <select
                   name="organizatori_id"
                   value={filters.organizatori_id}
                   onChange={handleFilterChange}
-                  className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
                 >
                   <option value="">All organizers</option>
-                  {users.map((userItem) => (
-                    <option key={userItem.id} value={userItem.id}>
-                      {userItem.full_name || userItem.username || userItem.email}
-                    </option>
-                  ))}
+                  {users
+                    .filter(isEligibleOrganizerUser)
+                    .map((userItem) => (
+                      <option key={userItem.id} value={userItem.id}>
+                        {userItem.full_name || userItem.username || userItem.email}
+                      </option>
+                    ))}
                 </select>
-              </label>
+              </div>
             )}
+
+            {/* Only admins can create tournaments or assign organizers. */}
+            {isAdmin && (
+              <button
+                onClick={handleCreate}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
+              >
+                <Plus size={18} />
+                + Add Tournament
+              </button>
+            )}
+          </div>
           </div>
         </div>
 
-        <div className="flex bg-white dark:bg-slate-900 rounded-lg shadow-md overflow-x-auto">
-          {filteredTournaments.length === 0 ? (
-            <div className="w-full px-6 py-12 text-center text-gray-600 dark:text-slate-400">
-              {filters.search ? `No tournaments match "${filters.search}". Try a different search.` : 'No tournaments found. Click "Add Tournament" to add a new one.'}
-            </div>
-          ) : (
+        <div className={`flex bg-white dark:bg-slate-900 rounded-lg shadow-md overflow-x-auto ${loading ? `opacity-60 pointer-events-none` : ''}`}>
+          {filteredTournaments.length > 0 ? (
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-800 text-white">
                 <tr>
@@ -867,6 +919,12 @@ export default function Tournaments() {
                 ))}
               </tbody>
             </table>
+          ) : (
+            <div className="w-full px-6 py-12 text-center text-gray-600 dark:text-slate-400">
+              {debouncedSearch
+                ? `No tournaments match "${debouncedSearch}". Try a different search.`
+                : 'No tournaments found. Click "Add Tournament" to add a new one.'}
+            </div>
           )}
         </div>
       </div>

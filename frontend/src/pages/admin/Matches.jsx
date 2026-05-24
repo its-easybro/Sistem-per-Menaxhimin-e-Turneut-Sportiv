@@ -947,7 +947,7 @@ export default function Matches() {
   );
 
   return (
-    <div className="bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4 dark:bg-slate-900">
       {alert && (
         <Alert
           type={alert.type}
@@ -957,13 +957,13 @@ export default function Matches() {
       )}
       <div className="w-full mx-auto">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">
               Match Management
             </h2>
             <button
               onClick={handleCreate}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
+              className="rounded-lg bg-green-500 px-6 py-2 font-semibold text-white shadow-md transition duration-200 ease-in-out hover:bg-green-600"
             >
               + Add New Match
             </button>
@@ -977,10 +977,10 @@ export default function Matches() {
               placeholder="Search by tournament or team"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3 text-gray-900 placeholder:text-transparent focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:placeholder:text-gray-400 dark:focus:bg-slate-900 sm:placeholder:text-gray-400"
             />
             <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -996,9 +996,9 @@ export default function Matches() {
         </div>
 
         {/* Matches table section */}
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-800 text-white">
+        <div className="flex overflow-x-auto rounded-lg border border-gray-100 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900">
+          <table className="w-full border-collapse text-left">
+            <thead className="bg-gray-800 text-white dark:bg-slate-800">
               <tr>
                 <th className="px-4 py-3 text-center font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">
@@ -1015,29 +1015,29 @@ export default function Matches() {
               </tr>
             </thead>
             {/* Table Body */}
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
               {filteredMatches.length > 0 ? (
                 filteredMatches.map((m) => (
                   <tr
                     key={m.id}
-                    className="hover:bg-gray-100 transition-colors duration-150"
+                    className="transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-slate-800"
                   >
-                    <td className="px-4 py-3 text-gray-500 text-center">
+                    <td className="px-4 py-3 text-center text-gray-500 dark:text-slate-400">
                       {m.id}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
+                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
                       {getTournamentName(m.turneu_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
+                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
                       {getTeamName(m.ekipi_shtepiak_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
+                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
                       {getTeamName(m.ekipi_mysafir_id)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold text-center">
+                    <td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-slate-100">
                       {formatDate(m.data_ndeshjes)}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
+                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
                       {formatTime(m.ora_fillimit) || "N/A"}
                     </td>
                     <td className="px-4 py-3">
@@ -1057,8 +1057,8 @@ export default function Matches() {
                         {m.statusi}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{getPrimaryRefereeName(m.id)}</td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200">{getPrimaryRefereeName(m.id)}</td>
+                    <td className="px-4 py-3 text-center text-gray-700 dark:text-slate-200">
                       <MatchTimer match={m} />
                     </td>
                     <td className="px-4 py-3">
@@ -1110,7 +1110,7 @@ export default function Matches() {
                 <tr>
                   <td
                     colSpan="9"
-                    className="px-6 py-4 text-center text-gray-600"
+                    className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                   >
                     {searchQuery
                       ? `No matches match "${searchQuery}". Try a different search.`
@@ -1129,23 +1129,23 @@ export default function Matches() {
             onClick={handleCloseModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
                 Add New Match
               </h3>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
                       Tournament *
                     </label>
                     <select
                       name="turneu_id"
                       value={formData.turneu_id}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.turneu_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 ${formErrors.turneu_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'  } rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       required
                     >
                       <option value="">Select Tournament</option>
@@ -1159,14 +1159,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
                       Home Team *
                     </label>
                     <select
                       name="ekipi_shtepiak_id"
                       value={formData.ekipi_shtepiak_id}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.ekipi_shtepiak_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 ${formErrors.ekipi_shtepiak_id ? 'border-red-500' : 'border-gray-300 border-gray-300 dark:border-slate-700'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       required
                     >
                       <option value="">Select Home Team</option>
@@ -1180,14 +1180,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
                       Away Team *
                     </label>
                     <select
                       name="ekipi_mysafir_id"
                       value={formData.ekipi_mysafir_id}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.ekipi_mysafir_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 ${formErrors.ekipi_mysafir_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       required
                     >
                       <option value="">Select Away Team</option>
@@ -1201,7 +1201,7 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
                       Match Date *
                     </label>
                     <input
@@ -1209,7 +1209,7 @@ export default function Matches() {
                       name="data_ndeshjes"
                       value={formData.data_ndeshjes}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.data_ndeshjes ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 ${formErrors.data_ndeshjes ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
                       required
                     />
                     {formErrors.data_ndeshjes && <p className="text-sm text-red-500 mt-1">{formErrors.data_ndeshjes}</p>}
@@ -1327,66 +1327,66 @@ export default function Matches() {
             onClick={handleCloseViewModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
                 Match Details
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                     Tournament
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
                     {getTournamentName(selectedMatch.turneu_id)}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                     Home Team
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
                     {getTeamName(selectedMatch.ekipi_shtepiak_id)}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                     Away Team
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
                     {getTeamName(selectedMatch.ekipi_mysafir_id)}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                     Date
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
                     {formatDate(selectedMatch.data_ndeshjes)}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                     Time
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
                     {formatTime(selectedMatch.ora_fillimit) || "N/A"}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                     Venue
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
                     {getVenueName(selectedMatch.fusha_id)}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                     Referee
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
                     {getPrimaryRefereeName(selectedMatch.id)}
                   </p>
                 </div>
@@ -1407,8 +1407,8 @@ export default function Matches() {
                   </p>
                 </div>
               </div>
-              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4">
-                <h4 className="mb-4 text-lg font-semibold text-gray-800">
+              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                   Match Status Controls
                 </h4>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -1448,20 +1448,20 @@ export default function Matches() {
               </div>
               <form
                 onSubmit={handleScoreSubmit}
-                className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
+                className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950"
               >
-                <h4 className="mb-4 text-lg font-semibold text-gray-800">
+                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                   Update Live Score
                 </h4>
                 {!isLiveMatch(selectedMatch) && (
-                  <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
                     The match must be live before score or event updates are allowed.
                   </p>
                 )}
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
                       Home Score
                     </label>
                     <input
@@ -1471,12 +1471,12 @@ export default function Matches() {
                       value={scoreForm.golat_shtepiak}
                       onChange={handleScoreInputChange}
                       disabled={!isLiveMatch(selectedMatch)}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
                       Away Score
                     </label>
                     <input
@@ -1486,7 +1486,7 @@ export default function Matches() {
                       value={scoreForm.golat_mysafir}
                       onChange={handleScoreInputChange}
                       disabled={!isLiveMatch(selectedMatch)}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     />
                   </div>
                 </div>
@@ -1607,23 +1607,23 @@ export default function Matches() {
             onClick={handleCloseEditModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
+              <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
                 Edit Match
               </h3>
               <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
                       Tournament *
                     </label>
                     <select
                       name="turneu_id"
                       value={formData.turneu_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       required
                     >
                       <option value="">Select Tournament</option>
@@ -1636,14 +1636,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
                       Home Team *
                     </label>
                     <select
                       name="ekipi_shtepiak_id"
                       value={formData.ekipi_shtepiak_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       required
                     >
                       <option value="">Select Home Team</option>
@@ -1656,14 +1656,14 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
                       Away Team *
                     </label>
                     <select
                       name="ekipi_mysafir_id"
                       value={formData.ekipi_mysafir_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       required
                     >
                       <option value="">Select Away Team</option>

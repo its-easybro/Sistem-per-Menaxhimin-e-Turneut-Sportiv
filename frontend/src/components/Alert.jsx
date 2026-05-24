@@ -23,10 +23,10 @@ export const Alert = ({ type = 'success', message, onClose, autoClose = true, du
 
   // Switches visual theme between success and error variants.
   const isSuccess = type === 'success';
-  const bgColor = isSuccess ? 'bg-green-100' : 'bg-red-100';
-  const borderColor = isSuccess ? 'border-green-400' : 'border-red-400';
-  const textColor = isSuccess ? 'text-green-700' : 'text-red-700';
-  const buttonHoverBg = isSuccess ? 'hover:bg-green-200' : 'hover:bg-red-200';
+  const bgColor = isSuccess ? 'bg-green-100 dark:bg-emerald-500/15' : 'bg-red-100 dark:bg-rose-500/15';
+  const borderColor = isSuccess ? 'border-green-400 dark:border-emerald-400/40' : 'border-red-400 dark:border-rose-400/40';
+  const textColor = isSuccess ? 'text-green-700 dark:text-emerald-200' : 'text-red-700 dark:text-rose-200';
+  const buttonHoverBg = isSuccess ? 'hover:bg-green-200 dark:hover:bg-emerald-500/20' : 'hover:bg-red-200 dark:hover:bg-rose-500/20';
 
   // Handles manual close from the dismiss button.
   const handleClose = () => {
