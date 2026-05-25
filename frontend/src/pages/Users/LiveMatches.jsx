@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Activity,
   AlertTriangle,
@@ -6,6 +7,7 @@ import {
   CircleDot,
   Clock3,
   Edit2,
+  ExternalLink,
   Flag,
   Radio,
   RefreshCcw,
@@ -25,6 +27,7 @@ import { useMatchTimer } from "../../hooks/useMatchTimer";
 
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 const initialEventDetails = {
+  lojtari_id: "",
   player_name: "",
   description: "",
   minuta: "",
@@ -151,8 +154,36 @@ function formatMinute(minute) {
   return `${parsed}'`;
 }
 
-function normalizeEventDetails(details) {
+function getPlayerTeamId(player) {
+  return player?.team_id ?? player?.ekipiId ?? player?.teamId ?? null;
+}
+
+function getPlayerNameOption(player) {
+  const name = [player?.emri, player?.mbiemri].filter(Boolean).join(" ");
+  const number = player?.numri ? `#${player.numri} ` : "";
+
+  return `${number}${name || "Unnamed player"}`;
+}
+
+function getPlayersForTeam(players, teamId) {
+  const parsedTeamId = Number(teamId);
+  if (!Number.isInteger(parsedTeamId)) return [];
+
+  return players.filter((player) => Number(getPlayerTeamId(player)) === parsedTeamId);
+}
+
+function normalizeEventDetails(details, teamId, players) {
+  const selectedPlayerId = Number(details.lojtari_id);
+  const selectedPlayer = players.find(
+    (player) => Number(player.id) === selectedPlayerId,
+  );
+  const selectedPlayerBelongsToTeam =
+    selectedPlayer && Number(getPlayerTeamId(selectedPlayer)) === Number(teamId);
+
   return {
+    ...(selectedPlayerBelongsToTeam && {
+      lojtari_id: selectedPlayerId,
+    }),
     ...(details.player_name.trim() && {
       player_name: details.player_name.trim(),
     }),
@@ -169,7 +200,8 @@ function getEventEditForm(event) {
   return {
     lloji: getEventType(event),
     ekipi_id: event.teamId ? String(event.teamId) : "",
-    player_name: getEventPerson(event),
+    lojtari_id: event.playerId ? String(event.playerId) : "",
+    player_name: event.playerId ? "" : getEventPerson(event),
     description: event.description || "",
     minuta:
       getEventMinute(event) === null || getEventMinute(event) === undefined
@@ -263,6 +295,7 @@ function LiveMatches() {
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
   const [savingAction, setSavingAction] = useState("");
+  const [players, setPlayers] = useState([]);
   const [eventDetails, setEventDetails] = useState(initialEventDetails);
   const [editingEventId, setEditingEventId] = useState(null);
   const [eventEditForm, setEventEditForm] = useState(null);
@@ -281,6 +314,14 @@ function LiveMatches() {
   );
 
   const score = getScore(selectedMatch);
+  const homePlayers = useMemo(
+    () => getPlayersForTeam(players, selectedMatch?.ekipi_shtepiak_id),
+    [players, selectedMatch?.ekipi_shtepiak_id],
+  );
+  const awayPlayers = useMemo(
+    () => getPlayersForTeam(players, selectedMatch?.ekipi_mysafir_id),
+    [players, selectedMatch?.ekipi_mysafir_id],
+  );
 
   const liveSummary = useMemo(() => {
     const events = getTimelineEvents(selectedMatch);
@@ -320,6 +361,29 @@ function LiveMatches() {
   useEffect(() => {
     loadMatches();
   }, []);
+
+  useEffect(() => {
+    if (!canManageLive) {
+      setPlayers([]);
+      return;
+    }
+
+    const loadPlayers = async () => {
+      try {
+        const response = await api.get("/players");
+        setPlayers(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        setAlert({
+          type: "error",
+          message:
+            "Error loading players: " +
+            (err.response?.data?.error || err.message),
+        });
+      }
+    };
+
+    loadPlayers();
+  }, [canManageLive]);
 
   useEffect(() => {
     const updateMatch = (matchId, updater) => {
@@ -505,6 +569,7 @@ function LiveMatches() {
     setEventDetails((current) => ({
       ...current,
       [name]: value,
+      ...(name === "lojtari_id" && value ? { player_name: "" } : {}),
     }));
   };
 
@@ -516,7 +581,7 @@ function LiveMatches() {
       const response = await api.post(`/matches/${selectedMatch.id}/events`, {
         lloji,
         ekipi_id: teamId,
-        ...normalizeEventDetails(eventDetails),
+        ...normalizeEventDetails(eventDetails, teamId, players),
       });
 
       if (response.data.event) {
@@ -570,6 +635,8 @@ function LiveMatches() {
     setEventEditForm((current) => ({
       ...current,
       [name]: value,
+      ...(name === "ekipi_id" ? { lojtari_id: "" } : {}),
+      ...(name === "lojtari_id" && value ? { player_name: "" } : {}),
     }));
   };
 
@@ -581,6 +648,9 @@ function LiveMatches() {
       const response = await api.put(`/match-events/${event.id}`, {
         lloji: eventEditForm.lloji,
         ekipi_id: eventEditForm.ekipi_id ? Number(eventEditForm.ekipi_id) : null,
+        lojtari_id: eventEditForm.lojtari_id
+          ? Number(eventEditForm.lojtari_id)
+          : null,
         player_name: eventEditForm.player_name,
         description: eventEditForm.description,
         minuta:
@@ -722,6 +792,13 @@ function LiveMatches() {
               <RefreshCcw size={15} />
               Refresh
             </button>
+            <Link
+              to={`/live-matches/${selectedMatch.id}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400"
+            >
+              <ExternalLink size={15} />
+              Public view
+            </Link>
           </div>
         </header>
 
@@ -832,13 +909,13 @@ function LiveMatches() {
 
                 <div className="mb-4 grid gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/50 md:grid-cols-[1fr_110px]">
                   <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                    Player / name
+                    Manual player name
                     <input
                       type="text"
                       name="player_name"
                       value={eventDetails.player_name}
                       onChange={handleEventDetailChange}
-                      placeholder="Optional"
+                      placeholder="Optional fallback"
                       className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
                     />
                   </label>
@@ -888,6 +965,29 @@ function LiveMatches() {
                         {score.home}
                       </span>
                     </div>
+                    <label className="mt-4 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                      Player
+                      <select
+                        name="lojtari_id"
+                        value={
+                          homePlayers.some(
+                            (player) =>
+                              String(player.id) === eventDetails.lojtari_id,
+                          )
+                            ? eventDetails.lojtari_id
+                            : ""
+                        }
+                        onChange={handleEventDetailChange}
+                        className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
+                      >
+                        <option value="">No player selected</option>
+                        {homePlayers.map((player) => (
+                          <option key={player.id} value={player.id}>
+                            {getPlayerNameOption(player)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <div className="mt-4 grid gap-2 sm:grid-cols-3">
                       <ActionButton
                         tone="blue"
@@ -960,6 +1060,29 @@ function LiveMatches() {
                         {score.away}
                       </span>
                     </div>
+                    <label className="mt-4 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                      Player
+                      <select
+                        name="lojtari_id"
+                        value={
+                          awayPlayers.some(
+                            (player) =>
+                              String(player.id) === eventDetails.lojtari_id,
+                          )
+                            ? eventDetails.lojtari_id
+                            : ""
+                        }
+                        onChange={handleEventDetailChange}
+                        className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
+                      >
+                        <option value="">No player selected</option>
+                        {awayPlayers.map((player) => (
+                          <option key={player.id} value={player.id}>
+                            {getPlayerNameOption(player)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <div className="mt-4 grid gap-2 sm:grid-cols-3">
                       <ActionButton
                         tone="blue"
@@ -1031,6 +1154,10 @@ function LiveMatches() {
                     {selectedEvents.slice(0, 7).map((event) => {
                       const type = getEventType(event);
                       const isEditing = editingEventId === event.id;
+                      const editPlayers =
+                        isEditing && eventEditForm
+                          ? getPlayersForTeam(players, eventEditForm.ekipi_id)
+                          : [];
                       return (
                         <div
                           key={`${event.id}-${getEventMinute(event)}-${type}`}
@@ -1117,7 +1244,31 @@ function LiveMatches() {
                                 </select>
                               </label>
                               <label className="text-sm font-semibold">
-                                Player / name
+                                Player
+                                <select
+                                  name="lojtari_id"
+                                  value={
+                                    editPlayers.some(
+                                      (player) =>
+                                        String(player.id) ===
+                                        eventEditForm.lojtari_id,
+                                    )
+                                      ? eventEditForm.lojtari_id
+                                      : ""
+                                  }
+                                  onChange={handleEventEditChange}
+                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                >
+                                  <option value="">No player selected</option>
+                                  {editPlayers.map((player) => (
+                                    <option key={player.id} value={player.id}>
+                                      {getPlayerNameOption(player)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="text-sm font-semibold">
+                                Manual player name
                                 <input
                                   type="text"
                                   name="player_name"
@@ -1233,33 +1384,46 @@ function LiveMatches() {
                   const active = match.id === selectedMatch.id;
 
                   return (
-                    <button
-                      type="button"
+                    <div
                       key={match.id}
-                      onClick={() => setSelectedMatchId(match.id)}
                       className={`w-full rounded-xl border p-3 text-left transition ${
                         active
                           ? "border-blue-300 bg-blue-50 dark:border-blue-500/50 dark:bg-blue-500/10"
                           : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-slate-600"
                       }`}
                     >
-                      <p className={`text-xs font-semibold ${mutedText}`}>
-                        {match.turneu_emri || "Tournament"}
-                      </p>
-                      <div className="mt-2 flex items-center justify-between gap-3">
-                        <span
-                          className={`min-w-0 truncate font-bold ${strongText}`}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMatchId(match.id)}
+                        className="w-full text-left"
+                      >
+                        <p className={`text-xs font-semibold ${mutedText}`}>
+                          {match.turneu_emri || "Tournament"}
+                        </p>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <span
+                            className={`min-w-0 truncate font-bold ${strongText}`}
+                          >
+                            {match.ekipi_shtepiak} vs {match.ekipi_mysafir}
+                          </span>
+                          <span className="rounded-lg bg-white px-2 py-1 text-sm font-black text-gray-900 shadow-sm dark:bg-slate-800 dark:text-slate-200">
+                            {itemScore.home}-{itemScore.away}
+                          </span>
+                        </div>
+                      </button>
+                      <div className="mt-3 flex items-center justify-between gap-3 border-t border-gray-200 pt-3 dark:border-slate-700">
+                        <p className={`text-xs ${mutedText}`}>
+                          {match.statusi} / {formatDate(match.data_ndeshjes)}
+                        </p>
+                        <Link
+                          to={`/live-matches/${match.id}`}
+                          className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
                         >
-                          {match.ekipi_shtepiak} vs {match.ekipi_mysafir}
-                        </span>
-                        <span className="rounded-lg bg-white px-2 py-1 text-sm font-black text-gray-900 shadow-sm dark:bg-slate-800 dark:text-slate-200">
-                          {itemScore.home}-{itemScore.away}
-                        </span>
+                          Details
+                          <ExternalLink size={13} />
+                        </Link>
                       </div>
-                      <p className={`mt-2 text-xs ${mutedText}`}>
-                        {match.statusi} / {formatDate(match.data_ndeshjes)}
-                      </p>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

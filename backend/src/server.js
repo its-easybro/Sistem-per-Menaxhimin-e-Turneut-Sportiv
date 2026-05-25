@@ -46,8 +46,7 @@ const io = new Server(httpServer, {
 });
 
 app.set("io", io); // Make io accessible in routes via req.app.get("io")
-const simulatorMap = new Map(); // Map to store simulator cancel functions
-startMatchCron(io, simulatorMap); // Start the match cron job
+startMatchCron(io); // Start the match cron job
 
 // Middleware
 app.use(

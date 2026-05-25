@@ -47,6 +47,7 @@ const UserContactUs = lazy(() => import("./pages/Users/ContactUs"))
 const ForgotPassword = lazy(() => import("./pages/Users/ForgotPassword"))
 const ResetPassword = lazy(() => import("./pages/Users/ResetPassword"))
 const LiveMatches = lazy(() => import("./pages/Users/LiveMatches"))
+const PublicLiveMatch = lazy(() => import("./pages/Users/PublicLiveMatch"))
 
 function App() {
   // Waits for initial auth/session check before rendering app routes.
@@ -73,6 +74,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/live-matches" element={<LiveMatches />} />
+        <Route path="/live-matches/:id" element={<PublicLiveMatch />} />
 
         {/* ADMIN ROUTES */}
         <Route element={<ProtectedRoute requiredRoles={["is_admin"]} Layout={AdminRoute} />}>

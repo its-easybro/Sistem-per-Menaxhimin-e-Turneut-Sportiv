@@ -1,6 +1,5 @@
 import cron from "node-cron";
 import prisma from "../lib/prisma.js";
-import { startSimulator } from "./matchSimulator.js";
 
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 
@@ -39,7 +38,7 @@ function getMatchDuration(match) {
 }
 
 // Runs every minute to move matches between Planned, Live, and Finished states.
-export function startMatchCron(io, simulatorMap) {
+export function startMatchCron(io) {
   cron.schedule("* * * * *", async () => {
     try {
       // Find planned matches that may need to become live.
@@ -81,31 +80,6 @@ export function startMatchCron(io, simulatorMap) {
           },
         });
 
-        // Load both teams' players so the simulator can create random card events.
-        const players = await prisma.players.findMany({
-          where: {
-            ekipi_id: {
-              in: [match.ekipi_shtepiak_id, match.ekipi_mysafir_id],
-            },
-          },
-          select: {
-            id: true,
-            emri: true,
-            mbiemri: true,
-            ekipi_id: true,
-          },
-        });
-
-        // Start and remember the simulator so it can be stopped later.
-        const cancelSimulator = startSimulator(
-          io,
-          match.id,
-          players,
-          getMatchDuration(match),
-        );
-
-        simulatorMap.set(match.id, cancelSimulator);
-
         // Notify connected clients that this match is now live.
         io.emit("match_live", {
           matchId: match.id,
@@ -135,12 +109,7 @@ export function startMatchCron(io, simulatorMap) {
           });
 
           if (updateResult.count > 0) {
-            // Stop the simulator because the match is no longer live.
-            const cancelSimulator = simulatorMap.get(match.id);
-            if (cancelSimulator) {
-              cancelSimulator();
-              simulatorMap.delete(match.id);
-            }
+            // Match is no longer live; no simulated events are running in normal app flow.
           }
 
           continue;
@@ -160,13 +129,6 @@ export function startMatchCron(io, simulatorMap) {
         });
 
         if (updateResult.count === 0) continue;
-
-        // Stop simulated events once the match has ended.
-        const cancelSimulator = simulatorMap.get(match.id);
-        if (cancelSimulator) {
-          cancelSimulator();
-          simulatorMap.delete(match.id);
-        }
 
         // Notify connected clients that this match has finished.
         io.emit("match_finished", {

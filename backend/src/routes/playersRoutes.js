@@ -256,6 +256,7 @@ router.get("/", protect, async (req, res) => {
         pesha: true,
         kombesia: true,
         foto: true,
+        ekipi_id: true,
         teams: {
           select: {
             emertimi: true,
@@ -275,6 +276,7 @@ router.get("/", protect, async (req, res) => {
       pesha: players.pesha,
       kombesia: players.kombesia,
       foto: players.foto,
+      team_id: players.ekipi_id,
       ekipi_id: players.teams?.emertimi ?? "No Team",
     }))
     res.json(result);

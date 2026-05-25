@@ -421,6 +421,69 @@ router.get("/public/live", async (req, res) => {
   }
 });
 
+router.get("/public/live/:id", async (req, res) => {
+  const matchId = parsePositiveInt(req.params.id);
+
+  if (!matchId) {
+    return res.status(400).json({ error: "Invalid match id" });
+  }
+
+  try{
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const match = await prisma.matches.findFirst({
+      where: {
+        id: matchId,
+        OR: [
+          { statusi: "Live" },
+          { statusi: "HalfTime" },
+          {
+            statusi: "Përfunduar",
+            data_ndeshjes: {
+              gte: yesterday,
+            },
+          },
+        ],
+      },
+      include: {
+        teams_matches_ekipi_shtepiak_idToteams: {
+          select: { emertimi: true },
+        },
+        teams_matches_ekipi_mysafir_idToteams: {
+          select: { emertimi: true },
+        },
+        tournaments: {
+          select: { emertimi: true },
+        },
+        matchresults: true,
+        matchevents: {
+          include: {
+            players: {
+              select: { id: true, emri: true, mbiemri: true },
+            },
+            teams: {
+              select: { id: true, emertimi: true },
+            },
+          },
+          orderBy: [
+            { minuta: "asc" },
+            { id: "asc" },
+          ],
+        },
+      },
+    });
+
+    if (!match) {
+      return res.status(404).json({ error: "Match not found" });
+    }
+
+    res.json(formatPublicMatch(match));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? parsePositiveInt(req.query.page) : null;
