@@ -1066,8 +1066,8 @@ export default function Matches() {
               type="text"
               name="search"
               placeholder="Search by tournament or team"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={filters.search}
+              onChange={handleFilterChange}
               className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3 text-gray-900 placeholder:text-transparent focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:placeholder:text-gray-400 dark:focus:bg-slate-900 sm:placeholder:text-gray-400"
             />
             <svg
@@ -1653,7 +1653,7 @@ export default function Matches() {
                 onSubmit={handleScoreSubmit}
                 className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950"
               >
-                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
+              
                 <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                   Update Live Score
                 </h4>
@@ -2037,6 +2037,6 @@ export default function Matches() {
           </div>
         )}
       </div>
-    </div>
+   
   );
 }
