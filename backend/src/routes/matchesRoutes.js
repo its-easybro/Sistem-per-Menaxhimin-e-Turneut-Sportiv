@@ -489,29 +489,12 @@ router.get("/", protect, async (req, res) => {
   const page = req.query.page ? parsePositiveInt(req.query.page) : null;
   const limit = req.query.limit ? Math.max(1, parsePositiveInt(req.query.limit)) : null;
   const skip = page && limit ? (page - 1) * limit : undefined;
-  const { statusi, search, turneu_id, team_id } = req.query;
+  const { statusi, search } = req.query;
 
   const where = {};
 
   if (statusi) {
     where.statusi = statusi;
-  }
-
-  if (turneu_id) {
-    const tournamentId = parsePositiveInt(turneu_id);
-    if (tournamentId) {
-      where.turneu_id = tournamentId;
-    }
-  }
-
-  if (team_id) {
-    const teamId = parsePositiveInt(team_id);
-    if (teamId) {
-      where.OR = [
-        { ekipi_shtepiak_id: teamId },
-        { ekipi_mysafir_id: teamId },
-      ];
-    }
   }
 
   if (search) {

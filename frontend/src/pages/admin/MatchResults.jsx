@@ -473,7 +473,7 @@ export default function MatchResults() {
   );
 
   return (
-    <div className="flex flex-col flex-1 p-8 bg-gray-50/50 min-h-screen">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
         <Alert
           type={alert.type}
@@ -483,8 +483,8 @@ export default function MatchResults() {
       )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Match Results</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Match Results</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             Manage match results, notes, and MVP players
           </p>
         </div>
@@ -503,7 +503,7 @@ export default function MatchResults() {
           placeholder="Search by team name or tournament..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+          className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:placeholder:text-slate-500"
         />
         <svg
           className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
@@ -522,18 +522,18 @@ export default function MatchResults() {
 
       {/* Match Cards Grid */}
       {filteredMatches.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
-          <p className="text-gray-500">No match results found.</p>
+        <div className="text-center py-12 bg-white dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
+          <p className="text-gray-500 dark:text-slate-400">No match results found.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
           {filteredMatches.map((match) => (
             <div
               key={match.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 p-5 flex flex-col hover:shadow-md transition-shadow"
             >
               {/* Card Header: Tournament & Date */}
-              <div className="flex justify-between items-center text-xs text-gray-500 mb-4 border-b border-gray-100 pb-3">
+              <div className="flex justify-between items-center text-xs text-gray-500 dark:text-slate-400 mb-4 border-b border-gray-100 dark:border-slate-800 pb-3">
                 <span className="font-semibold text-indigo-600 truncate mr-2">
                   {match.turneu_emri || "Turne i Panjohur"}
                 </span>
@@ -544,20 +544,20 @@ export default function MatchResults() {
 
               {/* Scoreboard Area */}
               <div className="flex justify-between items-center my-4">
-                <div className="flex-1 text-center font-medium text-gray-800 break-words leading-tight">
+                <div className="flex-1 text-center font-medium text-gray-800 dark:text-slate-100 break-words leading-tight">
                   {match.ekipi_shtepiak}
                 </div>
-                <div className="px-4 text-2xl font-black text-gray-900 bg-gray-50 border border-gray-100 rounded-lg mx-3 py-1.5 min-w-[80px] text-center shadow-inner">
+                <div className="px-4 text-2xl font-black text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-700 rounded-lg mx-3 py-1.5 min-w-[80px] text-center shadow-inner">
                   {match.golat_shtepiak} - {match.golat_mysafir}
                 </div>
-                <div className="flex-1 text-center font-medium text-gray-800 break-words leading-tight">
+                <div className="flex-1 text-center font-medium text-gray-800 dark:text-slate-100 break-words leading-tight">
                   {match.ekipi_mysafir}
                 </div>
               </div>
 
               {/* Notes */}
               {match.shenime && (
-                <div className="text-xs text-gray-500 text-center italic mb-4 line-clamp-1 border-b border-gray-50 pb-3">
+                <div className="text-xs text-gray-500 dark:text-slate-400 text-center italic mb-4 line-clamp-1 border-b border-gray-50 dark:border-slate-800 pb-3">
                   "{match.shenime}"
                 </div>
               )}
@@ -569,7 +569,7 @@ export default function MatchResults() {
                   (!match.shenime ? "border-t-0 pt-0" : "")
                 }
               >
-                <div className="text-sm text-gray-600 flex items-center">
+                <div className="text-sm text-gray-600 dark:text-slate-400 flex items-center">
                   <Award className="w-4 h-4 mr-1.5 text-amber-500" />
                   MVP:{" "}
                   <span className="font-medium ml-1 text-gray-900 truncate max-w-[120px]">
@@ -605,30 +605,30 @@ export default function MatchResults() {
           onClick={handleCloseModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2x1 font-bold text-gray-800 mb-6">
+            <h3 className="text-2x1 font-bold text-gray-800 dark:text-slate-100 mb-6">
               Watch Match Results
             </h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Match Referees Section */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Match Referees
                   </label>
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                  <div className="bg-gray-50 dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-lg p-4">
                     {selectedMatchForForm &&
                     getMatchReferees(selectedMatchForForm.id).length > 0 ? (
                       <div className="space-y-2">
                         {getMatchReferees(selectedMatchForForm.id).map(
                           (ref, idx) => (
                             <div key={idx} className="text-sm">
-                              <p className="font-medium text-gray-800">
+                              <p className="font-medium text-gray-800 dark:text-slate-100">
                                 {ref.name}
                               </p>
-                              <p className="text-gray-600 text-xs">
+                              <p className="text-gray-600 dark:text-slate-400 text-xs">
                                 {ref.role} • {ref.category}
                               </p>
                             </div>
@@ -636,7 +636,7 @@ export default function MatchResults() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-sm">
+                      <p className="text-gray-500 dark:text-slate-400 text-sm">
                         No referees assigned
                       </p>
                     )}
@@ -644,14 +644,14 @@ export default function MatchResults() {
                 </div>
                 {/* Ndeshja ID */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Pick Match *
                   </label>
                   <select
                     name="ndeshja_id"
                     value={formData.ndeshja_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   >
                     <option value="">Pick finished match</option>
@@ -672,7 +672,7 @@ export default function MatchResults() {
                 </div>
                 {/* Golat shtepiak */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     {terms.home}
                   </label>
                   <input
@@ -681,7 +681,7 @@ export default function MatchResults() {
                     name="golat_shtepiak"
                     value={formData.golat_shtepiak}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder={terms.home}
                     required
                   />
@@ -690,7 +690,7 @@ export default function MatchResults() {
 
                 {/* Golat vizitor */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     {terms.away}
                   </label>
                   <input
@@ -699,7 +699,7 @@ export default function MatchResults() {
                     name="golat_mysafir"
                     value={formData.golat_mysafir}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder={terms.away}
                     required
                   />
@@ -710,14 +710,14 @@ export default function MatchResults() {
 
                 {/* Fituesi id */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Winner
                   </label>
                   <select
                     name="fitues_id"
                     value={formData.fitues_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                     disabled={!selectedMatchForForm}
                   >
                     <option value="">No Team</option>
@@ -730,7 +730,7 @@ export default function MatchResults() {
                 </div>
                 {/* Shenime */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Notes
                   </label>
                   <input
@@ -738,14 +738,14 @@ export default function MatchResults() {
                     name="shenime"
                     value={formData.shenime}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.shenime ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.shenime ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder="Notes"
                   />
                   {formErrors.shenime && <p className="text-sm text-red-500 mt-1">{formErrors.shenime}</p>}
                 </div>
                 {/* MVP */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     MVP
                   </label>
                   <select
@@ -753,7 +753,7 @@ export default function MatchResults() {
                     name="mvp_id"
                     value={formData.mvp_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder="MVP Player"
                   >
                     <option value="">Select MVP</option>
@@ -795,20 +795,20 @@ export default function MatchResults() {
           onClick={handleCloseEditModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2x1 font-bold text-gray-800 mb-6">
+            <h3 className="text-2x1 font-bold text-gray-800 dark:text-slate-100 mb-6">
               Edito Rezultatin
             </h3>
             <form onSubmit={handleEditSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Match Referees Section */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Match Referees
                   </label>
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                  <div className="bg-gray-50 dark:bg-slate-950 border border-gray-300 dark:border-slate-700 rounded-lg p-4">
                     {selectedMatchResult &&
                     getMatchReferees(selectedMatchResult.ndeshja_id).length >
                       0 ? (
@@ -816,10 +816,10 @@ export default function MatchResults() {
                         {getMatchReferees(selectedMatchResult.ndeshja_id).map(
                           (ref, idx) => (
                             <div key={idx} className="text-sm">
-                              <p className="font-medium text-gray-800">
+                              <p className="font-medium text-gray-800 dark:text-slate-100">
                                 {ref.name}
                               </p>
-                              <p className="text-gray-600 text-xs">
+                              <p className="text-gray-600 dark:text-slate-400 text-xs">
                                 {ref.role} • {ref.category}
                               </p>
                             </div>
@@ -827,21 +827,21 @@ export default function MatchResults() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-sm">
+                      <p className="text-gray-500 dark:text-slate-400 text-sm">
                         No referees assigned
                       </p>
                     )}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Select Match *
                   </label>
                   <select
                     name="ndeshja_id"
                     value={formData.ndeshja_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   >
                     <option value="">Select match</option>
@@ -863,7 +863,7 @@ export default function MatchResults() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     {terms.home}
                   </label>
                   <input
@@ -872,14 +872,14 @@ export default function MatchResults() {
                     name="golat_shtepiak"
                     value={formData.golat_shtepiak}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   />
                   {formErrors.golat_shtepiak && <p className="text-sm text-red-500 mt-1">{formErrors.golat_shtepiak}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     {terms.away}
                   </label>
                   <input
@@ -888,21 +888,21 @@ export default function MatchResults() {
                     name="golat_mysafir"
                     value={formData.golat_mysafir}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   />
                   {formErrors.golat_mysafir && <p className="text-sm text-red-500 mt-1">{formErrors.golat_mysafir}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Winner
                   </label>
                   <select
                     name="fitues_id"
                     value={formData.fitues_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                     disabled={!selectedMatchForForm}
                   >
                     <option value="">No Team</option>
@@ -915,7 +915,7 @@ export default function MatchResults() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Notes
                   </label>
                   <input
@@ -923,20 +923,20 @@ export default function MatchResults() {
                     name="shenime"
                     value={formData.shenime}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.shenime ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.shenime ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                   />
                   {formErrors.shenime && <p className="text-sm text-red-500 mt-1">{formErrors.shenime}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     MVP
                   </label>
                   <select
                     name="mvp_id"
                     value={formData.mvp_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500`}
                   >
                     <option value="">Select MVP</option>
                     {players.map((player) => (
@@ -975,13 +975,13 @@ export default function MatchResults() {
           onClick={handleCloseDeleteModal}
         >
           <div
-            className="w-full max-w-md rounded-lg bg-white p-8 shadow-2xl"
+            className="w-full max-w-md rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-2xl font-bold text-red-600 mb-4">
               Delete result?
             </h3>
-            <p className="text-gray-700 mb-6">
+            <p className="text-gray-700 dark:text-slate-300 mb-6">
               Are you sure you want to delete this result?
             </p>
 
