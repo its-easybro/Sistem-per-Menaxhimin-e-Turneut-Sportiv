@@ -15,7 +15,9 @@ import usersRoutes from "./routes/usersRoutes.js";
 import venuesRoutes from "./routes/venuesRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import matchesRoutes from "./routes/matchesRoutes.js";
-import matchEventsRoutes from "./routes/matchEventsRoutes.js";
+import matchEventsRoutes, {
+  matchEventLifecycleRoutes,
+} from "./routes/matchEventsRoutes.js";
 import tournamentsRoutes from "./routes/tournamentsRoutes.js";
 import matchResultsRoutes from "./routes/matchResultsRoutes.js";
 import matchRefereesRoutes from "./routes/matchRefereesRoutes.js";
@@ -66,6 +68,7 @@ app.use("/venues", venuesRoutes);
 app.use("/teams", teamRoutes);
 app.use("/matches", matchEventsRoutes);
 app.use("/matches", matchesRoutes);
+app.use("/match-events", matchEventLifecycleRoutes);
 app.use("/tournaments", tournamentsRoutes);
 app.use("/match-results", matchResultsRoutes);
 app.use("/match-referees", matchRefereesRoutes);

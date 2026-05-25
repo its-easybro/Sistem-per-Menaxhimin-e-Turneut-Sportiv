@@ -341,7 +341,10 @@ function formatPublicMatch(match){
         playerId: event.lojtari_id,
         playerName: event.players
           ? `${event.players.emri} ${event.players.mbiemri}`
-          : null,
+          : event.player_name ?? null,
+        player_name: event.player_name ?? null,
+        description: event.description ?? null,
+        createdByUserId: event.created_by_user_id ?? null,
         teamId: event.ekipi_id,
         teamName: event.teams?.emertimi ?? null,
         card: eventType,

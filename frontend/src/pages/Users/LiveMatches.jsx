@@ -5,12 +5,16 @@ import {
   CalendarDays,
   CircleDot,
   Clock3,
+  Edit2,
   Flag,
   Radio,
   RefreshCcw,
+  Save,
   Shield,
+  Trash2,
   Trophy,
   Wifi,
+  X,
 } from "lucide-react";
 import api from "../../config/axiosInstance";
 import socket from "../../socket";
@@ -20,6 +24,17 @@ import AuthContext from "../../context/AuthContext";
 import { useMatchTimer } from "../../hooks/useMatchTimer";
 
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
+const initialEventDetails = {
+  player_name: "",
+  description: "",
+  minuta: "",
+};
+const pageShell =
+  "w-full bg-gray-100 text-gray-900 transition-colors duration-300 dark:bg-slate-900 dark:text-slate-100";
+const panel =
+  "rounded-2xl border border-gray-200 bg-white shadow-sm transition-colors duration-300 dark:border-slate-700 dark:bg-slate-800";
+const mutedText = "text-gray-500 dark:text-slate-400";
+const strongText = "text-gray-900 dark:text-slate-200";
 
 function formatDate(value) {
   if (!value) return "N/A";
@@ -64,6 +79,10 @@ function getEventMinute(event) {
   return event.minute ?? event.minuta;
 }
 
+function getEventPerson(event) {
+  return event.playerName || event.player_name || "";
+}
+
 function getEventLabel(type) {
   const labels = {
     Goal: "Goal",
@@ -78,19 +97,31 @@ function getEventLabel(type) {
 }
 
 function getEventClasses(type) {
-  if (isGoalEventType(type)) return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200";
-  if (type === "RedCard" || type === "E kuqe") return "border-red-200 bg-red-50 text-red-700 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-200";
-  if (type === "YellowCard" || type === "E verdhe") return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-100";
+  if (isGoalEventType(type)) {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300";
+  }
 
-  return "border-gray-200 bg-gray-50 text-gray-700 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-200";
+  if (type === "RedCard" || type === "E kuqe") {
+    return "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300";
+  }
+
+  if (type === "YellowCard" || type === "E verdhe") {
+    return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300";
+  }
+
+  return "border-gray-200 bg-gray-50 text-gray-700 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300";
 }
 
 function getTimelineEvents(match) {
   return [...(match?.cards || []), ...(match?.events || [])].sort((a, b) => {
     const minuteA = Number(getEventMinute(a));
     const minuteB = Number(getEventMinute(b));
-    const safeMinuteA = Number.isFinite(minuteA) ? minuteA : Number.MAX_SAFE_INTEGER;
-    const safeMinuteB = Number.isFinite(minuteB) ? minuteB : Number.MAX_SAFE_INTEGER;
+    const safeMinuteA = Number.isFinite(minuteA)
+      ? minuteA
+      : Number.MAX_SAFE_INTEGER;
+    const safeMinuteB = Number.isFinite(minuteB)
+      ? minuteB
+      : Number.MAX_SAFE_INTEGER;
 
     if (safeMinuteA !== safeMinuteB) return safeMinuteB - safeMinuteA;
     return Number(b.id || 0) - Number(a.id || 0);
@@ -120,17 +151,44 @@ function formatMinute(minute) {
   return `${parsed}'`;
 }
 
-function TeamCrest({ name, side }) {
-  const color =
+function normalizeEventDetails(details) {
+  return {
+    ...(details.player_name.trim() && {
+      player_name: details.player_name.trim(),
+    }),
+    ...(details.description.trim() && {
+      description: details.description.trim(),
+    }),
+    ...(details.minuta !== "" && {
+      minuta: Number(details.minuta),
+    }),
+  };
+}
+
+function getEventEditForm(event) {
+  return {
+    lloji: getEventType(event),
+    ekipi_id: event.teamId ? String(event.teamId) : "",
+    player_name: getEventPerson(event),
+    description: event.description || "",
+    minuta:
+      getEventMinute(event) === null || getEventMinute(event) === undefined
+        ? ""
+        : String(getEventMinute(event)),
+  };
+}
+
+function TeamBadge({ name, side }) {
+  const tone =
     side === "home"
-      ? "from-blue-500 to-cyan-400 border-blue-300/40"
-      : "from-emerald-500 to-lime-400 border-emerald-300/40";
+      ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300"
+      : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
 
   return (
-    <div className={`grid h-24 w-24 place-items-center rounded-full border bg-gradient-to-br ${color} shadow-2xl shadow-black/30 sm:h-28 sm:w-28`}>
-      <div className="grid h-16 w-16 place-items-center rounded-full border border-white/30 bg-slate-950/35 text-2xl font-black text-white sm:h-20 sm:w-20">
-        {getInitials(name)}
-      </div>
+    <div
+      className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-sm font-black ${tone}`}
+    >
+      {getInitials(name)}
     </div>
   );
 }
@@ -138,8 +196,8 @@ function TeamCrest({ name, side }) {
 function StatusBadge({ match }) {
   if (isLive(match)) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-red-400/30 bg-red-500 px-4 py-1.5 text-sm font-bold text-white shadow-lg shadow-red-950/30">
-        <Radio size={15} />
+      <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+        <Radio size={14} />
         LIVE
       </span>
     );
@@ -147,16 +205,16 @@ function StatusBadge({ match }) {
 
   if (isHalfTime(match)) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/20 dark:text-amber-100">
-        <Clock3 size={15} />
+      <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+        <Clock3 size={14} />
         HALF TIME
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-1.5 text-sm font-bold text-gray-700 dark:border-slate-500/40 dark:bg-slate-700/60 dark:text-slate-100">
-      <CircleDot size={15} />
+    <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-700 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-300">
+      <CircleDot size={14} />
       {match?.statusi || "Scheduled"}
     </span>
   );
@@ -170,15 +228,31 @@ function ClockBadge({ match }) {
   }
 
   if (!isLive(match)) {
-    return <span className="text-gray-500 dark:text-slate-400">--</span>;
+    return <span className="text-gray-400 dark:text-slate-500">--</span>;
   }
 
   return (
     <span className="text-emerald-600 dark:text-emerald-300">
       {minutes}
-      <span className="text-2xl">'</span>
-      <span className="ml-2 text-lg text-gray-500 dark:text-slate-300">{display}</span>
+      <span className="text-lg">'</span>
+      <span className="ml-2 text-sm font-semibold text-gray-500 dark:text-slate-400">
+        {display}
+      </span>
     </span>
+  );
+}
+
+function StatRow({ label, value, tone, width }) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className={mutedText}>{label}</span>
+        <span className={`font-bold ${strongText}`}>{value}</span>
+      </div>
+      <div className="h-2 rounded-full bg-gray-100 dark:bg-slate-700">
+        <div className={`h-2 rounded-full ${tone}`} style={{ width }} />
+      </div>
+    </div>
   );
 }
 
@@ -189,6 +263,9 @@ function LiveMatches() {
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
   const [savingAction, setSavingAction] = useState("");
+  const [eventDetails, setEventDetails] = useState(initialEventDetails);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [eventEditForm, setEventEditForm] = useState(null);
 
   const canManageLive =
     user?.is_admin || user?.is_organizer || user?.is_referee;
@@ -288,6 +365,9 @@ function LiveMatches() {
 
     const appendEvent = (event) => {
       updateMatch(event.matchId, (match) => {
+        const cards = match.cards || [];
+        if (cards.some((item) => item.id === event.id)) return match;
+
         const events = match.events || [];
         if (events.some((item) => item.id === event.id)) return match;
 
@@ -296,6 +376,36 @@ function LiveMatches() {
           events: [...events, event],
         };
       });
+    };
+
+    const updateEvent = (event) => {
+      updateMatch(event.matchId, (match) => {
+        const cards = match.cards || [];
+        const events = match.events || [];
+        const cardExists = cards.some((item) => item.id === event.id);
+        const eventExists = events.some((item) => item.id === event.id);
+
+        if (!cardExists && !eventExists) {
+          return {
+            ...match,
+            events: [...events, event],
+          };
+        }
+
+        return {
+          ...match,
+          cards: cards.map((item) => (item.id === event.id ? event : item)),
+          events: events.map((item) => (item.id === event.id ? event : item)),
+        };
+      });
+    };
+
+    const deleteEvent = ({ matchId, eventId }) => {
+      updateMatch(matchId, (match) => ({
+        ...match,
+        cards: (match.cards || []).filter((event) => event.id !== eventId),
+        events: (match.events || []).filter((event) => event.id !== eventId),
+      }));
     };
 
     const handleCardEvent = (event) => {
@@ -319,6 +429,8 @@ function LiveMatches() {
     socket.on("score-updated", handleScoreUpdate);
     socket.on("card_event", handleCardEvent);
     socket.on("match-event-created", appendEvent);
+    socket.on("match-event-updated", updateEvent);
+    socket.on("match-event-deleted", deleteEvent);
 
     return () => {
       socket.off("match_live", handleMatchLive);
@@ -329,6 +441,8 @@ function LiveMatches() {
       socket.off("score-updated", handleScoreUpdate);
       socket.off("card_event", handleCardEvent);
       socket.off("match-event-created", appendEvent);
+      socket.off("match-event-updated", updateEvent);
+      socket.off("match-event-deleted", deleteEvent);
     };
   }, []);
 
@@ -340,6 +454,60 @@ function LiveMatches() {
     );
   };
 
+  const applyScorePatch = (matchId, scorePayload) => {
+    if (!scorePayload) return;
+
+    applyMatchPatch(matchId, {
+      score: {
+        golat_shtepiak: scorePayload.golat_shtepiak ?? 0,
+        golat_mysafir: scorePayload.golat_mysafir ?? 0,
+      },
+    });
+  };
+
+  const replaceEventInState = (nextEvent) => {
+    setMatches((prev) =>
+      prev.map((match) => {
+        if (match.id !== nextEvent.matchId) return match;
+
+        return {
+          ...match,
+          cards: (match.cards || []).map((event) =>
+            event.id === nextEvent.id ? nextEvent : event,
+          ),
+          events: (match.events || []).map((event) =>
+            event.id === nextEvent.id ? nextEvent : event,
+          ),
+        };
+      }),
+    );
+  };
+
+  const removeEventFromState = (matchId, eventId) => {
+    setMatches((prev) =>
+      prev.map((match) =>
+        match.id === matchId
+          ? {
+              ...match,
+              cards: (match.cards || []).filter((event) => event.id !== eventId),
+              events: (match.events || []).filter(
+                (event) => event.id !== eventId,
+              ),
+            }
+          : match,
+      ),
+    );
+  };
+
+  const handleEventDetailChange = (event) => {
+    const { name, value } = event.target;
+
+    setEventDetails((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
   const handleCreateEvent = async (lloji, teamId) => {
     if (!selectedMatch) return;
 
@@ -348,6 +516,7 @@ function LiveMatches() {
       const response = await api.post(`/matches/${selectedMatch.id}/events`, {
         lloji,
         ekipi_id: teamId,
+        ...normalizeEventDetails(eventDetails),
       });
 
       if (response.data.event) {
@@ -369,13 +538,10 @@ function LiveMatches() {
       }
 
       if (response.data.score) {
-        applyMatchPatch(selectedMatch.id, {
-          score: {
-            golat_shtepiak: response.data.score.golat_shtepiak ?? 0,
-            golat_mysafir: response.data.score.golat_mysafir ?? 0,
-          },
-        });
+        applyScorePatch(selectedMatch.id, response.data.score);
       }
+
+      setEventDetails(initialEventDetails);
     } catch (err) {
       setAlert({
         type: "error",
@@ -388,13 +554,94 @@ function LiveMatches() {
     }
   };
 
-  const ActionButton = ({ children, icon, onClick, disabled, tone = "slate" }) => {
+  const beginEditEvent = (event) => {
+    setEditingEventId(event.id);
+    setEventEditForm(getEventEditForm(event));
+  };
+
+  const cancelEditEvent = () => {
+    setEditingEventId(null);
+    setEventEditForm(null);
+  };
+
+  const handleEventEditChange = (event) => {
+    const { name, value } = event.target;
+
+    setEventEditForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const handleUpdateEvent = async (event) => {
+    if (!eventEditForm) return;
+
+    try {
+      setSavingAction(`update-${event.id}`);
+      const response = await api.put(`/match-events/${event.id}`, {
+        lloji: eventEditForm.lloji,
+        ekipi_id: eventEditForm.ekipi_id ? Number(eventEditForm.ekipi_id) : null,
+        player_name: eventEditForm.player_name,
+        description: eventEditForm.description,
+        minuta:
+          eventEditForm.minuta === "" ? null : Number(eventEditForm.minuta),
+      });
+
+      if (response.data.event) {
+        replaceEventInState(response.data.event);
+      }
+
+      applyScorePatch(event.matchId, response.data.score);
+      cancelEditEvent();
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error updating event: " +
+          (err.response?.data?.error || err.message),
+      });
+    } finally {
+      setSavingAction("");
+    }
+  };
+
+  const handleDeleteEvent = async (event) => {
+    const confirmed = window.confirm("Delete this match event?");
+    if (!confirmed) return;
+
+    try {
+      setSavingAction(`delete-${event.id}`);
+      const response = await api.delete(`/match-events/${event.id}`);
+      removeEventFromState(event.matchId, event.id);
+      applyScorePatch(event.matchId, response.data.score);
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error deleting event: " +
+          (err.response?.data?.error || err.message),
+      });
+    } finally {
+      setSavingAction("");
+    }
+  };
+
+  const ActionButton = ({
+    children,
+    icon,
+    onClick,
+    disabled,
+    tone = "slate",
+  }) => {
     const tones = {
-      green: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25",
-      amber: "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-100 dark:hover:bg-amber-500/25",
-      red: "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-400/30 dark:bg-red-500/15 dark:text-red-100 dark:hover:bg-red-500/25",
-      blue: "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-400/30 dark:bg-blue-500/15 dark:text-blue-100 dark:hover:bg-blue-500/25",
-      slate: "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-slate-500/40 dark:bg-slate-800/80 dark:text-slate-100 dark:hover:bg-slate-700/80",
+      green:
+        "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20",
+      amber:
+        "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20",
+      red: "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20",
+      blue: "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20",
+      slate:
+        "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
     };
 
     return (
@@ -402,7 +649,7 @@ function LiveMatches() {
         type="button"
         onClick={onClick}
         disabled={disabled || Boolean(savingAction)}
-        className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:border-slate-700 dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500 ${tones[tone]}`}
+        className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 dark:disabled:border-slate-700 dark:disabled:bg-slate-800/50 dark:disabled:text-slate-500 ${tones[tone]}`}
       >
         {icon}
         {children}
@@ -412,8 +659,8 @@ function LiveMatches() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 dark:bg-slate-950 dark:text-white">
-        <div className="mx-auto max-w-7xl">
+      <main className={pageShell}>
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-0">
           <CardSkeleton />
         </div>
       </main>
@@ -422,18 +669,24 @@ function LiveMatches() {
 
   if (!selectedMatch) {
     return (
-      <main className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 dark:bg-slate-950 dark:text-white">
-        <div className="mx-auto max-w-7xl rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-          <h1 className="text-2xl font-black">Live Match Center</h1>
-          <p className="mt-2 text-gray-500 dark:text-slate-400">No live or recent matches found.</p>
+      <main className={pageShell}>
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-0">
+          <div className={`${panel} p-8`}>
+            <h1 className={`text-2xl font-bold ${strongText}`}>
+              Live Match Center
+            </h1>
+            <p className={`mt-2 ${mutedText}`}>
+              No live or recent matches found.
+            </p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-[#071018] dark:text-slate-100">
-      <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8">
+    <main className={pageShell}>
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-0">
         {alert && (
           <div className="mb-4">
             <Alert
@@ -444,198 +697,315 @@ function LiveMatches() {
           </div>
         )}
 
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm transition-colors duration-300 dark:border-slate-800 dark:bg-slate-950/80 dark:shadow-xl dark:shadow-black/20">
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-slate-300">
-            <span className="font-bold text-gray-900 dark:text-white">Live Match</span>
-            <span className="text-gray-300 dark:text-slate-600">/</span>
-            <span>{selectedMatch.turneu_emri || "Tournament"}</span>
-            <span className="text-gray-300 dark:text-slate-600">/</span>
-            <span>{selectedMatch.faza || "Match"}</span>
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
+              Live Match Center
+            </p>
+            <h1 className={`mt-1 text-3xl font-bold ${strongText}`}>
+              {selectedMatch.turneu_emri || "Tournament"}
+            </h1>
+            <p className={`mt-1 text-sm ${mutedText}`}>
+              {selectedMatch.faza || "Match"} overview and live event updates.
+            </p>
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-300">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
               <Wifi size={16} />
-              Live feed connected
+              Connected
             </span>
             <button
               type="button"
               onClick={loadMatches}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               <RefreshCcw size={15} />
               Refresh
             </button>
           </div>
-        </div>
+        </header>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <section className="space-y-4">
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700/80 dark:bg-slate-950 dark:shadow-2xl dark:shadow-black/40">
-              <div className="relative min-h-[300px] bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(239,246,255,0.96)),linear-gradient(90deg,rgba(37,99,235,0.18),rgba(16,185,129,0.16)),linear-gradient(0deg,rgba(22,163,74,0.10),rgba(255,255,255,0.08))] px-5 py-6 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.55),rgba(2,6,23,0.92)),linear-gradient(90deg,rgba(29,78,216,0.35),rgba(22,163,74,0.28)),linear-gradient(0deg,rgba(22,101,52,0.22),rgba(15,23,42,0.05))] sm:px-8">
-                <div className="absolute inset-x-0 bottom-0 h-24 border-t border-emerald-500/10 bg-[repeating-linear-gradient(90deg,rgba(16,185,129,0.10)_0,rgba(16,185,129,0.10)_1px,transparent_1px,transparent_110px)] dark:bg-[repeating-linear-gradient(90deg,rgba(34,197,94,0.08)_0,rgba(34,197,94,0.08)_1px,transparent_1px,transparent_110px)]" />
-                <div className="relative z-10 flex flex-col items-center gap-6">
-                  <div className="text-center">
-                    <h1 className="text-2xl font-black text-gray-950 dark:text-white sm:text-3xl">
-                      {selectedMatch.turneu_emri || "Tournament"}
-                    </h1>
-                    <div className="mt-3">
-                      <StatusBadge match={selectedMatch} />
-                    </div>
-                  </div>
-
-                  <div className="grid w-full items-center gap-5 md:grid-cols-[1fr_auto_1fr]">
-                    <div className="flex flex-col items-center gap-3 text-center md:items-end md:text-right">
-                      <TeamCrest name={selectedMatch.ekipi_shtepiak} side="home" />
-                      <div>
-                        <p className="text-2xl font-black text-gray-950 dark:text-white">
-                          {selectedMatch.ekipi_shtepiak || "Home Team"}
-                        </p>
-                        <p className="mt-1 inline-flex rounded-md bg-blue-500 px-2 py-1 text-xs font-bold text-white">
-                          HOME
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="text-center">
-                      <div className="text-7xl font-black text-gray-950 drop-shadow-sm dark:text-white dark:drop-shadow-2xl sm:text-8xl">
-                        {score.home} - {score.away}
-                      </div>
-                      <div className="mt-2 text-4xl font-black">
-                        <ClockBadge match={selectedMatch} />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-3 text-center md:items-start md:text-left">
-                      <TeamCrest name={selectedMatch.ekipi_mysafir} side="away" />
-                      <div>
-                        <p className="text-2xl font-black text-gray-950 dark:text-white">
-                          {selectedMatch.ekipi_mysafir || "Away Team"}
-                        </p>
-                        <p className="mt-1 inline-flex rounded-md bg-emerald-500 px-2 py-1 text-xs font-bold text-white">
-                          AWAY
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid w-full gap-3 border-t border-gray-900/10 pt-4 text-sm text-gray-600 dark:border-white/10 dark:text-slate-200 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="inline-flex items-center justify-center gap-2">
-                      <CalendarDays size={16} />
-                      {formatDate(selectedMatch.data_ndeshjes)}
-                    </div>
-                    <div className="inline-flex items-center justify-center gap-2">
-                      <Clock3 size={16} />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="space-y-6">
+            <div className={`${panel} overflow-hidden`}>
+              <div className="border-b border-gray-100 px-5 py-4 dark:border-slate-700 sm:px-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className={`text-lg font-bold ${strongText}`}>
+                      Scoreboard
+                    </h2>
+                    <p className={`text-sm ${mutedText}`}>
+                      {formatDate(selectedMatch.data_ndeshjes)} at{" "}
                       {formatTime(selectedMatch.ora_fillimit)}
-                    </div>
-                    <div className="inline-flex items-center justify-center gap-2">
-                      <Shield size={16} />
-                      {selectedMatch.faza || "Match"}
-                    </div>
-                    <div className="inline-flex items-center justify-center gap-2">
-                      <Trophy size={16} />
-                      {selectedMatch.kohezgjatja || DEFAULT_MATCH_DURATION_MINUTES} min
-                    </div>
+                    </p>
                   </div>
+                  <StatusBadge match={selectedMatch} />
+                </div>
+              </div>
+
+              <div className="grid items-center gap-5 p-5 sm:p-6 md:grid-cols-[1fr_auto_1fr]">
+                <div className="flex min-w-0 items-center gap-4 md:justify-end md:text-right">
+                  <TeamBadge
+                    name={selectedMatch.ekipi_shtepiak}
+                    side="home"
+                  />
+                  <div className="min-w-0">
+                    <p className={`truncate text-xl font-black ${strongText}`}>
+                      {selectedMatch.ekipi_shtepiak || "Home Team"}
+                    </p>
+                    <p className="mt-1 text-xs font-bold uppercase text-blue-600 dark:text-blue-400">
+                      Home
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-6 py-4 text-center dark:border-slate-700 dark:bg-slate-900/60">
+                  <div className={`text-5xl font-black ${strongText}`}>
+                    {score.home} - {score.away}
+                  </div>
+                  <div className="mt-2 text-2xl font-black">
+                    <ClockBadge match={selectedMatch} />
+                  </div>
+                </div>
+
+                <div className="flex min-w-0 items-center gap-4 md:flex-row-reverse md:justify-end">
+                  <TeamBadge
+                    name={selectedMatch.ekipi_mysafir}
+                    side="away"
+                  />
+                  <div className="min-w-0 md:text-left">
+                    <p className={`truncate text-xl font-black ${strongText}`}>
+                      {selectedMatch.ekipi_mysafir || "Away Team"}
+                    </p>
+                    <p className="mt-1 text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400">
+                      Away
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 border-t border-gray-100 bg-gray-50 px-5 py-4 text-sm text-gray-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400 sm:grid-cols-2 sm:px-6 xl:grid-cols-4">
+                <div className="inline-flex items-center gap-2">
+                  <CalendarDays size={16} />
+                  {formatDate(selectedMatch.data_ndeshjes)}
+                </div>
+                <div className="inline-flex items-center gap-2">
+                  <Clock3 size={16} />
+                  {formatTime(selectedMatch.ora_fillimit)}
+                </div>
+                <div className="inline-flex items-center gap-2">
+                  <Shield size={16} />
+                  {selectedMatch.faza || "Match"}
+                </div>
+                <div className="inline-flex items-center gap-2">
+                  <Trophy size={16} />
+                  {selectedMatch.kohezgjatja || DEFAULT_MATCH_DURATION_MINUTES}{" "}
+                  min
                 </div>
               </div>
             </div>
 
             {canManageLive && (
-              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-xl dark:shadow-black/20">
-                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className={`${panel} p-5 sm:p-6`}>
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-lg font-black text-gray-950 dark:text-white">Match Events</h2>
-                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                    <h2 className={`text-lg font-bold ${strongText}`}>
+                      Match Events
+                    </h2>
+                    <p className={`text-sm ${mutedText}`}>
                       Add goals and cards for the selected match.
                     </p>
                   </div>
                   <span
                     className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${
                       isLive(selectedMatch)
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200"
-                        : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-100"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                        : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
                     }`}
                   >
                     <Radio size={14} />
-                    {isLive(selectedMatch) ? "Ready for events" : "Match must be Live"}
+                    {isLive(selectedMatch)
+                      ? "Ready for events"
+                      : "Match must be Live"}
                   </span>
                 </div>
 
-                <div className="grid gap-3 xl:grid-cols-2">
-                  <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-400/20 dark:bg-blue-500/10">
+                <div className="mb-4 grid gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/50 md:grid-cols-[1fr_110px]">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                    Player / name
+                    <input
+                      type="text"
+                      name="player_name"
+                      value={eventDetails.player_name}
+                      onChange={handleEventDetailChange}
+                      placeholder="Optional"
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
+                    />
+                  </label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                    Minute
+                    <input
+                      type="number"
+                      min="0"
+                      name="minuta"
+                      value={eventDetails.minuta}
+                      onChange={handleEventDetailChange}
+                      placeholder="Auto"
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
+                    />
+                  </label>
+                  <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 md:col-span-2">
+                    Description
+                    <input
+                      type="text"
+                      name="description"
+                      value={eventDetails.description}
+                      onChange={handleEventDetailChange}
+                      placeholder="Optional note"
+                      className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
                     <div className="flex min-w-0 items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-black uppercase text-blue-600 dark:text-blue-200">Home</p>
-                        <p className="truncate text-base font-black text-gray-950 dark:text-white">
-                          {selectedMatch.ekipi_shtepiak || "Home Team"}
-                        </p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <TeamBadge
+                          name={selectedMatch.ekipi_shtepiak}
+                          side="home"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold uppercase text-blue-600 dark:text-blue-400">
+                            Home
+                          </p>
+                          <p className={`truncate font-bold ${strongText}`}>
+                            {selectedMatch.ekipi_shtepiak || "Home Team"}
+                          </p>
+                        </div>
                       </div>
-                      <span className="rounded-lg bg-white px-3 py-1 text-xl font-black text-gray-950 shadow-sm dark:bg-slate-950/60 dark:text-white dark:shadow-none">
+                      <span className="rounded-lg bg-white px-3 py-1 text-xl font-black text-gray-900 shadow-sm dark:bg-slate-800 dark:text-slate-200">
                         {score.home}
                       </span>
                     </div>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
                       <ActionButton
                         tone="blue"
                         icon={<CircleDot size={16} />}
-                        onClick={() => handleCreateEvent("Goal", selectedMatch.ekipi_shtepiak_id)}
-                        disabled={!isLive(selectedMatch) || !selectedMatch.ekipi_shtepiak_id}
+                        onClick={() =>
+                          handleCreateEvent(
+                            "Goal",
+                            selectedMatch.ekipi_shtepiak_id,
+                          )
+                        }
+                        disabled={
+                          !isLive(selectedMatch) ||
+                          !selectedMatch.ekipi_shtepiak_id
+                        }
                       >
                         Goal
                       </ActionButton>
                       <ActionButton
                         tone="amber"
                         icon={<AlertTriangle size={16} />}
-                        onClick={() => handleCreateEvent("YellowCard", selectedMatch.ekipi_shtepiak_id)}
-                        disabled={!isLive(selectedMatch) || !selectedMatch.ekipi_shtepiak_id}
+                        onClick={() =>
+                          handleCreateEvent(
+                            "YellowCard",
+                            selectedMatch.ekipi_shtepiak_id,
+                          )
+                        }
+                        disabled={
+                          !isLive(selectedMatch) ||
+                          !selectedMatch.ekipi_shtepiak_id
+                        }
                       >
                         Yellow
                       </ActionButton>
                       <ActionButton
                         tone="red"
                         icon={<Flag size={16} />}
-                        onClick={() => handleCreateEvent("RedCard", selectedMatch.ekipi_shtepiak_id)}
-                        disabled={!isLive(selectedMatch) || !selectedMatch.ekipi_shtepiak_id}
+                        onClick={() =>
+                          handleCreateEvent(
+                            "RedCard",
+                            selectedMatch.ekipi_shtepiak_id,
+                          )
+                        }
+                        disabled={
+                          !isLive(selectedMatch) ||
+                          !selectedMatch.ekipi_shtepiak_id
+                        }
                       >
                         Red
                       </ActionButton>
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-400/20 dark:bg-emerald-500/10">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
                     <div className="flex min-w-0 items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-200">Away</p>
-                        <p className="truncate text-base font-black text-gray-950 dark:text-white">
-                          {selectedMatch.ekipi_mysafir || "Away Team"}
-                        </p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <TeamBadge
+                          name={selectedMatch.ekipi_mysafir}
+                          side="away"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400">
+                            Away
+                          </p>
+                          <p className={`truncate font-bold ${strongText}`}>
+                            {selectedMatch.ekipi_mysafir || "Away Team"}
+                          </p>
+                        </div>
                       </div>
-                      <span className="rounded-lg bg-white px-3 py-1 text-xl font-black text-gray-950 shadow-sm dark:bg-slate-950/60 dark:text-white dark:shadow-none">
+                      <span className="rounded-lg bg-white px-3 py-1 text-xl font-black text-gray-900 shadow-sm dark:bg-slate-800 dark:text-slate-200">
                         {score.away}
                       </span>
                     </div>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
                       <ActionButton
                         tone="blue"
                         icon={<CircleDot size={16} />}
-                        onClick={() => handleCreateEvent("Goal", selectedMatch.ekipi_mysafir_id)}
-                        disabled={!isLive(selectedMatch) || !selectedMatch.ekipi_mysafir_id}
+                        onClick={() =>
+                          handleCreateEvent(
+                            "Goal",
+                            selectedMatch.ekipi_mysafir_id,
+                          )
+                        }
+                        disabled={
+                          !isLive(selectedMatch) ||
+                          !selectedMatch.ekipi_mysafir_id
+                        }
                       >
                         Goal
                       </ActionButton>
                       <ActionButton
                         tone="amber"
                         icon={<AlertTriangle size={16} />}
-                        onClick={() => handleCreateEvent("YellowCard", selectedMatch.ekipi_mysafir_id)}
-                        disabled={!isLive(selectedMatch) || !selectedMatch.ekipi_mysafir_id}
+                        onClick={() =>
+                          handleCreateEvent(
+                            "YellowCard",
+                            selectedMatch.ekipi_mysafir_id,
+                          )
+                        }
+                        disabled={
+                          !isLive(selectedMatch) ||
+                          !selectedMatch.ekipi_mysafir_id
+                        }
                       >
                         Yellow
                       </ActionButton>
                       <ActionButton
                         tone="red"
                         icon={<Flag size={16} />}
-                        onClick={() => handleCreateEvent("RedCard", selectedMatch.ekipi_mysafir_id)}
-                        disabled={!isLive(selectedMatch) || !selectedMatch.ekipi_mysafir_id}
+                        onClick={() =>
+                          handleCreateEvent(
+                            "RedCard",
+                            selectedMatch.ekipi_mysafir_id,
+                          )
+                        }
+                        disabled={
+                          !isLive(selectedMatch) ||
+                          !selectedMatch.ekipi_mysafir_id
+                        }
                       >
                         Red
                       </ActionButton>
@@ -645,12 +1015,14 @@ function LiveMatches() {
               </div>
             )}
 
-            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-xl dark:shadow-black/20">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-black text-gray-950 dark:text-white">Live Feed</h2>
-                  <span className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                    Clocked automatically
+            <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+              <div className={`${panel} p-5 sm:p-6`}>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className={`text-lg font-bold ${strongText}`}>
+                    Live Feed
+                  </h2>
+                  <span className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+                    Automatic clock
                   </span>
                 </div>
 
@@ -658,26 +1030,144 @@ function LiveMatches() {
                   <div className="space-y-3">
                     {selectedEvents.slice(0, 7).map((event) => {
                       const type = getEventType(event);
+                      const isEditing = editingEventId === event.id;
                       return (
                         <div
                           key={`${event.id}-${getEventMinute(event)}-${type}`}
-                          className={`flex items-center gap-4 rounded-xl border px-4 py-3 ${getEventClasses(type)}`}
+                          className={`rounded-xl border px-4 py-3 ${getEventClasses(type)}`}
                         >
-                          <div className="w-12 text-lg font-black">
-                            {formatMinute(getEventMinute(event))}
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 text-lg font-black">
+                              {formatMinute(getEventMinute(event))}
+                            </div>
+                            <div className="grid h-10 w-10 place-items-center rounded-lg bg-white/80 dark:bg-slate-800/80">
+                              {isGoalEventType(type) ? (
+                                <CircleDot size={18} />
+                              ) : (
+                                <Flag size={18} />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className={`font-bold ${strongText}`}>
+                                {getEventLabel(type)}
+                                {event.teamName ? ` - ${event.teamName}` : ""}
+                              </p>
+                              <p className={`truncate text-sm ${mutedText}`}>
+                                {getEventPerson(event) || "Match official update"}
+                              </p>
+                              {event.description && (
+                                <p className={`truncate text-xs ${mutedText}`}>
+                                  {event.description}
+                                </p>
+                              )}
+                            </div>
+                            {canManageLive && (
+                              <div className="flex shrink-0 items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => beginEditEvent(event)}
+                                  disabled={Boolean(savingAction)}
+                                  className="rounded-lg p-2 text-gray-500 transition hover:bg-white/70 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                                  aria-label="Edit event"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteEvent(event)}
+                                  disabled={Boolean(savingAction)}
+                                  className="rounded-lg p-2 text-red-500 transition hover:bg-white/70 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
+                                  aria-label="Delete event"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          <div className="grid h-10 w-10 place-items-center rounded-full bg-white/70 dark:bg-slate-950/40">
-                            {isGoalEventType(type) ? <CircleDot size={18} /> : <Flag size={18} />}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-black text-gray-950 dark:text-white">
-                              {getEventLabel(type)}
-                              {event.teamName ? ` - ${event.teamName}` : ""}
-                            </p>
-                            <p className="truncate text-sm text-gray-500 dark:text-slate-300">
-                              {event.playerName || "Match official update"}
-                            </p>
-                          </div>
+                          {isEditing && eventEditForm && (
+                            <div className="mt-4 grid gap-3 border-t border-current/10 pt-4 md:grid-cols-2">
+                              <label className="text-sm font-semibold">
+                                Event
+                                <select
+                                  name="lloji"
+                                  value={eventEditForm.lloji}
+                                  onChange={handleEventEditChange}
+                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                >
+                                  <option value="Goal">Goal</option>
+                                  <option value="YellowCard">Yellow Card</option>
+                                  <option value="RedCard">Red Card</option>
+                                </select>
+                              </label>
+                              <label className="text-sm font-semibold">
+                                Team
+                                <select
+                                  name="ekipi_id"
+                                  value={eventEditForm.ekipi_id}
+                                  onChange={handleEventEditChange}
+                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                >
+                                  <option value="">No team</option>
+                                  <option value={selectedMatch.ekipi_shtepiak_id}>
+                                    {selectedMatch.ekipi_shtepiak || "Home Team"}
+                                  </option>
+                                  <option value={selectedMatch.ekipi_mysafir_id}>
+                                    {selectedMatch.ekipi_mysafir || "Away Team"}
+                                  </option>
+                                </select>
+                              </label>
+                              <label className="text-sm font-semibold">
+                                Player / name
+                                <input
+                                  type="text"
+                                  name="player_name"
+                                  value={eventEditForm.player_name}
+                                  onChange={handleEventEditChange}
+                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                />
+                              </label>
+                              <label className="text-sm font-semibold">
+                                Minute
+                                <input
+                                  type="number"
+                                  min="0"
+                                  name="minuta"
+                                  value={eventEditForm.minuta}
+                                  onChange={handleEventEditChange}
+                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                />
+                              </label>
+                              <label className="text-sm font-semibold md:col-span-2">
+                                Description
+                                <input
+                                  type="text"
+                                  name="description"
+                                  value={eventEditForm.description}
+                                  onChange={handleEventEditChange}
+                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                />
+                              </label>
+                              <div className="flex justify-end gap-2 md:col-span-2">
+                                <button
+                                  type="button"
+                                  onClick={cancelEditEvent}
+                                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                >
+                                  <X size={15} />
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateEvent(event)}
+                                  disabled={Boolean(savingAction)}
+                                  className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                                >
+                                  <Save size={15} />
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -689,48 +1179,32 @@ function LiveMatches() {
                 )}
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-xl dark:shadow-black/20">
-                <h2 className="mb-5 text-lg font-black text-gray-950 dark:text-white">Match Snapshot</h2>
+              <div className={`${panel} p-5 sm:p-6`}>
+                <h2 className={`mb-5 text-lg font-bold ${strongText}`}>
+                  Match Snapshot
+                </h2>
                 <div className="space-y-5">
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-slate-400">Goals</span>
-                      <span className="font-black text-gray-950 dark:text-white">{liveSummary.goals}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-gray-100 dark:bg-slate-800">
-                      <div
-                        className="h-2 rounded-full bg-emerald-400"
-                        style={{ width: `${Math.min(100, liveSummary.goals * 25)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-slate-400">Yellow Cards</span>
-                      <span className="font-black text-gray-950 dark:text-white">{liveSummary.yellowCards}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-gray-100 dark:bg-slate-800">
-                      <div
-                        className="h-2 rounded-full bg-amber-400"
-                        style={{ width: `${Math.min(100, liveSummary.yellowCards * 20)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-slate-400">Red Cards</span>
-                      <span className="font-black text-gray-950 dark:text-white">{liveSummary.redCards}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-gray-100 dark:bg-slate-800">
-                      <div
-                        className="h-2 rounded-full bg-red-400"
-                        style={{ width: `${Math.min(100, liveSummary.redCards * 25)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
-                    <p className="text-sm text-gray-500 dark:text-slate-400">Winner</p>
-                    <p className="mt-1 text-2xl font-black text-gray-950 dark:text-white">
+                  <StatRow
+                    label="Goals"
+                    value={liveSummary.goals}
+                    tone="bg-emerald-500"
+                    width={`${Math.min(100, liveSummary.goals * 25)}%`}
+                  />
+                  <StatRow
+                    label="Yellow Cards"
+                    value={liveSummary.yellowCards}
+                    tone="bg-amber-400"
+                    width={`${Math.min(100, liveSummary.yellowCards * 20)}%`}
+                  />
+                  <StatRow
+                    label="Red Cards"
+                    value={liveSummary.redCards}
+                    tone="bg-red-500"
+                    width={`${Math.min(100, liveSummary.redCards * 25)}%`}
+                  />
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+                    <p className={`text-sm ${mutedText}`}>Winner</p>
+                    <p className={`mt-1 text-2xl font-black ${strongText}`}>
                       {isFinished(selectedMatch)
                         ? score.home > score.away
                           ? selectedMatch.ekipi_shtepiak
@@ -745,11 +1219,11 @@ function LiveMatches() {
             </div>
           </section>
 
-          <aside className="space-y-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 dark:shadow-xl dark:shadow-black/20">
+          <aside className="space-y-6">
+            <div className={`${panel} p-5`}>
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-black text-gray-950 dark:text-white">Match Selector</h2>
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
+                <h2 className={`font-bold ${strongText}`}>Match Selector</h2>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
                   {matches.length}
                 </span>
               </div>
@@ -765,23 +1239,25 @@ function LiveMatches() {
                       onClick={() => setSelectedMatchId(match.id)}
                       className={`w-full rounded-xl border p-3 text-left transition ${
                         active
-                          ? "border-blue-300 bg-blue-50 dark:border-blue-400/50 dark:bg-blue-500/15"
-                          : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-slate-600"
+                          ? "border-blue-300 bg-blue-50 dark:border-blue-500/50 dark:bg-blue-500/10"
+                          : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-slate-600"
                       }`}
                     >
-                      <p className="text-xs font-semibold text-gray-500 dark:text-slate-400">
+                      <p className={`text-xs font-semibold ${mutedText}`}>
                         {match.turneu_emri || "Tournament"}
                       </p>
                       <div className="mt-2 flex items-center justify-between gap-3">
-                        <span className="min-w-0 truncate font-bold text-gray-950 dark:text-white">
+                        <span
+                          className={`min-w-0 truncate font-bold ${strongText}`}
+                        >
                           {match.ekipi_shtepiak} vs {match.ekipi_mysafir}
                         </span>
-                        <span className="rounded-lg bg-white px-2 py-1 text-sm font-black text-gray-950 shadow-sm dark:bg-slate-800 dark:text-white dark:shadow-none">
+                        <span className="rounded-lg bg-white px-2 py-1 text-sm font-black text-gray-900 shadow-sm dark:bg-slate-800 dark:text-slate-200">
                           {itemScore.home}-{itemScore.away}
                         </span>
                       </div>
-                      <p className="mt-2 text-xs text-gray-500 dark:text-slate-500">
-                        {match.statusi} · {formatDate(match.data_ndeshjes)}
+                      <p className={`mt-2 text-xs ${mutedText}`}>
+                        {match.statusi} / {formatDate(match.data_ndeshjes)}
                       </p>
                     </button>
                   );
@@ -789,55 +1265,67 @@ function LiveMatches() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 dark:shadow-xl dark:shadow-black/20">
-              <h2 className="mb-4 font-black text-gray-950 dark:text-white">Live Updates</h2>
+            <div className={`${panel} p-5`}>
+              <h2 className={`mb-4 font-bold ${strongText}`}>Live Updates</h2>
               <div className="space-y-3">
                 {selectedEvents.slice(0, 5).map((event) => {
                   const type = getEventType(event);
                   return (
                     <div
                       key={`side-${event.id}-${getEventMinute(event)}`}
-                      className="flex gap-3 border-b border-gray-200 pb-3 last:border-b-0 last:pb-0 dark:border-slate-800"
+                      className="flex gap-3 border-b border-gray-200 pb-3 last:border-b-0 last:pb-0 dark:border-slate-700"
                     >
-                      <div className={`grid h-10 w-10 place-items-center rounded-full border ${getEventClasses(type)}`}>
-                        {isGoalEventType(type) ? <CircleDot size={16} /> : <Flag size={16} />}
+                      <div
+                        className={`grid h-10 w-10 place-items-center rounded-lg border ${getEventClasses(type)}`}
+                      >
+                        {isGoalEventType(type) ? (
+                          <CircleDot size={16} />
+                        ) : (
+                          <Flag size={16} />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="font-bold text-gray-950 dark:text-white">{getEventLabel(type)}</p>
-                          <span className="text-xs text-gray-500 dark:text-slate-500">
+                          <p className={`font-bold ${strongText}`}>
+                            {getEventLabel(type)}
+                          </p>
+                          <span className={`text-xs ${mutedText}`}>
                             {formatMinute(getEventMinute(event))}
                           </span>
                         </div>
-                        <p className="truncate text-sm text-gray-500 dark:text-slate-400">
-                          {event.teamName || "Match update"}
+                        <p className={`truncate text-sm ${mutedText}`}>
+                          {getEventPerson(event) || event.teamName || "Match update"}
                         </p>
                       </div>
                     </div>
                   );
                 })}
                 {selectedEvents.length === 0 && (
-                  <p className="text-sm text-gray-500 dark:text-slate-400">No updates yet.</p>
+                  <p className={`text-sm ${mutedText}`}>No updates yet.</p>
                 )}
               </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 dark:shadow-xl dark:shadow-black/20">
-              <h2 className="mb-4 font-black text-gray-950 dark:text-white">System</h2>
+            <div className={`${panel} p-5`}>
+              <h2 className={`mb-4 font-bold ${strongText}`}>System</h2>
               <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-2 text-gray-500 dark:text-slate-400">
+                <div className="flex items-center justify-between gap-3">
+                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
                     <Activity size={16} />
                     Server Status
                   </span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-300">Online</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-300">
+                    Online
+                  </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-2 text-gray-500 dark:text-slate-400">
+                <div className="flex items-center justify-between gap-3">
+                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
                     <Radio size={16} />
                     Feed
                   </span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-300">Connected</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-300">
+                    Connected
+                  </span>
                 </div>
               </div>
             </div>

@@ -19,6 +19,7 @@ model User {
   reset_token        String?
   reset_token_expiry DateTime?
   referee            referees?     @relation("UserReferee")
+  matchevents         matchevents[]
   sessions           Session[]
   tournaments        tournaments[]
 
@@ -226,16 +227,20 @@ model ContactMessages {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model matchevents {
-  id         Int       @id @default(autoincrement())
-  ndeshja_id Int
-  lojtari_id Int?
-  ekipi_id   Int?
-  lloji      String
-  minuta     Int?
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  teams      teams?    @relation(fields: [ekipi_id], references: [id], onUpdate: NoAction)
-  players    players?  @relation(fields: [lojtari_id], references: [id], onUpdate: NoAction)
-  matches    matches   @relation(fields: [ndeshja_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                 Int       @id @default(autoincrement())
+  ndeshja_id         Int
+  lojtari_id         Int?
+  ekipi_id           Int?
+  lloji              String
+  minuta             Int?
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  player_name        String?
+  description        String?
+  created_by_user_id Int?
+  users              User?     @relation(fields: [created_by_user_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  teams              teams?    @relation(fields: [ekipi_id], references: [id], onUpdate: NoAction)
+  players            players?  @relation(fields: [lojtari_id], references: [id], onUpdate: NoAction)
+  matches            matches   @relation(fields: [ndeshja_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model Session {
