@@ -123,6 +123,14 @@ export default function Users() {
     }
   }, []);
 
+  const handleClearFilters = () => {
+    const resetFIlters = { search: "", roli: "" };
+    setFilters(resetFIlters);
+    setPage(1)
+    loadUsersPage(1, resetFIlters);
+  }
+  const hasActiveFilters = filters.search !== "" || filters.roli !== "";
+
   // Loads all users after confirming the current user is an admin.
   useEffect(() => {
     if (!user?.is_admin) {
@@ -334,8 +342,8 @@ export default function Users() {
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">Users Management</h2>
 
-          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 max-w-2xl">
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 md:relative">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-2xl">
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search size={18} className="text-gray-400 dark:text-gray-500" />
@@ -369,6 +377,15 @@ export default function Users() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                 </div>
               </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer md:absolute md:left-[calc(100%-13rem)] md:top-1/2 md:-translate-y-1/2 md:ml-0"
+                >
+                  Clear
+                </button>
+              )}
             </div>
 
             <button

@@ -1,11 +1,10 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
-import { ThemeContext } from "../../context/ThemeContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, Search, ChevronLeft, ChevronRight, Plus, SlidersHorizontal, SquareCenterlineDashedHorizontal } from "lucide-react";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
@@ -112,48 +111,9 @@ const matchUpdateSchema = yup.object().shape({
   faza: yup.string(),
 });
 
-function getModalOverlayClassName(isDarkMode) {
-  return `fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm ${
-    isDarkMode ? "bg-slate-950/80" : "bg-black/50"
-  }`;
-}
-
-function getModalSurfaceClassName(isDarkMode) {
-  return `w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg p-8 shadow-2xl ${
-    isDarkMode
-      ? "border border-slate-700 bg-slate-950 text-slate-100 shadow-slate-900/40"
-      : "bg-white text-gray-900"
-  }`;
-}
-
-function getModalLabelClassName(isDarkMode) {
-  return `mb-2 block text-sm font-medium ${
-    isDarkMode ? "text-slate-200" : "text-gray-700"
-  }`;
-}
-
-function getModalFieldClassName(isDarkMode, hasError = false) {
-  const borderClass = hasError
-    ? "border-red-500"
-    : isDarkMode
-    ? "border-slate-700"
-    : "border-gray-300";
-
-  const toneClass = isDarkMode
-    ? "bg-slate-900 text-slate-100"
-    : "bg-white text-gray-900";
-
-  return `w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 ${borderClass} ${toneClass}`;
-}
-
-function getModalErrorClassName(isDarkMode) {
-  return `mt-1 text-sm ${isDarkMode ? "text-red-400" : "text-red-500"}`;
-}
-
 export default function Matches() {
   // Central admin page for managing matches and linked tournament/team/venue data.
   const { user } = useContext(AuthContext);
-  const { isDarkMode } = useContext(ThemeContext);
   const navigate = useNavigate();
 
   // State Variables
@@ -165,7 +125,10 @@ export default function Matches() {
   const [referees, setReferees] = useState([]);
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -199,9 +162,9 @@ export default function Matches() {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  // Loads matches plus lookup datasets in one batch for form dropdowns.
+  // Loads lookup datasets for form dropdowns.
   useEffect(() => {
-    const loadData = async () => {
+    const loadLookups = async () => {
       if (!user?.is_admin) {
         setLoading(false);
         return;
@@ -211,17 +174,8 @@ export default function Matches() {
         setLoading(true);
         setError("");
 
-        const params = {
-          page,
-          limit: 50,
-          ...(filters.search && { search: filters.search }),
-          ...(filters.statusi && { statusi: filters.statusi }),
-          ...(filters.turneu_id && { turneu_id: filters.turneu_id }),
-          ...(filters.team_id && { team_id: filters.team_id }),
-        };
 
         const [
-          matchesResponse,
           tournamentsResponse,
           teamsResponse,
           registrationsResponse,
@@ -229,7 +183,6 @@ export default function Matches() {
           refereesResponse,
           venuesResponse,
         ] = await Promise.all([
-          api.get(`/matches`, { params }),
           api.get(`tournaments`),
           api.get(`teams`),
           api.get(`/tournament-registrations`),
@@ -238,11 +191,6 @@ export default function Matches() {
           api.get(`/venues`),
         ]);
 
-        const matchesData = Array.isArray(matchesResponse.data?.data)
-          ? matchesResponse.data.data
-          : Array.isArray(matchesResponse.data)
-          ? matchesResponse.data
-          : [];
         const tournamentsData = tournamentsResponse.data;
         const teamsData = teamsResponse.data;
         const registrationsData = registrationsResponse.data;
@@ -251,7 +199,6 @@ export default function Matches() {
         const venuesData = venuesResponse.data;
 
         setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
-        setMatches(matchesData);
         setTeams(Array.isArray(teamsData) ? teamsData : []);
         setRegistrations(
           Array.isArray(registrationsData) ? registrationsData : [],
@@ -261,20 +208,74 @@ export default function Matches() {
         );
         setReferees(Array.isArray(refereesData) ? refereesData : []);
         setVenues(Array.isArray(venuesData) ? venuesData : []);
-
-        setPagination(
-          matchesResponse.data?.pagination ?? null,
-        );
       } catch (err) {
         console.error("Error loading data:", err);
         setError(err.message);
       } finally {
         setLoading(false);
+        setHasLoaded(true);
       }
     };
 
-    loadData();
-  }, [user, filters, page]);
+    loadLookups();
+  }, [user]);
+
+  const loadMatches = useCallback(async (pageNum, filtersObj) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = new URLSearchParams({
+        page: pageNum,
+        limit: 10,
+        ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
+        ...(filtersObj.turneu_id && { turneu_id: filtersObj.turneu_id }),
+        ...(filtersObj.team_id && { team_id: filtersObj.team_id }),
+        ...(filtersObj.search && { search: filtersObj.search }),
+      });
+
+      const response = await api.get(`/matches?${params}`);
+
+      let rows = [];
+      let pagination = null;
+
+      if (Array.isArray(response.data?.data)) {
+        rows = response.data.data;
+        pagination = response.data?.pagination ?? null;
+      } else if (Array.isArray(response.data)) {
+        rows = response.data;
+        pagination = null;
+      }
+
+      setPagination(pagination);
+      setMatches(rows);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setHasLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user?.is_admin) {
+      return;
+    }
+
+    loadMatches(page, filters);
+  }, [user, loadMatches, page, filters]);
+
+  const handleClearFilters = () => {
+    const resetFilters = { search: "", statusi: "" };
+    setFilters(resetFilters);
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setPage(1);
+    loadMatches(1, resetFilters);
+  };
+
+  const hasActiveFilters =
+    searchQuery.trim() !== "" || filters.statusi !== "" || filters.turneu_id !== "" || filters.team_id !== "";
 
   useEffect(() => {
     const appendMatchEvent = (event) => {
@@ -372,15 +373,14 @@ export default function Matches() {
     setPage(1);
   };
 
-  const handleClearFilters = () => {
-    setFilters({
-      search: "",
-      statusi: "",
-      turneu_id: "",
-      team_id: "",
-    });
-    setPage(1);
-  };
+  // Debounced search sync (keeps filtering fast while preserving API/query behavior)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleCreate = () => {
     setFormData({
@@ -762,6 +762,7 @@ export default function Matches() {
     });
   };
 
+  
   const handleScoreSubmit = async (e) => {
     e.preventDefault();
 
@@ -998,7 +999,7 @@ export default function Matches() {
   });
 
   // Renders skeleton placeholders while initial API requests are in flight.
-  if (loading) {
+  if (loading && !hasLoaded) {
     return (
       <div className="delay-skeleton">
         <TableSkeleton />
@@ -1021,7 +1022,7 @@ export default function Matches() {
 
   // Filter matches based on search
   const filteredMatches = matches.filter((match) => {
-    const query = filters.search.toLowerCase();
+    const query = debouncedSearch.toLowerCase();
     if (!query) return true;
 
     return (
@@ -1048,150 +1049,88 @@ export default function Matches() {
       )}
       <div className="w-full mx-auto">
         <div className="mb-8">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">
               Match Management
             </h2>
-            <button
-              onClick={handleCreate}
-              className="rounded-lg bg-green-500 px-6 py-2 font-semibold text-white shadow-md transition duration-200 ease-in-out hover:bg-green-600"
-            >
-              + Add New Match
-            </button>
-          </div>
 
-          {/* SEARCH BAR */}
-          <div className="relative">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search by tournament or team"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3 text-gray-900 placeholder:text-transparent focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:placeholder:text-gray-400 dark:focus:bg-slate-900 sm:placeholder:text-gray-400"
-            />
-            <svg
-              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 dark:text-gray-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          </div>
+            
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <div className="relative flex-1 max-w-2xl">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  name="search"
+                  placeholder="Search by tournament or team"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all placeholder-gray-400"
+                />
+              </div>
 
-          <div className={`grid gap-4 lg:grid-cols-4 mt-4 ${isDarkMode ? "text-slate-100" : "text-gray-900"}`}>
-            <div>
-              <label className="block text-sm font-medium mb-2">Status</label>
-              <select
-                name="statusi"
-                value={filters.statusi}
-                onChange={handleFilterChange}
-                className={`w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-300 bg-white text-gray-900"}`}
-              >
-                <option value="">All statuses</option>
-                <option value="Planifikuar">Planifikuar</option>
-                <option value="Live">Live</option>
-                <option value="HalfTime">HalfTime</option>
-                <option value="Shtyrë">Shtyrë</option>
-                <option value="Anuluar">Anuluar</option>
-                <option value="Përfunduar">Përfunduar</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Tournament</label>
-              <select
-                name="turneu_id"
-                value={filters.turneu_id}
-                onChange={handleFilterChange}
-                className={`w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-300 bg-white text-gray-900"}`}
-              >
-                <option value="">All tournaments</option>
-                {tournaments.map((tournament) => (
-                  <option key={tournament.id} value={tournament.id}>
-                    {tournament.emertimi}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Team</label>
-              <select
-                name="team_id"
-                value={filters.team_id}
-                onChange={handleFilterChange}
-                className={`w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-gray-300 bg-white text-gray-900"}`}
-              >
-                <option value="">All teams</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.emertimi}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end gap-2">
-              <button
-                onClick={handleClearFilters}
-                type="button"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-              >
-                Clear filters
-              </button>
-            </div>
-          </div>
-
-          {pagination && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 text-sm text-gray-700 dark:text-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-              <span>
-                Showing page {pagination.page} of {pagination.totalPages} ({pagination.total} matches)
-              </span>
-              <div className="flex gap-2">
                 <button
-                  type="button"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={!pagination.hasPrev}
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:border-slate-800 dark:disabled:bg-slate-950 dark:disabled:text-slate-500"
+                  onClick={handleCreate}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
                 >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPage((prev) => prev + 1)}
-                  disabled={!pagination.hasNext}
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:disabled:border-slate-800 dark:disabled:bg-slate-950 dark:disabled:text-slate-500"
-                >
-                  Next
+                  <Plus size={18} />
+                  + Add New Match
                 </button>
               </div>
-            </div>
-          )}
 
+              <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 dark:border-slate-800/60 pt-3 mt-1">
+                  <div className="relative min-w-[160px] flex-1 sm:flex-none">
+                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                      <SlidersHorizontal size={14} />
+                    </div>
+                <label className="sr-only">Status</label>
+                <select
+                  name="statusi"
+                  value={filters.statusi}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All statuses</option>
+                  <option value="Planifikuar">Planifikuar</option>
+                  <option value="Live">Live</option>
+                  <option value="Shtyrë">Shtyrë</option>
+                  <option value="Anuluar">Anuluar</option>
+                  <option value="Përfunduar">Përfunduar</option>
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+            </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+                >
+                  Clear
+                </button>
+              )}
+          </div>
         </div>
 
         {/* Matches table section */}
-        <div className="flex overflow-x-auto rounded-lg border border-gray-100 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900">
-          <table className="w-full border-collapse text-left">
-            <thead className="bg-gray-800 text-white dark:bg-slate-800">
+        <div className={`flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
+          <table className="w-full text-left border-collapse min-w-[500px]">
+            <thead className="bg-gray-800 dark:bg-slate-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-center font-semibold">ID</th>
-                <th className="px-4 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-center font-semibold">ID</th>
+                <th className="px-6 py-4 text-left font-semibold">
                   Tournament
                 </th>
-                <th className="px-4 py-3 text-left font-semibold">Home Team</th>
-                <th className="px-4 py-3 text-left font-semibold">Away Team</th>
-                <th className="px-4 py-3 text-center font-semibold">Date</th>
-                <th className="px-4 py-3 text-left font-semibold">Time</th>
-                <th className="px-4 py-3 text-left font-semibold">Status</th>
-                <th className="px-4 py-3 text-left font-semibold">Referee</th>
-                <th className="px-4 py-3 text-center font-semibold">Timer</th>
-                <th className="px-4 py-3 text-center font-semibold">Actions</th>
+                <th className="px-6 py-4 text-left font-semibold">Home Team</th>
+                <th className="px-6 py-4 text-left font-semibold">Away Team</th>
+                <th className="px-6 py-4 text-center font-semibold">Date</th>
+                <th className="px-6 py-4 text-left font-semibold">Time</th>
+                <th className="px-6 py-4 text-left font-semibold">Status</th>
+                <th className="px-6 py-4 text-left font-semibold">Referee</th>
+                <th className="px-6 py-4 text-center font-semibold">Timer</th>
+                <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
             {/* Table Body */}
@@ -1202,25 +1141,25 @@ export default function Matches() {
                     key={m.id}
                     className="transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-slate-800"
                   >
-                    <td className="px-4 py-3 text-center text-gray-500 dark:text-slate-400">
+                    <td className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
                       {m.id}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
+                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
                       {getTournamentName(m.turneu_id)}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
+                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
                       {getTeamName(m.ekipi_shtepiak_id)}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
+                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
                       {getTeamName(m.ekipi_mysafir_id)}
                     </td>
-                    <td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-slate-100">
+                    <td className="px-6 py-4 text-center font-semibold text-gray-900 dark:text-slate-100">
                       {formatDate(m.data_ndeshjes)}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
+                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
                       {formatTime(m.ora_fillimit) || "N/A"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-semibold ${
                           m.statusi === "Përfunduar"
@@ -1237,11 +1176,11 @@ export default function Matches() {
                         {m.statusi}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200">{getPrimaryRefereeName(m.id)}</td>
-                    <td className="px-4 py-3 text-center text-gray-700 dark:text-slate-200">
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-200">{getPrimaryRefereeName(m.id)}</td>
+                    <td className="px-6 py-4 text-center text-gray-700 dark:text-slate-200">
                       <MatchTimer match={m} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => handleView(m.id)}
@@ -1289,11 +1228,11 @@ export default function Matches() {
               ) : (
                 <tr>
                   <td
-                    colSpan="9"
+                    colSpan="10"
                     className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                   >
-                    {filters.search
-                      ? `No matches match "${filters.search}". Try a different search.`
+                    {debouncedSearch
+                      ? `No matches match "${debouncedSearch}". Try a different search.`
                       : 'No matches found. Click "Add New Match" to add a new one.'}
                   </td>
                 </tr>
@@ -1302,14 +1241,89 @@ export default function Matches() {
           </table>
         </div>
 
+        {pagination && (
+            <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(page - 1)}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Close
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Forward
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  {pagination.total && (
+                    <>
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> users)
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+          )}
+
         {/* ADD NEW MATCH MODAL */}
         {showModal && (
           <div
-            className={getModalOverlayClassName(isDarkMode)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
             onClick={handleCloseModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
@@ -1336,7 +1350,7 @@ export default function Matches() {
                       ))}
                     </select>
                     {formErrors.turneu_id && (
-                      <p className={getModalErrorClassName(isDarkMode)}>
+                      <p className="mt-1 text-sm text-red-500">
                         {formErrors.turneu_id}
                       </p>
                     )}
@@ -1361,7 +1375,7 @@ export default function Matches() {
                       ))}
                     </select>
                     {formErrors.ekipi_shtepiak_id && (
-                      <p className={getModalErrorClassName(isDarkMode)}>
+                      <p className="mt-1 text-sm text-red-500">
                         {formErrors.ekipi_shtepiak_id}
                       </p>
                     )}
@@ -1386,7 +1400,7 @@ export default function Matches() {
                       ))}
                     </select>
                     {formErrors.ekipi_mysafir_id && (
-                      <p className={getModalErrorClassName(isDarkMode)}>
+                      <p className="mt-1 text-sm text-red-500">
                         {formErrors.ekipi_mysafir_id}
                       </p>
                     )}
@@ -1405,14 +1419,14 @@ export default function Matches() {
                       required
                     />
                     {formErrors.data_ndeshjes && (
-                      <p className={getModalErrorClassName(isDarkMode)}>
+                      <p className="mt-1 text-sm text-red-500">
                         {formErrors.data_ndeshjes}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className={getModalLabelClassName(isDarkMode)}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Start Time
                     </label>
                     <input
@@ -1420,27 +1434,28 @@ export default function Matches() {
                       name="ora_fillimit"
                       value={formData.ora_fillimit}
                       onChange={handleInputChange}
-                      className={getModalFieldClassName(
-                        isDarkMode,
-                        Boolean(formErrors.ora_fillimit),
-                      )}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.ora_fillimit ? "border-red-500" : "border-gray-300"
+                    }`}
                     />
                     {formErrors.ora_fillimit && (
-                      <p className={getModalErrorClassName(isDarkMode)}>
+                      <p className="mt-1 text-sm text-red-500">
                         {formErrors.ora_fillimit}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className={getModalLabelClassName(isDarkMode)}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Venue
                     </label>
                     <select
                       name="fusha_id"
                       value={formData.fusha_id}
                       onChange={handleInputChange}
-                      className={getModalFieldClassName(isDarkMode)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.fusha_id ? "border-red-500" : "border-gray-300"
+                    }`}
                     >
                       <option value="">Select Venue</option>
                       {venues.map((v) => (
@@ -1452,14 +1467,16 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className={getModalLabelClassName(isDarkMode)}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Referee
                     </label>
                     <select
                       name="referi_id"
                       value={formData.referi_id}
                       onChange={handleInputChange}
-                      className={getModalFieldClassName(isDarkMode)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.referi_id ? "border-red-500" : "border-gray-300"
+                    }`}
                     >
                       <option value="">Select Referee</option>
                       {referees.map((r) => (
@@ -1471,14 +1488,16 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className={getModalLabelClassName(isDarkMode)}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Status
                     </label>
                     <select
                       name="statusi"
                       value={formData.statusi}
                       onChange={handleInputChange}
-                      className={getModalFieldClassName(isDarkMode)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.statusi ? "border-red-500" : "border-gray-300"
+                    }`}
                     >
                       <option value="Planifikuar">Planifikuar</option>
                       <option value="Live">Live</option>
@@ -1489,7 +1508,7 @@ export default function Matches() {
                   </div>
 
                   <div>
-                    <label className={getModalLabelClassName(isDarkMode)}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Phase
                     </label>
                     <input
@@ -1497,7 +1516,9 @@ export default function Matches() {
                       name="faza"
                       value={formData.faza}
                       onChange={handleInputChange}
-                      className={getModalFieldClassName(isDarkMode)}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.faza ? "border-red-500" : "border-gray-300"
+                    }`}
                       placeholder="e.g., Final, Semi-final"
                     />
                   </div>
@@ -1653,7 +1674,6 @@ export default function Matches() {
                 onSubmit={handleScoreSubmit}
                 className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950"
               >
-                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                 <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                   Update Live Score
                 </h4>
@@ -2036,6 +2056,7 @@ export default function Matches() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

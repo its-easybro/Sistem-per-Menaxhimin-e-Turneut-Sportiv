@@ -426,6 +426,14 @@ export default function Tournaments() {
     }
   }, [canManageTournaments, isAdmin]);
 
+  const handleClearFilters = () => {
+    const resetFilters = { search: "", lloji: "", statusi: "", sporti_id: "", organizatori_id: "" };
+    setFilters(resetFilters);
+    setSearchQuery("");
+  };
+
+  const hasActiveFilters = filters.search !== "" || filters.lloji !== "" || filters.statusi !== "" || filters.sporti_id !== "" || filters.organizatori_id !== "";
+
   useEffect(() => {
     loadTournaments(page, filters);
   }, [loadTournaments, page, filters]);
@@ -713,11 +721,11 @@ export default function Tournaments() {
       )}
       <div className="w-full mx-auto space-y-6">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">Tournament Management</h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">Tournament Management</h2>
           
-          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
-            <div className="relative flex-1">
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <div className="relative flex-1 max-w-2xl">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={18} className="text-gray-400 dark:text-gray-500" />
               </div>
@@ -727,12 +735,23 @@ export default function Tournaments() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by Sport, Format, Location, or Status"
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all placeholder-gray-400"
             />
           </div>
 
-          <div className="flex gap-3 mt-4 sm:mt-0 sm:flex-nowrap flex-wrap overflow-x-auto">
-            <div className="relative min-w-[160px]">
+          {isAdmin && (
+          <button
+            onClick={handleCreate}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98] shrink-0"
+           >
+            <Plus size={18} />
+              Shto Turne
+            </button>
+             )}
+            </div>
+
+          <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 dark:border-slate-800/60 pt-3 mt-1">
+            <div className="relative min-w-[160px] flex-1 sm:flex-none">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                 <SlidersHorizontal size={14} />
               </div>
@@ -751,7 +770,7 @@ export default function Tournaments() {
               </select>
             </div>
 
-            <div className="relative min-w-[160px]">
+            <div className="relative min-w-[160px] flex-1 sm:flex-none">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                 <SlidersHorizontal size={14} />
               </div>
@@ -770,7 +789,7 @@ export default function Tournaments() {
               </select>
             </div>
 
-            <div className="relative min-w-[160px]">
+            <div className="relative min-w-[160px] flex-1 sm:flex-none">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                 <SlidersHorizontal size={14} />
               </div>
@@ -788,10 +807,8 @@ export default function Tournaments() {
                 ))}
               </select>
             </div>
-          </div>
-
             {isAdmin && (
-              <div className="relative min-w-[160px]">
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                   <SlidersHorizontal size={14} />
                 </div>
@@ -812,18 +829,16 @@ export default function Tournaments() {
                 </select>
               </div>
             )}
-
-            {/* Only admins can create tournaments or assign organizers. */}
-            {isAdmin && (
-              <button
-                onClick={handleCreate}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
-              >
-                <Plus size={18} />
-                + Add Tournament
-              </button>
-            )}
           </div>
+            
+            {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+            >
+              Clear Filters
+            </button>
+            )}
           </div>
         </div>
 
