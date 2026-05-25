@@ -217,6 +217,55 @@ function parseTournamentDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function parseStringQuery(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function buildTournamentFilters(query) {
+  const search = parseStringQuery(query.search);
+  const statusi = parseStringQuery(query.statusi);
+  const lloji = parseStringQuery(query.lloji);
+  const sportiId = query.sporti_id ? parsePositiveInteger(query.sporti_id) : null;
+  const organizatoriId = query.organizatori_id
+    ? parsePositiveInteger(query.organizatori_id)
+    : null;
+
+  const where = {};
+
+  if (search) {
+    where.OR = [
+      { emertimi: { contains: search, mode: "insensitive" } },
+      { lokacioni: { contains: search, mode: "insensitive" } },
+      { pershkrimi: { contains: search, mode: "insensitive" } },
+      { lloji: { contains: search, mode: "insensitive" } },
+      { statusi: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  if (statusi) {
+    where.statusi = { equals: statusi, mode: "insensitive" };
+  }
+
+  if (lloji) {
+    where.lloji = { equals: lloji, mode: "insensitive" };
+  }
+
+  if (sportiId) {
+    where.sporti_id = sportiId;
+  }
+
+  if (organizatoriId) {
+    where.organizatori_id = organizatoriId;
+  }
+
+  return where;
+}
+
 // Validates the tournament data and converts it to the appropriate format for the database
 function validateTournamentPayload(body) {
   const {
@@ -344,24 +393,50 @@ async function ensureOrganizerUser(userId) {
 
 // Route for getting all tournaments
 router.get("/", protect, async (req, res) => {
+  const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
+  const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
+  const skip = page && limit ? (page - 1) * limit : undefined;
+  const where = buildTournamentFilters(req.query);
+
   try {
     let result;
+    const queryOptions = {
+      where,
+      orderBy: { id: "asc" },
+      ...(page && limit ? { skip, take: limit } : {}),
+    };
 
     if (req.user.is_admin) {
-      result = await prisma.tournaments.findMany({
-        orderBy: { id: "asc" },
-      });
+      result = await prisma.tournaments.findMany(queryOptions);
     } else if (req.user.is_organizer) {
-      // Organizers only receive tournaments that are explicitly assigned to them.
       result = await prisma.tournaments.findMany({
-        where: { organizatori_id: req.user.id },
-        orderBy: { id: "asc" },
+        ...queryOptions,
+        where: { ...where, organizatori_id: req.user.id },
       });
     } else {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    res.send(result);
+    if (page && limit) {
+      const countWhere = req.user.is_admin
+        ? where
+        : { ...where, organizatori_id: req.user.id };
+      const total = await prisma.tournaments.count({ where: countWhere });
+
+      return res.json({
+        data: result,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
+      });
+    }
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

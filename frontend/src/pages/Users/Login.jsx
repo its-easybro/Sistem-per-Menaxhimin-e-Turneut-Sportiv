@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
@@ -76,21 +76,21 @@ const Login = () => {
     )
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card Container */}
-        <div className="bg-white rounded-lg shadow-xl p-8">
+        <div className="bg-white rounded-lg shadow-xl p-8 dark:bg-slate-900 dark:border dark:border-slate-800">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100 mb-2">
               Welcome Back
             </h1>
-            <p className="text-gray-600">Sign in to your account</p>
+            <p className="text-gray-600 dark:text-slate-400">Sign in to your account</p>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center dark:bg-rose-500/15 dark:border-rose-400/40 dark:text-rose-200">
               {error}
             </div>
           )}
@@ -101,7 +101,7 @@ const Login = () => {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
               >
                 Email Address
               </label>
@@ -112,10 +112,10 @@ const Login = () => {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition dark:bg-slate-950 dark:text-slate-100 ${
                   errors.email
                     ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-blue-500"
+                    : "border-gray-300 focus:ring-blue-500 dark:border-slate-700"
                 }`}
                 placeholder="you@example.com"
               />
@@ -128,7 +128,7 @@ const Login = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
               >
                 Password
               </label>
@@ -139,17 +139,17 @@ const Login = () => {
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition ${
+                  className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition dark:bg-slate-950 dark:text-slate-100 ${
                     errors.password
                       ? "border-red-500 focus:ring-red-500"
-                      : "border-gray-300 focus:ring-blue-500"
+                      : "border-gray-300 focus:ring-blue-500 dark:border-slate-700"
                   }`}
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((value) => !value)}
-                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -171,25 +171,25 @@ const Login = () => {
           </form>
 
           {/* Footer Links */}
-          <div className="mt-8 pt-6 border-t border-gray-200 space-y-3 text-center">
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-slate-800 space-y-3 text-center">
             <div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-slate-400">
                 Don't have an account?{" "}
-                <a
-                  href="/register"
-                  className="text-blue-600 hover:text-blue-700 font-semibold transition duration-200"
+                <Link
+                  to="/register"
+                  className="text-blue-600 hover:text-blue-700 font-semibold transition duration-200 dark:text-blue-300 dark:hover:text-blue-200"
                 >
                   Create one
-                </a>
+                </Link>
               </p>
             </div>
             <div>
-              <a
-                href="/forgot-password"
-                className="inline-block text-blue-600 hover:text-blue-700 font-medium text-sm transition duration-200 hover:underline"
+              <Link
+                to="/forgot-password"
+                className="inline-block text-blue-600 hover:text-blue-700 font-medium text-sm transition duration-200 hover:underline dark:text-blue-300 dark:hover:text-blue-200"
               >
                 Forgot your password?
-              </a>
+              </Link>
             </div>
           </div>
         </div>

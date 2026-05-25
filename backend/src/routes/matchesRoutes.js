@@ -423,33 +423,110 @@ router.get("/public/live", async (req, res) => {
 
 
 router.get("/", protect, async (req, res) => {
+  const page = req.query.page ? parsePositiveInt(req.query.page) : null;
+  const limit = req.query.limit ? Math.max(1, parsePositiveInt(req.query.limit)) : null;
+  const skip = page && limit ? (page - 1) * limit : undefined;
+  const { statusi, search, turneu_id, team_id } = req.query;
+
+  const where = {};
+
+  if (statusi) {
+    where.statusi = statusi;
+  }
+
+  if (turneu_id) {
+    const tournamentId = parsePositiveInt(turneu_id);
+    if (tournamentId) {
+      where.turneu_id = tournamentId;
+    }
+  }
+
+  if (team_id) {
+    const teamId = parsePositiveInt(team_id);
+    if (teamId) {
+      where.OR = [
+        { ekipi_shtepiak_id: teamId },
+        { ekipi_mysafir_id: teamId },
+      ];
+    }
+  }
+
+  if (search) {
+    const normalizedSearch = String(search).trim();
+    if (normalizedSearch) {
+      where.OR = [
+        ...(where.OR || []),
+        {
+          tournaments: {
+            emertimi: { contains: normalizedSearch, mode: "insensitive" },
+          },
+        },
+        {
+          teams_matches_ekipi_shtepiak_idToteams: {
+            emertimi: { contains: normalizedSearch, mode: "insensitive" },
+          },
+        },
+        {
+          teams_matches_ekipi_mysafir_idToteams: {
+            emertimi: { contains: normalizedSearch, mode: "insensitive" },
+          },
+        },
+        {
+          statusi: { contains: normalizedSearch, mode: "insensitive" },
+        },
+        {
+          faza: { contains: normalizedSearch, mode: "insensitive" },
+        },
+      ];
+    }
+  }
+
+  if (req.user.is_organizer) {
+    where.tournaments = {
+      organizatori_id: req.user.id,
+    };
+  }
+
+  if (req.user.is_referee) {
+    where.matchreferees = {
+      some: {
+        referees: {
+          user_id: req.user.id,
+        },
+      },
+    };
+  }
+
   try {
     let matches;
 
-    if (req.user.is_admin) {
-      matches = await prisma.matches.findMany({
-        orderBy: { id: "asc" },
-      });
-    } else if (req.user.is_organizer) {
-      matches = await prisma.matches.findMany({
-        where: {
-          tournaments: {
-            organizatori_id: req.user.id,
-          },
+    if (page && limit) {
+      const [total, rows] = await Promise.all([
+        prisma.matches.count({ where }),
+        prisma.matches.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { id: "asc" },
+        }),
+      ]);
+
+      return res.json({
+        data: rows,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
         },
-        orderBy: { id: "asc" },
       });
-    } else if (req.user.is_referee) {
+    }
+
+    if (req.user.is_admin || req.user.is_organizer || req.user.is_referee) {
       matches = await prisma.matches.findMany({
-        where: {
-          matchreferees: {
-            some: {
-              referees: {
-                user_id: req.user.id,
-              },
-            },
-          },
-        },
+        where,
         orderBy: { id: "asc" },
       });
     } else {

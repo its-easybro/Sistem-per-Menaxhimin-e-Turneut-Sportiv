@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { Navigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Trash2, Edit, Eye, EyeOff, Search, ChevronLeft, ChevronRight, Plus, SlidersHorizontal } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const initialFormData = {
@@ -93,9 +93,9 @@ function getStatusBadgeClasses(status) {
   // Maps tournament status values to badge color classes.
   if (status === "Aktiv") return "bg-green-100 text-green-700";
   if (status === "Regjistrimi") return "bg-blue-100 text-blue-700";
-  if (status === "Përfunduar") return "bg-gray-200 text-gray-700";
-  if (status === "Anuluar") return "bg-red-100 text-red-700";
-  return "bg-gray-100 text-gray-700";
+  if (status === "Përfunduar") return "bg-gray-200 text-gray-700 dark:bg-slate-700 dark:text-slate-100";
+  if (status === "Anuluar") return "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100";
+  return "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-100";
 }
 
 function getFormatBadgeClasses(format) {
@@ -103,8 +103,8 @@ function getFormatBadgeClasses(format) {
   if (format === "Liga") return "bg-purple-100 text-purple-700";
   if (format === "Grup + Eliminim") return "bg-amber-100 text-amber-700";
   if (format === "Vetëm Grup") return "bg-sky-100 text-sky-700";
-  if (format === "Vetëm Eliminim") return "bg-indigo-100 text-indigo-700";
-  return "bg-gray-100 text-gray-700";
+  if (format === "Vetëm Eliminim") return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-100";
+  return "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-100";
 }
 
 function toDateInputValue(value) {
@@ -131,28 +131,40 @@ function formatCurrency(value) {
   const amount = Number(value);
   return Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
 }
-//NEW 
+function normalizeUserRecord(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    username: user.username ?? user.emri ?? "",
+    full_name: user.full_name ?? ([user.emri, user.mbiemri].filter(Boolean).join(" ") || ""),
+    roli: user.roli ?? "user",
+    is_admin: user.is_admin ?? user.roli === "admin",
+    is_organizer: user.is_organizer ?? user.roli === "organizator",
+    is_referee: user.is_referee ?? user.roli === "gjyqtar",
+  };
+}
+
 function getOrganizerName(users, organizerId) {
-  const organizer = users.find ((item) => item.id === organizerId);
+  const organizer = users.find((item) => item.id === organizerId);
   return organizer?.full_name || organizer?.username || "N/A";
 }
 
 function isEligibleOrganizerUser(user) {
-  return user?.roli === "user" || user?.roli === "organizator";
+  return user?.is_organizer || user?.roli === "organizator";
 }
 
 function TournamentFormFields({ formData, sports, users, onChange, canAssignOrganizer, formErrors = {} }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Tournament Name</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Tournament Name</span>
         <input
           type="text"
           name="emertimi"
           value={formData.emertimi}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
-            formErrors.emertimi ? "border-red-500" : "border-gray-300"
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+            formErrors.emertimi ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
         />
@@ -162,13 +174,13 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Sport</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Sport</span>
         <select
           name="sporti_id"
           value={formData.sporti_id}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
-            formErrors.sporti_id ? "border-red-500" : "border-gray-300"
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+            formErrors.sporti_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
         >
@@ -185,13 +197,13 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Format</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Format</span>
         <select
           name="lloji"
           value={formData.lloji}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
-            formErrors.lloji ? "border-red-500" : "border-gray-300"
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+            formErrors.lloji ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
         >
@@ -208,13 +220,13 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Status</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Status</span>
         <select
           name="statusi"
           value={formData.statusi}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
-            formErrors.statusi ? "border-red-500" : "border-gray-300"
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+            formErrors.statusi ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
         >
           {statusOptions.map((status) => (
@@ -229,14 +241,14 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Start Date</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Start Date</span>
         <input
           type="date"
           name="data_fillimit"
           value={formData.data_fillimit}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
-            formErrors.data_fillimit ? "border-red-500" : "border-gray-300"
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+            formErrors.data_fillimit ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
         />
@@ -246,14 +258,14 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">End Date</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">End Date</span>
         <input
           type="date"
           name="data_perfundimit"
           value={formData.data_perfundimit}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
-            formErrors.data_perfundimit ? "border-red-500" : "border-gray-300"
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+            formErrors.data_perfundimit ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
         />
@@ -263,14 +275,14 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Location</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Location</span>
         <input
           type="text"
           name="lokacioni"
           value={formData.lokacioni}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
-            formErrors.lokacioni ? "border-red-500" : "border-gray-300"
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+            formErrors.lokacioni ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
         />
         {formErrors.lokacioni && (
@@ -280,25 +292,27 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
 
       {canAssignOrganizer && (
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700">Assign Organizer</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Assign Organizer</span>
           <select
             name="organizatori_id"
             value={formData.organizatori_id}
             onChange={onChange}
-            className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+            className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
           >
             <option value="">No organizer</option>
-            {users.map((organizer) => (
+            {users
+              .filter(isEligibleOrganizerUser)
+              .map((organizer) => (
               <option key={organizer.id} value={organizer.id}>
                 {organizer.full_name || organizer.username} ({organizer.email})
               </option>
-            ))}
+              ))}
           </select>
         </label>
       )}
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Registration Price</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Registration Price</span>
         <input
           type="number"
           min="0"
@@ -306,8 +320,8 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="cmimi_regjistrimit"
           value={formData.cmimi_regjistrimit}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 outline-none focus:border-blue-500 ${
-            formErrors.cmimi_regjistrimit ? "border-red-500" : "border-gray-300"
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+            formErrors.cmimi_regjistrimit ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
         />
         {formErrors.cmimi_regjistrimit && (
@@ -316,13 +330,13 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
       </label>
 
       <label className="flex flex-col gap-2 md:col-span-2">
-        <span className="text-sm font-medium text-gray-700">Description</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Description</span>
         <textarea
           name="pershkrimi"
           value={formData.pershkrimi}
           onChange={onChange}
           rows={4}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+          className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
         />
       </label>
     </div>
@@ -341,8 +355,10 @@ export default function Tournaments() {
   const [sports, setSports] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -351,49 +367,87 @@ export default function Tournaments() {
   const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
+  const [_pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({
+    search: "",
+    lloji: "",
+    statusi: "",
+    sporti_id: "",
+    organizatori_id: "",
+  });
   const assignableUsers = users.filter(isEligibleOrganizerUser);
 
-  // Loads tournaments and sports in parallel for table and form dropdowns.
-  useEffect(() => {
-    const loadTournaments = async () => {
-      // Blocks users without admin/organizer roles from loading tournament data.
-      if (!canManageTournaments) {
-        setLoading(false);
-        return;
+  const loadTournaments = useCallback(async (pageNum, filtersObj) => {
+    if (!canManageTournaments) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = new URLSearchParams({
+        page: pageNum,
+        limit: 10,
+        ...(filtersObj.search && { search: filtersObj.search }),
+        ...(filtersObj.lloji && { lloji: filtersObj.lloji }),
+        ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
+        ...(filtersObj.sporti_id && { sporti_id: filtersObj.sporti_id }),
+        ...(filtersObj.organizatori_id && { organizatori_id: filtersObj.organizatori_id }),
+      });
+
+      const requests = [api.get(`/tournaments?${params}`), api.get(`/sports`)];
+      if (isAdmin) {
+        requests.push(api.get(`/users`));
       }
 
-      try {
-        setLoading(true);
-        setError("");
+      const [tournamentsRes, sportsRes, usersRes] = await Promise.all(requests);
 
-        const requests = [
-          api.get(`/tournaments`),
-          api.get(`/sports`),
-        ];
+      const tournamentPayload = tournamentsRes.data;
+      const tournamentsData = Array.isArray(tournamentPayload)
+        ? tournamentPayload
+        : tournamentPayload?.data ?? [];
+      const paginationData = Array.isArray(tournamentPayload)
+        ? null
+        : tournamentPayload?.pagination ?? null;
 
-        if (isAdmin) {
-          requests.push(api.get(`/users`));
-        }
-
-        // For organizers, `/tournaments` is already filtered in the backend
-        // so this page receives only the tournament(s) assigned to them.
-        const [tournamentsRes, sportsRes, usersRes] = await Promise.all(requests);
-
-        const tournamentsData = tournamentsRes.data;
-        const sportsData = sportsRes.data;
-
-        setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
-        setSports(Array.isArray(sportsData) ? sportsData : []);
-        setUsers(Array.isArray(usersRes?.data) ? usersRes.data : []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTournaments();
+      setTournaments(Array.isArray(tournamentsData) ? tournamentsData : []);
+      setPagination(paginationData);
+      setSports(Array.isArray(sportsRes.data) ? sportsRes.data : []);
+      const usersPayload = usersRes?.data?.data ?? usersRes?.data ?? [];
+      setUsers(Array.isArray(usersPayload) ? usersPayload.map(normalizeUserRecord) : []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setHasLoaded(true);
+    }
   }, [canManageTournaments, isAdmin]);
+
+  useEffect(() => {
+    loadTournaments(page, filters);
+  }, [loadTournaments, page, filters]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }))
+      if (searchQuery !== filters.search) {
+        setPage(1);
+      }
+    }, 400);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, filters.search])
 
   const resetForm = () => {
     setFormData(initialFormData);
@@ -582,6 +636,15 @@ export default function Tournaments() {
     }
   };
 
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setPage(1);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -598,17 +661,22 @@ export default function Tournaments() {
     }
   };
 
-  // Applies search against tournament name, sport, location, and status.
-  const filteredTournaments = tournaments.filter((item) => {
-    const query = searchQuery.toLowerCase();
+  const tournamentList = Array.isArray(tournaments) ? tournaments : [];
+  const filteredTournaments = tournamentList.filter((item) => {
+    if (!debouncedSearch) {
+      return true;
+    }
 
-    return (
-      item.emertimi?.toLowerCase().includes(query) ||
-      item.lloji?.toLowerCase().includes(query) ||
-      item.lokacioni?.toLowerCase().includes(query) ||
-      item.statusi?.toLowerCase().includes(query) ||
-      getSportName(item.sporti_id).toLowerCase().includes(query)
-    );
+    const query = debouncedSearch.toLowerCase();
+    return [
+      item.emertimi,
+      getSportName(item.sporti_id),
+      item.lloji,
+      item.statusi,
+      item.lokacioni,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query));
   });
 
   // Organizers can open this page too, but only for their assigned tournament data.
@@ -616,7 +684,7 @@ export default function Tournaments() {
     return <Navigate to="/login" replace />;
   }
 
-  if (loading) {
+  if (loading && !hasLoaded) {
     return (
         <div className="delay-skeleton">
           <TableSkeleton />
@@ -635,7 +703,7 @@ export default function Tournaments() {
   }
 
   return (
-    <div className="bg-gray-50 p-4">
+    <div className="bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
         <Alert 
           type={alert.type} 
@@ -645,52 +713,122 @@ export default function Tournaments() {
       )}
       <div className="w-full mx-auto space-y-6">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Tournament Management
-            </h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">Tournament Management</h2>
+          
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-gray-400 dark:text-gray-500" />
+              </div>
+            <input
+              type="text"
+              name="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by Sport, Format, Location, or Status"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+            />
+          </div>
+
+          <div className="flex gap-3 mt-4 sm:mt-0 sm:flex-nowrap flex-wrap overflow-x-auto">
+            <div className="relative min-w-[160px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                <SlidersHorizontal size={14} />
+              </div>
+              <select
+                name="sporti_id"
+                value={filters.sporti_id}
+                onChange={handleFilterChange}
+                className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+              >
+                <option value="">All sports</option>
+                {sports.map((sport) => (
+                  <option key={sport.id} value={sport.id}>
+                    {sport.emertimi}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative min-w-[160px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                <SlidersHorizontal size={14} />
+              </div>
+              <select
+                name="lloji"
+                value={filters.lloji}
+                onChange={handleFilterChange}
+                className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+              >
+                <option value="">All formats</option>
+                {tournamentTypeOptions.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative min-w-[160px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                <SlidersHorizontal size={14} />
+              </div>
+              <select
+                name="statusi"
+                value={filters.statusi}
+                onChange={handleFilterChange}
+                className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+              >
+                <option value="">All statuses</option>
+                {statusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+            {isAdmin && (
+              <div className="relative min-w-[160px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="organizatori_id"
+                  value={filters.organizatori_id}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All organizers</option>
+                  {users
+                    .filter(isEligibleOrganizerUser)
+                    .map((userItem) => (
+                      <option key={userItem.id} value={userItem.id}>
+                        {userItem.full_name || userItem.username || userItem.email}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
 
             {/* Only admins can create tournaments or assign organizers. */}
             {isAdmin && (
               <button
                 onClick={handleCreate}
-                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
               >
+                <Plus size={18} />
                 + Add Tournament
               </button>
             )}
           </div>
-
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, sport, format, location, or status"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
-            />
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
           </div>
         </div>
 
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
-          {filteredTournaments.length === 0 ? (
-            <div className="w-full px-6 py-12 text-center text-gray-600">
-              {searchQuery ? `No tournaments match "${searchQuery}". Try a different search.` : 'No tournaments found. Click "Add Tournament" to add a new one.'}
-            </div>
-          ) : (
+        <div className={`flex bg-white dark:bg-slate-900 rounded-lg shadow-md overflow-x-auto ${loading ? `opacity-60 pointer-events-none` : ''}`}>
+          {filteredTournaments.length > 0 ? (
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-800 text-white">
                 <tr>
@@ -705,46 +843,46 @@ export default function Tournaments() {
                   <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                 {filteredTournaments.map((tournament) => (
-                  <tr key={tournament.id} className="hover:bg-gray-100 transition-colors duration-150">
+                  <tr key={tournament.id} className="hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors duration-150">
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-gray-900">
+                      <div className="font-semibold text-gray-900 dark:text-slate-100">
                         {tournament.emertimi}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-slate-400">
                         Registration: {formatCurrency(tournament.cmimi_regjistrimit)} EUR
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-700 font-semibold">
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-200 font-semibold">
                       {getSportName(tournament.sporti_id)}
                     </td>
                     {isAdmin && (
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">
                         {getOrganizerName(users, tournament.organizatori_id)}
                       </td>
                     )}
-                    <td className="px-4 py-3 text-sm text-gray-700">
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">
                       <span
                         className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getFormatBadgeClasses(tournament.lloji)}`}
                       >
                         {tournament.lloji || "N/A"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 text-center">
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 text-center">
                       <div>{formatDate(tournament.data_fillimit)}</div>
-                      <div className="text-gray-500"> 
+                      <div className="text-gray-500 dark:text-slate-400"> 
                         to {formatDate(tournament.data_perfundimit)}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">
                       <span
                         className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClasses(tournament.statusi)}`}
                       >
                         {tournament.statusi || "N/A"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-700 font-semibold">
+                    <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300 font-semibold">
                       {tournament.lokacioni || "N/A"}
                     </td>
                     <td className="px-4 py-3">
@@ -781,6 +919,12 @@ export default function Tournaments() {
                 ))}
               </tbody>
             </table>
+          ) : (
+            <div className="w-full px-6 py-12 text-center text-gray-600 dark:text-slate-400">
+              {debouncedSearch
+                ? `No tournaments match "${debouncedSearch}". Try a different search.`
+                : 'No tournaments found. Click "Add Tournament" to add a new one.'}
+            </div>
           )}
         </div>
       </div>
@@ -791,10 +935,10 @@ export default function Tournaments() {
           onClick={handleCloseModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Add Tournament</h3>
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Add Tournament</h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               <TournamentFormFields
                 formData={formData}
@@ -830,70 +974,70 @@ export default function Tournaments() {
           onClick={handleCloseViewModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Tournament Details</h3>
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Tournament Details</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Name</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                   {selectedTournament.emertimi || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sport</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Sport</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                   {getSportName(selectedTournament.sporti_id)}
                 </p>
               </div>
               {isAdmin && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Organizer</label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Organizer</label>
+                  <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                     {getOrganizerName(users, selectedTournament.organizatori_id)}
                   </p>
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Format</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                   {selectedTournament.lloji || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Status</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                   {selectedTournament.statusi || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Start Date</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                   {formatDate(selectedTournament.data_fillimit)}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">End Date</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                   {formatDate(selectedTournament.data_perfundimit)}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Location</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                   {selectedTournament.lokacioni || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Registration Price</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Registration Price</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
                   {formatCurrency(selectedTournament.cmimi_regjistrimit)} EUR
                 </p>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg whitespace-pre-wrap">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Description</label>
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg whitespace-pre-wrap">
                   {selectedTournament.pershkrimi || "N/A"}
                 </p>
               </div>
@@ -917,10 +1061,10 @@ export default function Tournaments() {
           onClick={handleCloseEditModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Tournament</h3>
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Edit Tournament</h3>
             <form onSubmit={handleEditSubmit} className="space-y-6">
               <TournamentFormFields
                 formData={formData}
@@ -956,14 +1100,14 @@ export default function Tournaments() {
           onClick={handleCloseDeleteModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Delete Tournament</h3>
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Delete Tournament</h3>
             <div className="space-y-4">
-              <p className="text-gray-700">
+              <p className="text-gray-700 dark:text-slate-300">
                 Are you sure you want to delete{" "}
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-slate-100">
                   {selectedTournament.emertimi}
                 </span>
                 ?

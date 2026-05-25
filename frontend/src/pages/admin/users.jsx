@@ -67,9 +67,11 @@ export default function Users() {
   // Manages user records, modal visibility, selected row, and form state.
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -117,6 +119,7 @@ export default function Users() {
       setError(err.message);
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
   }, []);
 
@@ -129,6 +132,18 @@ export default function Users() {
 
     loadUsersPage(page, filters);
   }, [user, loadUsersPage, page, filters]);
+  // Implements debounced search by updating the debounced search term and filters after a delay when the search query changes, and resets to the first page if the search term has changed to ensure relevant results are shown.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }));
+      if (searchQuery !== filters.search) {
+        setPage(1);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, filters.search]);
   // Handles changes to filter inputs by updating the filters state and resetting to the first page to show relevant results.
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -269,7 +284,7 @@ export default function Users() {
   const userList = Array.isArray(users) ? users : [];
 
   const filteredUsers = userList.filter((item) => {
-    const query = searchQuery.toLowerCase();
+  const query = debouncedSearch.toLowerCase();
 
     return (
       // Checks if email, username, or full name contains the search query (case-insensitive).
@@ -310,7 +325,7 @@ export default function Users() {
           onClose={() => setAlert(null)}
         />
       )}
-      {loading ? (
+      {loading && !hasLoaded ? (
           <div className="delay-skeleton mt-4">
             <TableSkeleton />
           </div>
@@ -328,7 +343,7 @@ export default function Users() {
                 <input
                   type="text"
                   placeholder="Search by email, username..."
-                  value={filters.search}
+                  value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
                 />
@@ -366,7 +381,7 @@ export default function Users() {
           </div>
         </div>
 
-        <div className={`flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto ${loading ? 'opacity-60' : ''}`}>
+        <div className={`flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
           <table className="w-full text-left border-collapse min-w-[500px]">
             <thead className="bg-gray-800 dark:bg-slate-800 text-white">
               <tr>
@@ -427,8 +442,8 @@ export default function Users() {
               ) : (
                 <tr>
                   <td colSpan="7" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
-                    {searchQuery
-                      ? `No users match "${searchQuery}". Try a different search.`
+                    {debouncedSearch
+                      ? `No users match "${debouncedSearch}". Try a different search.`
                       : "No users found."}
                   </td>
                 </tr>

@@ -204,18 +204,18 @@ export default function OrganizerTeams() {
   }
 
   if (error) {
-    return <div className="rounded-xl bg-white p-6 text-sm text-red-600 shadow-sm">Error: {error}</div>;
+    return <div className="rounded-xl bg-white p-6 text-sm text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400">Error: {error}</div>;
   }
 
   return (
     <div className="space-y-6">
       {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
 
-      <div className="rounded-xl bg-white p-6 shadow-sm">
+      <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-slate-900 dark:border dark:border-slate-800">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tournament Teams</h1>
-            <p className="mt-1 text-sm text-gray-600">Register teams only to the tournaments assigned to you.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Tournament Teams</h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">Register teams only to the tournaments assigned to you.</p>
           </div>
           <button
             onClick={() => {
@@ -234,14 +234,14 @@ export default function OrganizerTeams() {
             const items = registrations.filter((item) => item.turneu_id === tournament.id);
 
             return (
-              <div key={tournament.id} className="rounded-lg border border-gray-200">
-                <div className="border-b border-gray-200 px-4 py-3">
-                  <h2 className="font-semibold text-gray-900">{tournament.emertimi}</h2>
+              <div key={tournament.id} className="rounded-lg border border-gray-200 dark:border-slate-800 dark:bg-slate-900">
+                <div className="border-b border-gray-200 px-4 py-3 dark:border-slate-800">
+                  <h2 className="font-semibold text-gray-900 dark:text-slate-100">{tournament.emertimi}</h2>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left">
-                    <thead className="bg-gray-50 text-sm text-gray-700">
+                    <thead className="bg-gray-50 text-sm text-gray-700 dark:bg-slate-800 dark:text-slate-200">
                       <tr>
                         <th className="px-4 py-3">Team</th>
                         <th className="px-4 py-3">Status</th>
@@ -249,19 +249,19 @@ export default function OrganizerTeams() {
                         <th className="px-4 py-3 text-center">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                       {items.length === 0 ? (
                         <tr>
-                          <td colSpan="4" className="px-4 py-6 text-center text-gray-500">
+                          <td colSpan="4" className="px-4 py-6 text-center text-gray-500 dark:text-slate-400">
                             No teams registered yet.
                           </td>
                         </tr>
                       ) : (
                         items.map((item) => (
                           <tr key={item.id}>
-                            <td className="px-4 py-3 font-medium text-gray-900">{getTeamName(item.ekipi_id)}</td>
-                            <td className="px-4 py-3">{item.statusi}</td>
-                            <td className="px-4 py-3">{Number(item.tarifa_paguar || 0).toFixed(2)} EUR</td>
+                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">{getTeamName(item.ekipi_id)}</td>
+                            <td className="px-4 py-3 text-gray-700 dark:text-slate-200">{item.statusi}</td>
+                            <td className="px-4 py-3 text-gray-700 dark:text-slate-200">{Number(item.tarifa_paguar || 0).toFixed(2)} EUR</td>
                             <td className="px-4 py-3">
                               <div className="flex justify-center gap-2">
                                 <button
@@ -295,12 +295,12 @@ export default function OrganizerTeams() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
-          <div className="w-full max-w-2xl rounded-xl bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-6 text-2xl font-bold text-gray-900">Add Team To Tournament</h2>
+          <div className="w-full max-w-2xl rounded-xl bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-slate-100">Add Team To Tournament</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700">Tournament</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Tournament</span>
                   <select
                     name="turneu_id"
                     value={formData.turneu_id}
@@ -314,7 +314,7 @@ export default function OrganizerTeams() {
                         setFormErrors((prev) => ({ ...prev, turneu_id: "" }));
                       }
                     }}
-                    className={`rounded-lg border px-3 py-2 ${formErrors.turneu_id ? "border-red-500" : "border-gray-300"}`}
+                    className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.turneu_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                     required
                   >
                     <option value="">Select tournament</option>
@@ -330,7 +330,7 @@ export default function OrganizerTeams() {
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700">Team</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Team</span>
                   <select
                     name="ekipi_id"
                     value={formData.ekipi_id}
@@ -340,7 +340,7 @@ export default function OrganizerTeams() {
                         setFormErrors((prev) => ({ ...prev, ekipi_id: "" }));
                       }
                     }}
-                    className={`rounded-lg border px-3 py-2 ${formErrors.ekipi_id ? "border-red-500" : "border-gray-300"}`}
+                    className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.ekipi_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                     required
                   >
                     <option value="">Select team</option>
@@ -356,7 +356,7 @@ export default function OrganizerTeams() {
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700">Status</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Status</span>
                   <select
                     name="statusi"
                     value={formData.statusi}
@@ -366,7 +366,7 @@ export default function OrganizerTeams() {
                         setFormErrors((prev) => ({ ...prev, statusi: "" }));
                       }
                     }}
-                    className={`rounded-lg border px-3 py-2 ${formErrors.statusi ? "border-red-500" : "border-gray-300"}`}
+                    className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.statusi ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                   >
                     <option value="Në Pritje">Në Pritje</option>
                     <option value="Aprovuar">Aprovuar</option>
@@ -379,7 +379,7 @@ export default function OrganizerTeams() {
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700">Fee Paid</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Fee Paid</span>
                   <input
                     type="number"
                     min="0"
@@ -391,7 +391,7 @@ export default function OrganizerTeams() {
                         setFormErrors((prev) => ({ ...prev, tarifa_paguar: "" }));
                       }
                     }}
-                    className={`rounded-lg border px-3 py-2 ${formErrors.tarifa_paguar ? "border-red-500" : "border-gray-300"}`}
+                    className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.tarifa_paguar ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                   />
                   {formErrors.tarifa_paguar && (
                     <p className="text-red-500 text-xs">{formErrors.tarifa_paguar}</p>
@@ -416,12 +416,12 @@ export default function OrganizerTeams() {
       )}
       {showEditModal && selectedRegistration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={handleCloseEditModal}>
-          <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">Edit Team</h2>
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-slate-100">Edit Team</h2>
             <form onSubmit={handleEditSubmit}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700">Tournament</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Tournament</span>
                   <select
                     name="turneu_id"
                     value={formData.turneu_id}
@@ -431,7 +431,7 @@ export default function OrganizerTeams() {
                         setFormErrors((prev) => ({ ...prev, turneu_id: "" }));
                       }
                     }}
-                    className={`rounded-lg border px-3 py-2 ${formErrors.turneu_id ? "border-red-500" : "border-gray-300"}`}
+                    className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.turneu_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                     required
                   >
                     <option value="">Select tournament</option>
@@ -447,7 +447,7 @@ export default function OrganizerTeams() {
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700">Team</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Team</span>
                   <select
                     name="ekipi_id"
                     value={formData.ekipi_id}
@@ -457,7 +457,7 @@ export default function OrganizerTeams() {
                         setFormErrors((prev) => ({ ...prev, ekipi_id: "" }));
                       }
                     }}
-                    className={`rounded-lg border px-3 py-2 ${formErrors.ekipi_id ? "border-red-500" : "border-gray-300"}`}
+                    className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.ekipi_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                     required
                   >
                     <option value="">Select team</option>
@@ -473,7 +473,7 @@ export default function OrganizerTeams() {
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700">Status</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Status</span>
                   <select
                     name="statusi"
                     value={formData.statusi}
@@ -483,7 +483,7 @@ export default function OrganizerTeams() {
                         setFormErrors((prev) => ({ ...prev, statusi: "" }));
                       }
                     }}
-                    className={`rounded-lg border px-3 py-2 ${formErrors.statusi ? "border-red-500" : "border-gray-300"}`}
+                    className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.statusi ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                   >
                     <option value="Në Pritje">Në Pritje</option>
                     <option value="Aprovuar">Aprovuar</option>
@@ -496,7 +496,7 @@ export default function OrganizerTeams() {
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700">Fee Paid</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Fee Paid</span>
                   <input
                     type="number"
                     min="0"
@@ -508,7 +508,7 @@ export default function OrganizerTeams() {
                         setFormErrors((prev) => ({ ...prev, tarifa_paguar: "" }));
                       }
                     }}
-                    className={`rounded-lg border px-3 py-2 ${formErrors.tarifa_paguar ? "border-red-500" : "border-gray-300"}`}
+                    className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.tarifa_paguar ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                   />
                   {formErrors.tarifa_paguar && (
                     <p className="text-red-500 text-xs">{formErrors.tarifa_paguar}</p>
@@ -530,9 +530,9 @@ export default function OrganizerTeams() {
       )}
       {showDeleteModal && selectedRegistration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}>
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900">Delete Team</h2>
-            <p className="mb-6 text-gray-600">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-slate-100">Delete Team</h2>
+            <p className="mb-6 text-gray-600 dark:text-slate-300">
               Are you sure you want to delete {getTeamName(selectedRegistration.ekipi_id)} from this tournament?
             </p>
             <div className="flex gap-3">
