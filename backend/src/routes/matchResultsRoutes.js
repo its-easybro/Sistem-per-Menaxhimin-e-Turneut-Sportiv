@@ -122,23 +122,70 @@ function formatMatchResult(result) {
 // Route for getting all match results with detailed data. This route is protected.
 router.get("/", protect, async (req, res) => {
   try {
-    const results = await prisma.matchresults.findMany({
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit) || 10);
+    const skip = (page - 1) * limit;
+    const { fromDate, toDate, search } = req.query;
+
+    const where = {};
+
+    // Date range filtering
+    if (fromDate || toDate) {
+      where.matches = {
+        data_ndeshjes: {},
+      };
+
+      if (fromDate) {
+        const from = new Date(fromDate);
+        from.setHours(0, 0, 0, 0);
+        where.matches.data_ndeshjes.gte = from;
+      }
+
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        where.matches.data_ndeshjes.lte = to;
+      }
+    }
+
+    // Fetch results (without pagination initially to apply search filter)
+    const allResults = await prisma.matchresults.findMany({
+      where,
       include: matchResultInclude,
+      orderBy: {
+        matches: {
+          data_ndeshjes: "desc",
+        },
+      },
     });
 
-    const formattedResult = results
-      .sort((a, b) => {
-        const dateA = a.matches?.data_ndeshjes
-          ? new Date(a.matches.data_ndeshjes).getTime()
-          : 0;
-        const dateB = b.matches?.data_ndeshjes
-          ? new Date(b.matches.data_ndeshjes).getTime()
-          : 0;
-        return dateB - dateA;
-      })
-      .map(formatMatchResult);
+    // Apply search filter on formatted results
+    let filteredResults = allResults.map(formatMatchResult);
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredResults = filteredResults.filter(
+        (result) =>
+          (result.ekipi_shtepiak && result.ekipi_shtepiak.toLowerCase().includes(searchLower)) ||
+          (result.ekipi_mysafir && result.ekipi_mysafir.toLowerCase().includes(searchLower)) ||
+          (result.turneu_emri && result.turneu_emri.toLowerCase().includes(searchLower))
+      );
+    }
 
-    res.json(formattedResult);
+    // Apply pagination on filtered results
+    const total = filteredResults.length;
+    const paginatedResults = filteredResults.slice(skip, skip + limit);
+
+    res.json({
+      data: paginatedResults,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

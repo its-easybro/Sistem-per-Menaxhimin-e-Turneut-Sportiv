@@ -1,9 +1,9 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState, useCallback } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import * as yup from "yup";
 import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
-import { Award, Plus, Search, Edit, Trash2, Spotlight } from "lucide-react";
+import { Award, Plus, Search, Edit, Trash2, Spotlight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Alert } from "../../components/Alert";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
@@ -96,7 +96,12 @@ export default function MatchResults() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMatchResult, setSelectedMatchResult] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [alert, setAlert] = useState(null);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [filters, setFilters] = useState({ fromDate: "", toDate: "", search: "" });
   const [formData, setFormData] = useState({
     ndeshja_id: "",
     golat_shtepiak: "",
@@ -107,17 +112,48 @@ export default function MatchResults() {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  // Loads results and all related entities used in winner/MVP/referee lookups.
+  // Loads match results with pagination and date filters
+  const loadMatchResultsPage = useCallback(async (pageNum, filtersObj) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: pageNum,
+        limit: 10,
+        ...(filtersObj.fromDate && { fromDate: filtersObj.fromDate }),
+        ...(filtersObj.toDate && { toDate: filtersObj.toDate }),
+        ...(filtersObj.search && { search: filtersObj.search }),
+      });
+      const response = await api.get(`/match-results?${params}`);
+
+      let rows = [];
+      let paginationData = null;
+      if (Array.isArray(response.data?.data)) {
+        rows = response.data.data;
+        paginationData = response.data?.pagination ?? null;
+      } else if (Array.isArray(response.data)) {
+        rows = response.data;
+        paginationData = null;
+      }
+
+      setPagination(paginationData);
+      setMatchResults(rows);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setHasLoaded(true);
+    }
+  }, []);
+
+  // Loads all related entities (matches, tournaments, sports, teams, players, etc.)
   useEffect(() => {
-    const loadMatchResults = async () => {
+    const loadRelatedEntities = async () => {
       if (!user?.is_admin) {
         setLoading(false);
         return;
       }
       try {
-        setLoading(true);
         const [
-          matchResultsResponse,
           matchesResponse,
           tournamentsResponse,
           sportsResponse,
@@ -126,7 +162,6 @@ export default function MatchResults() {
           matchRefereesResponse,
           refereesResponse,
         ] = await Promise.all([
-          api.get(`/match-results`),
           api.get(`/matches`),
           api.get(`/tournaments`),
           api.get(`/sports`),
@@ -136,7 +171,6 @@ export default function MatchResults() {
           api.get(`/referees`)
         ]);
 
-        const MatchResultData = matchResultsResponse.data;
         const matchesData = matchesResponse.data;
         const tournamentsData = tournamentsResponse.data;
         const sportsData = sportsResponse.data;
@@ -145,7 +179,6 @@ export default function MatchResults() {
         const matchRefereesData = matchRefereesResponse.data;
         const refereesData = refereesResponse.data;
 
-        setMatchResults(MatchResultData);
         setMatches(matchesData);
         setTournaments(tournamentsData);
         setSports(sportsData);
@@ -153,14 +186,52 @@ export default function MatchResults() {
         setPlayers(playersData);
         setMatchReferees(matchRefereesData);
         setReferees(refereesData);
+
+        // Load first page of match results
+        loadMatchResultsPage(1, filters);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setLoading(false);
       }
     };
-    loadMatchResults();
-  }, [user]);
+    loadRelatedEntities();
+  }, [user, loadMatchResultsPage, filters]);
+
+  // Load new page when page number changes
+  useEffect(() => {
+    if (!user?.is_admin || !hasLoaded) return;
+    loadMatchResultsPage(page, filters);
+  }, [page, loadMatchResultsPage, filters, user, hasLoaded]);
+
+  // Handle filter changes and pagination
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    const newFilters = { ...filters, [name]: value };
+    setFilters(newFilters);
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    const resetFilters = { fromDate: "", toDate: "", search: "" };
+    setFilters(resetFilters);
+    setSearchQuery("");
+    setPage(1);
+    loadMatchResultsPage(1, resetFilters);
+  };
+
+  const hasActiveFilters = filters.fromDate !== "" || filters.toDate !== "" || filters.search !== "";
+
+  // Implements debounced search like in users.jsx
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }));
+      if (searchQuery !== filters.search) {
+        setPage(1);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, filters.search]);
 
   // Create match result handlers
   const handleCreate = () => {
@@ -214,11 +285,7 @@ export default function MatchResults() {
     e.preventDefault();
     try {
       await matchResultCreateSchema.validate(formData, { abortEarly: false });
-      const response = await api.post(`/match-results`, buildMatchResultPayload());
-
-      const newMatch = response.data;
-
-      setMatchResults([...MatchResults, newMatch]);
+      await api.post(`/match-results`, buildMatchResultPayload());
 
       setFormData({
         ndeshja_id: "",
@@ -232,6 +299,7 @@ export default function MatchResults() {
 
       setShowModal(false);
       setAlert({ type: "success", message: "Match result created successfully!" });
+      await loadMatchResultsPage(page, filters);
     } catch (err) {
       if (err.inner) {
         const validationErrors = {};
@@ -307,13 +375,7 @@ export default function MatchResults() {
 
     try {
       await matchResultUpdateSchema.validate(formData, { abortEarly: false });
-      const response = await api.put(`/match-results/${selectedMatchResult.id}`, buildMatchResultPayload())
-
-      const updatedMatch = response.data;
-
-      setMatchResults(
-        MatchResults.map((e) => (e.id === updatedMatch.id ? updatedMatch : e)),
-      );
+      await api.put(`/match-results/${selectedMatchResult.id}`, buildMatchResultPayload())
 
       setFormData({
         ndeshja_id: "",
@@ -328,6 +390,7 @@ export default function MatchResults() {
       setShowEditModal(false);
       setSelectedMatchResult(null);
       setAlert({ type: "success", message: "Match result updated successfully!" });
+      await loadMatchResultsPage(page, filters);
     } catch (err) {
       if (err.inner) {
         const validationErrors = {};
@@ -346,14 +409,11 @@ export default function MatchResults() {
     if (!selectedMatchResult) return;
     try {
       await api.delete(`/match-results/${selectedMatchResult.id}`);
-      
-      setMatchResults(
-        MatchResults.filter((e) => e.id !== selectedMatchResult.id),
-      );
 
       setSelectedMatchResult(null);
       setShowDeleteModal(false);
       setAlert({ type: "success", message: "Match result deleted successfully!" });
+      await loadMatchResultsPage(page, filters);
     } catch (err) {
       setAlert({ type: "error", message: "Error deleting match result: " + err.message });
     }
@@ -445,7 +505,7 @@ export default function MatchResults() {
     return <Navigate to="/" replace />;
   }
 
-  if (loading) {
+  if (loading && !hasLoaded) {
     return (
       <div className="delay-skeleton">
         <TableSkeleton />
@@ -481,43 +541,65 @@ export default function MatchResults() {
           onClose={() => setAlert(null)}
         />
       )}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Match Results</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-            Manage match results, notes, and MVP players
-          </p>
-        </div>
-        <button
-          onClick={handleCreate}
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
-        >
-          <span className="font-medium">+ Add Result</span>
-        </button>
-      </div>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">Match Results</h2>
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <input
-          type="text"
-          placeholder="Search by team name or tournament..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:placeholder:text-slate-500"
-        />
-        <svg
-          className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
+        <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 md:relative">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-3xl">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-gray-400 dark:text-gray-500" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search by team name or tournament..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+              />
+            </div>
+
+            <div className="relative flex-1 min-w-[140px]">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">From Date</label>
+              <input
+                type="date"
+                name="fromDate"
+                value={filters.fromDate}
+                onChange={handleFilterChange}
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all"
+              />
+            </div>
+
+            <div className="relative flex-1 min-w-[140px]">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">To Date</label>
+              <input
+                type="date"
+                name="toDate"
+                value={filters.toDate}
+                onChange={handleFilterChange}
+                className="w-full px-3 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all"
+              />
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer md:absolute md:left-[calc(100%-13rem)] md:top-1/2 md:-translate-y-1/2 md:ml-0"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={handleCreate}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
+          >
+            <Plus size={18} />
+            Add Result
+          </button>
+        </div>
       </div>
 
       {/* Match Cards Grid */}
@@ -595,6 +677,49 @@ export default function MatchResults() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={!pagination.hasPrev}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-700 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
+          >
+            <ChevronLeft size={18} />
+            Previous
+          </button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setPage(pageNum)}
+                className={`px-3 py-2 rounded-lg font-medium transition-all ${
+                  page === pageNum
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setPage(Math.min(pagination.totalPages, page + 1))}
+            disabled={!pagination.hasNext}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-700 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
+          >
+            Next
+            <ChevronRight size={18} />
+          </button>
+
+          <div className="w-full text-center text-sm text-gray-600 dark:text-slate-400 mt-4">
+            Page {pagination.page} of {pagination.totalPages} • Total: {pagination.total} results
+          </div>
         </div>
       )}
 

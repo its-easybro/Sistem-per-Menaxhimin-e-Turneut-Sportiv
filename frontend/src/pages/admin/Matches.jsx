@@ -1073,7 +1073,7 @@ export default function Matches() {
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
                 >
                   <Plus size={18} />
-                  + Add New Match
+                  Add New Match
                 </button>
               </div>
 
