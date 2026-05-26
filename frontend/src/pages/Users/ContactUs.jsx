@@ -1,13 +1,29 @@
 import { useState } from "react";
 import api from "../../config/axiosInstance";
 import * as yup from "yup";
+import { Bug, HelpCircle, ShieldAlert, UserPlus } from "lucide-react";
 
 const MESSAGE_MAX_LENGTH = 500;
+const SUBJECT_MAX_LENGTH = 120;
+
+const CATEGORY_OPTIONS = [
+  { value: "dispute", label: "Dispute", icon: ShieldAlert },
+  { value: "upgrade", label: "Role Request", icon: UserPlus },
+  { value: "bug", label: "Bug Report", icon: Bug },
+  { value: "other", label: "General", icon: HelpCircle },
+];
+
+const getCategoryLabel = (value) => {
+  const option = CATEGORY_OPTIONS.find((item) => item.value === value);
+  return option ? option.label : "General";
+};
 
 export default function ContactUs() {
   const [formData, setFormData] = useState({
     emri: "",
     email: "",
+    kategoria: "other",
+    subjekti: "",
     mesazhi: "",
   });
   const [errors, setErrors] = useState({});
@@ -23,6 +39,14 @@ export default function ContactUs() {
       .string()
       .email("Invalid email address")
       .required("Email is required"),
+    kategoria: yup
+      .string()
+      .oneOf(["dispute", "upgrade", "bug", "other"])
+      .required("Category is required"),
+    subjekti: yup
+      .string()
+      .max(SUBJECT_MAX_LENGTH, `Subject must not exceed ${SUBJECT_MAX_LENGTH} characters`)
+      .nullable(),
     mesazhi: yup
       .string()
       .min(10, "Message must be at least 10 characters")
@@ -50,7 +74,7 @@ export default function ContactUs() {
       await validationSchema.validate(formData, { abortEarly: false });
 
       await api.post("/contactUs", formData);
-      setFormData({ emri: "", email: "", mesazhi: "" });
+      setFormData({ emri: "", email: "", kategoria: "other", subjekti: "", mesazhi: "" });
       setAlert({
         type: "success",
         message: "Message sent successfully! We'll get back to you soon.",
@@ -136,6 +160,60 @@ export default function ContactUs() {
               {errors.emri && (
                 <p className="text-red-400 text-xs mt-1">{errors.emri}</p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm mb-2 text-slate-200">Category</label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {CATEGORY_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const isActive = formData.kategoria === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, kategoria: option.value }))}
+                      className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                        isActive
+                          ? "border-emerald-500 bg-emerald-500/15 text-emerald-200"
+                          : "border-white/10 bg-slate-950/60 text-slate-300 hover:border-emerald-400/50 hover:text-white"
+                      }`}
+                    >
+                      <Icon size={14} />
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {errors.kategoria && (
+                <p className="text-red-400 text-xs mt-1">{errors.kategoria}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm mb-2 text-slate-200">Subject</label>
+              <input
+                type="text"
+                name="subjekti"
+                value={formData.subjekti}
+                onChange={handleInputChange}
+                placeholder="Short summary of your request"
+                maxLength={SUBJECT_MAX_LENGTH}
+                className={`w-full rounded-lg border bg-slate-950/60 px-4 py-3 text-slate-100 placeholder:text-slate-500 placeholder:text-sm focus:outline-none focus:border-emerald-500 transition ${errors.subjekti ? "border-red-500" : "border-white/10"}`}
+              />
+              <div className="mt-2 flex items-start justify-between gap-4">
+                {errors.subjekti ? (
+                  <p className="text-red-400 text-xs mt-1">{errors.subjekti}</p>
+                ) : (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Optional, used by the admin inbox.
+                  </p>
+                )}
+                <div className="ml-auto text-xs text-slate-500 mt-1">
+                  {formData.subjekti.length}/{SUBJECT_MAX_LENGTH}
+                </div>
+              </div>
             </div>
 
             {/* --- EMAIL FIELD --- */}

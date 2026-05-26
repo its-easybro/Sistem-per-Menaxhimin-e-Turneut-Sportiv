@@ -1053,8 +1053,8 @@ export default function Matches() {
             </h2>
 
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <div className="relative flex-1 max-w-2xl">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+              <div className="relative flex-1 min-w-[220px]">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search size={18} className="text-gray-400 dark:text-gray-500" />
                 </div>
@@ -1068,49 +1068,50 @@ export default function Matches() {
                 />
               </div>
 
-                <button
-                  onClick={handleCreate}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
-                >
-                  <Plus size={18} />
-                  Add New Match
-                </button>
+              <div className="relative flex-1 min-w-[160px] sm:flex-none">
+                <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
+                  Status
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                    <SlidersHorizontal size={14} />
+                  </div>
+                  <select
+                    name="statusi"
+                    value={filters.statusi}
+                    onChange={handleFilterChange}
+                    className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                  >
+                    <option value="">All statuses</option>
+                    <option value="Planifikuar">Planifikuar</option>
+                    <option value="Live">Live</option>
+                    <option value="Shtyrë">Shtyrë</option>
+                    <option value="Anuluar">Anuluar</option>
+                    <option value="Përfunduar">Përfunduar</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 dark:border-slate-800/60 pt-3 mt-1">
-                  <div className="relative min-w-[160px] flex-1 sm:flex-none">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                      <SlidersHorizontal size={14} />
-                    </div>
-                <label className="sr-only">Status</label>
-                <select
-                  name="statusi"
-                  value={filters.statusi}
-                  onChange={handleFilterChange}
-                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
-                >
-                  <option value="">All statuses</option>
-                  <option value="Planifikuar">Planifikuar</option>
-                  <option value="Live">Live</option>
-                  <option value="Shtyrë">Shtyrë</option>
-                  <option value="Anuluar">Anuluar</option>
-                  <option value="Përfunduar">Përfunduar</option>
-                </select>
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                </div>
+              <button
+                onClick={handleCreate}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
+              >
+                <Plus size={18} />
+                Add New Match
+              </button>
             </div>
-
-              {hasActiveFilters && (
+            {hasActiveFilters && (
                 <button
                   onClick={handleClearFilters}
                   className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
                 >
-                  Clear
+                  Clear Filters
                 </button>
               )}
           </div>
-        </div>
         </div>
 
         {/* Matches table section */}
@@ -1265,7 +1266,7 @@ export default function Matches() {
                   <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
                   {pagination.total && (
                     <>
-                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> users)
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> matches)
                     </>
                   )}
                 </p>

@@ -96,7 +96,6 @@ export default function MatchResults() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMatchResult, setSelectedMatchResult] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [alert, setAlert] = useState(null);
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
@@ -223,7 +222,6 @@ export default function MatchResults() {
   // Implements debounced search like in users.jsx
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
       setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }));
       if (searchQuery !== filters.search) {
         setPage(1);
@@ -544,11 +542,11 @@ export default function MatchResults() {
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">Match Results</h2>
 
-        <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 md:relative">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-3xl">
+        <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
             {/* Search Input */}
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="relative flex-1 min-w-[220px]">
+              <div className="hidden lg:block text-xs mb-1" aria-hidden="true">
                 <Search size={18} className="text-gray-400 dark:text-gray-500" />
               </div>
               <input
@@ -560,7 +558,7 @@ export default function MatchResults() {
               />
             </div>
 
-            <div className="relative flex-1 min-w-[140px]">
+            <div className="relative flex-1 min-w-[160px] sm:flex-none">
               <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">From Date</label>
               <input
                 type="date"
@@ -571,7 +569,7 @@ export default function MatchResults() {
               />
             </div>
 
-            <div className="relative flex-1 min-w-[140px]">
+            <div className="relative flex-1 min-w-[160px] sm:flex-none">
               <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">To Date</label>
               <input
                 type="date"
@@ -582,23 +580,22 @@ export default function MatchResults() {
               />
             </div>
 
-            {hasActiveFilters && (
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
+            >
+              <Plus size={18} />
+              Add Result
+            </button>
+          </div>
+          {hasActiveFilters && (
               <button
                 onClick={handleClearFilters}
-                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer md:absolute md:left-[calc(100%-13rem)] md:top-1/2 md:-translate-y-1/2 md:ml-0"
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
               >
-                Clear
+                Clear Filters
               </button>
             )}
-          </div>
-
-          <button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
-          >
-            <Plus size={18} />
-            Add Result
-          </button>
         </div>
       </div>
 

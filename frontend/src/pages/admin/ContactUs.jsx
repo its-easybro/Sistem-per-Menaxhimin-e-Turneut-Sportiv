@@ -3,7 +3,18 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Trash2, Eye, Check } from "lucide-react";
+import {
+  Bug,
+  CheckCircle2,
+  Clock,
+  HelpCircle,
+  Mail,
+  MailOpen,
+  Search,
+  ShieldAlert,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
@@ -20,6 +31,58 @@ const formatDate = (isoDate) => {
   }
 };
 
+const getMessageSubject = (message) => {
+  if (!message) return "No subject";
+  const firstLine = message
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.length > 0);
+  if (!firstLine) return "No subject";
+  return firstLine.length > 60 ? `${firstLine.slice(0, 57)}...` : firstLine;
+};
+
+const getCategoryValue = (message) => {
+  return String(message?.kategoria || message?.category || "other").toLowerCase();
+};
+
+const getCategoryBadge = (category) => {
+  const styles = {
+    dispute: {
+      color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400",
+      icon: ShieldAlert,
+      label: "Dispute",
+    },
+    upgrade: {
+      color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400",
+      icon: UserPlus,
+      label: "Role Request",
+    },
+    bug: {
+      color: "text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400",
+      icon: Bug,
+      label: "Bug",
+    },
+    other: {
+      color: "text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-400",
+      icon: HelpCircle,
+      label: "General",
+    },
+  };
+
+  const key = String(category || "other").toLowerCase();
+  const config = styles[key] || styles.other;
+  const Icon = config.icon;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${config.color}`}
+    >
+      <Icon size={14} />
+      {config.label}
+    </span>
+  );
+};
+
 export default function AdminContactUs() {
   const { user } = useContext(AuthContext);
 
@@ -27,10 +90,11 @@ export default function AdminContactUs() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("unread");
+  const [expandedId, setExpandedId] = useState(null);
   const [alert, setAlert] = useState(null);
 
   // Fetch messages on component mount
@@ -50,11 +114,12 @@ export default function AdminContactUs() {
   }, []);
 
   // Handle mark as read
-  const handleMarkAsRead = async (id) => {
+  const handleMarkAsRead = async (id, event) => {
+    if (event) event.stopPropagation();
     try {
       await api.patch(`/contactUs/${id}/read`);
-      setMessages(
-        messages.map((msg) =>
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === id ? { ...msg, lexuar: true, lexuar_at: new Date() } : msg
         )
       );
@@ -62,14 +127,6 @@ export default function AdminContactUs() {
     } catch (err) {
       setAlert({ type: 'error', message: 'Error marking as read: ' + err.message });
     }
-  };
-
-  // Handle view
-  const handleView = (id) => {
-    const message = messages.find((msg) => msg.id === id);
-    if (!message) return;
-    setSelectedMessage(message);
-    setShowViewModal(true);
   };
 
   // Handle delete
@@ -86,7 +143,10 @@ export default function AdminContactUs() {
 
     try {
       await api.delete(`/contactUs/${selectedMessage.id}`);
-      setMessages(messages.filter((msg) => msg.id !== selectedMessage.id));
+      setMessages((prev) => prev.filter((msg) => msg.id !== selectedMessage.id));
+      if (expandedId === selectedMessage.id) {
+        setExpandedId(null);
+      }
       setShowDeleteModal(false);
       setSelectedMessage(null);
       setAlert({ type: 'success', message: 'Message deleted successfully!' });
@@ -97,20 +157,26 @@ export default function AdminContactUs() {
 
   // Handle close modal
   const handleCloseModal = () => {
-    setShowViewModal(false);
     setShowDeleteModal(false);
     setSelectedMessage(null);
   };
 
   // Filter messages by search query
   const filteredMessages = messages.filter((msg) => {
-    const query = searchQuery.toLowerCase();
-    return (
+    const query = searchQuery.trim().toLowerCase();
+    const matchesQuery =
+      !query ||
       msg.emri?.toLowerCase().includes(query) ||
       msg.email?.toLowerCase().includes(query) ||
-      msg.mesazhi?.toLowerCase().includes(query)
-    );
+      msg.subjekti?.toLowerCase().includes(query) ||
+      msg.kategoria?.toLowerCase().includes(query) ||
+      msg.mesazhi?.toLowerCase().includes(query);
+    const isRead = Boolean(msg.lexuar);
+    const matchesTab = activeTab === "unread" ? !isRead : isRead;
+    return matchesQuery && matchesTab;
   });
+
+  const unreadCount = messages.filter((msg) => !msg.lexuar).length;
 
   // Loading state
   if (!user || !user.is_admin) {
@@ -126,7 +192,7 @@ export default function AdminContactUs() {
   }
 
   return (
-    <div className="bg-gray-50 p-4">
+    <div className="max-w-5xl mx-auto px-4 py-8">
       {alert && (
         <Alert
           type={alert.type}
@@ -135,230 +201,210 @@ export default function AdminContactUs() {
         />
       )}
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
           {error}
         </div>
       )}
-      <div className="w-full mx-auto">
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Contact Messages
-            </h2>
-          </div>
 
-          {/* SEARCH BAR */}
-          <div className="relative">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search by name, email, or message"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
-            />
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 flex items-center gap-3">
+            Support Inbox
+            {unreadCount > 0 && (
+              <span className="bg-blue-600 text-white text-sm font-bold px-2.5 py-0.5 rounded-full relative top-[-2px]">
+                {unreadCount} New
+              </span>
+            )}
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+            Manage and resolve user inquiries and system reports.
+          </p>
         </div>
 
-        {/* Messages table section */}
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
+        <div className="relative w-full sm:w-64">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search tickets..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          />
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+        <div className="flex border-b border-gray-200 dark:border-slate-800">
+          <button
+            onClick={() => setActiveTab("unread")}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 text-sm font-semibold transition-colors relative ${
+              activeTab === "unread"
+                ? "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10"
+                : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800/50"
+            }`}
+          >
+            <Mail size={18} />
+            Needs Action
+            {activeTab === "unread" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400"></span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("read")}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 text-sm font-semibold transition-colors relative ${
+              activeTab === "read"
+                ? "text-gray-900 dark:text-white bg-gray-50 dark:bg-slate-800/50"
+                : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800/50"
+            }`}
+          >
+            <MailOpen size={18} />
+            Resolved
+            {activeTab === "read" && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900 dark:bg-slate-500"></span>
+            )}
+          </button>
+        </div>
+
+        <div className="divide-y divide-gray-100 dark:divide-slate-800/60">
           {filteredMessages.length === 0 ? (
-            <div className="w-full px-6 py-12 text-center text-gray-600">
-              {searchQuery
-                ? `No messages match "${searchQuery}". Try a different search.`
-                : 'No contact messages found.'}
+            <div className="p-12 text-center text-gray-500 dark:text-slate-400">
+              <CheckCircle2 size={48} className="mx-auto mb-4 opacity-20" />
+              <p className="text-lg font-medium">Inbox Zero!</p>
+              <p className="text-sm mt-1">No {activeTab} messages found.</p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-800 text-white">
-                <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Name</th>
-                  <th className="px-4 py-3 text-left font-semibold">Email</th>
-                  <th className="px-4 py-3 text-left font-semibold">Message Preview</th>
-                  <th className="px-4 py-3 text-center font-semibold">Status</th>
-                  <th className="px-4 py-3 text-center font-semibold">Date</th>
-                  <th className="px-4 py-3 text-center font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredMessages.map((msg) => (
-                  <tr key={msg.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    <td className="px-4 py-3 text-gray-900 font-semibold">
-                      {msg.emri}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {msg.email}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 max-w-xs truncate">
-                      {msg.mesazhi}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          msg.lexuar
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
+            filteredMessages.map((msg) => {
+              const isExpanded = expandedId === msg.id;
+              const isUnread = !msg.lexuar;
+              const subject = msg.subjekti || getMessageSubject(msg.mesazhi);
+              const category = getCategoryValue(msg);
+
+              return (
+                <div
+                  key={msg.id}
+                  onClick={() => setExpandedId(isExpanded ? null : msg.id)}
+                  className={`p-4 sm:p-6 transition-colors cursor-pointer ${
+                    isExpanded
+                      ? "bg-gray-50/50 dark:bg-slate-800/30"
+                      : "hover:bg-gray-50 dark:hover:bg-slate-800/40"
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="font-bold text-gray-900 dark:text-white truncate">
+                          {msg.emri}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-slate-500 truncate">
+                          &lt;{msg.email}&gt;
+                        </span>
+                        <div className="hidden sm:block">
+                          {getCategoryBadge(category)}
+                        </div>
+                      </div>
+                      <h4
+                        className={`text-sm ${
+                          isUnread
+                            ? "font-bold text-gray-900 dark:text-slate-100"
+                            : "font-medium text-gray-600 dark:text-slate-400"
                         }`}
                       >
-                        {msg.lexuar ? 'Read' : 'Unread'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 text-center">
-                      {formatDate(msg.created_at)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-center gap-2">
-                        {!msg.lexuar && (
-                          <button
-                            onClick={() => handleMarkAsRead(msg.id)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                            title="Mark Read"
-                          >
-                            <Check size={16} />
-                          </button>
-                        )}
+                        {subject}
+                      </h4>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 dark:text-slate-500">
+                        <Clock size={14} />
+                        {formatDate(msg.created_at)}
+                      </div>
+
+                      {isUnread && (
                         <button
-                          onClick={() => handleView(msg.id)}
-                          className="bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                          title="View"
+                          onClick={(event) => handleMarkAsRead(msg.id, event)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded-lg transition-colors"
                         >
-                          <Eye size={16} />
+                          <CheckCircle2 size={16} />
+                          <span className="hidden sm:inline">Resolve</span>
                         </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="sm:hidden mb-4">
+                        {getCategoryBadge(category)}
+                      </div>
+                      <div className="bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-lg p-4">
+                        <p className="text-sm text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                          {msg.mesazhi}
+                        </p>
+                      </div>
+                      <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex-1"></div>
                         <button
-                          onClick={() => handleDelete(msg.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                          title="Delete"
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDelete(msg.id);
+                          }}
+                          className="inline-flex items-center gap-1.5 self-end text-xs font-bold text-red-600 dark:text-red-400 hover:underline"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
+                          Delete
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
-
-        {/* View Message Modal */}
-        {showViewModal && selectedMessage && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseModal}
-          >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Message Details</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name
-                  </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {selectedMessage.emri}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {selectedMessage.email}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Message
-                  </label>
-                  <div className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
-                    {selectedMessage.mesazhi}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {selectedMessage.lexuar ? 'Read' : 'Unread'}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date Received
-                  </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {formatDate(selectedMessage.created_at)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-4 pt-6">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Message Modal */}
-        {showDeleteModal && selectedMessage && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseModal}
-          >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Delete Message</h3>
-              <div className="space-y-4">
-                <p className="text-gray-700">
-                  Are you sure you want to delete this message from{" "}
-                  <span className="font-semibold text-gray-900">
-                    {selectedMessage.emri}
-                  </span>
-                  ?
-                </p>
-              </div>
-              <div className="flex gap-4 pt-6">
-                <button
-                  type="button"
-                  onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition duration-200"
-                >
-                  Delete
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {showDeleteModal && selectedMessage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 dark:text-slate-100">Delete Message</h3>
+            <div className="space-y-4">
+              <p className="text-gray-700 dark:text-slate-300">
+                Are you sure you want to delete this message from{" "}
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {selectedMessage.emri}
+                </span>
+                ?
+              </p>
+            </div>
+            <div className="flex gap-4 pt-6">
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition duration-200 dark:bg-red-700 dark:hover:bg-red-600"
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200 dark:bg-slate-700 dark:hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
