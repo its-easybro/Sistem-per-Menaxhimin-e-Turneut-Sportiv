@@ -242,7 +242,7 @@ export default function SportsManagment() {
 
   if (authLoading) return (
     <div className="flex justify-center items-center h-screen">
-      <p className="text-lg text-gray-600">Checking access...</p>
+      <p className="text-lg text-gray-600 dark:text-slate-400">Checking access...</p>
     </div>
   );
 
@@ -260,7 +260,7 @@ export default function SportsManagment() {
 
   if (error) return (
     <div className="flex justify-center items-center h-screen">
-      <p className="text-lg text-red-600">Error: {error}</p>
+      <p className="text-lg text-red-600 dark:text-red-400">Error: {error}</p>
     </div>
   );
 
@@ -270,7 +270,7 @@ export default function SportsManagment() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
         <Alert 
           type={alert.type} 
@@ -281,7 +281,7 @@ export default function SportsManagment() {
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800">Sports Management</h2>
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-200">Sports Management</h2>
             <button
               onClick={handleCreate}
               className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
@@ -297,10 +297,10 @@ export default function SportsManagment() {
               placeholder="Search by sport name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
             />
             <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -316,9 +316,9 @@ export default function SportsManagment() {
         </div>
 
         {/* Sports table section */}
-        <div className="flex-1 bg-white rounded-lg shadow-md overflow-x-auto">
+        <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[500px]">
-            <thead className="bg-gray-800 text-white">
+            <thead className="bg-gray-800 dark:bg-slate-700 text-white">
               <tr>
                 <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Sport Name</th>
@@ -328,15 +328,15 @@ export default function SportsManagment() {
                 <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {filteredSports.length > 0 ? (
                 filteredSports.map((s) => (
-                  <tr key={s.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-500 text-center">{s.id}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{s.emertimi}</td>
-                    <td className="px-6 py-4 text-gray-600">{s.pershkrimi}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{s.numri_lojtareve}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{s.lloji}</td>
+                  <tr key={s.id} className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150">
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">{s.id}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-medium">{s.emertimi}</td>
+                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{s.pershkrimi}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{s.numri_lojtareve}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{s.lloji}</td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex justify-center gap-2">
                         <button
@@ -366,7 +366,7 @@ export default function SportsManagment() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-600">
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
                     {searchQuery ? `No sports match "${searchQuery}". Try a different search.` : 'No sports found. Click "Create New Sport" to add one.'}
                   </td>
                 </tr>
@@ -381,13 +381,13 @@ export default function SportsManagment() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseModal}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Create New Sport</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Create New Sport</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Sport Name (Emertimi)
                   </label>
                   <input
@@ -395,21 +395,21 @@ export default function SportsManagment() {
                     name="emertimi"
                     value={formData.emertimi}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.emertimi ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.emertimi ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                     placeholder="e.g., Football"
                   />
                   {formErrors.emertimi && <p className='text-red-500 text-xs mt-1'>{formErrors.emertimi}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Description (Pershkrimi)
                   </label>
                   <textarea
                     name="pershkrimi"
                     value={formData.pershkrimi}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.pershkrimi ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.pershkrimi ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                     placeholder="Enter description"
                     rows="3"
                   />
@@ -417,7 +417,7 @@ export default function SportsManagment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Number of Players (Numri Lojtareve)
                   </label>
                   <input
@@ -425,21 +425,21 @@ export default function SportsManagment() {
                     name="numri_lojtareve"
                     value={formData.numri_lojtareve}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.numri_lojtareve ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.numri_lojtareve ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                     placeholder="e.g., 11"
                   />
                   {formErrors.numri_lojtareve && <p className='text-red-500 text-xs mt-1'>{formErrors.numri_lojtareve}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Type (Lloji)
                   </label>
                   <select
                     name="lloji"
                     value={formData.lloji}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${formErrors.lloji ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.lloji ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                   >
                     <option value="">Select type</option>
                     {sportTypeOptions.map((option) => (
@@ -476,37 +476,37 @@ export default function SportsManagment() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseViewModal}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Sport Details</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Sport Details</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Sport Name (Emertimi)
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{selectedSport.emertimi}</p>
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">{selectedSport.emertimi}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Description (Pershkrimi)
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{selectedSport.pershkrimi}</p>
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">{selectedSport.pershkrimi}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Number of Players (Numri Lojtareve)
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{selectedSport.numri_lojtareve}</p>
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">{selectedSport.numri_lojtareve}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Type (Lloji)
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{selectedSport.lloji}</p>
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">{selectedSport.lloji}</p>
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -528,13 +528,13 @@ export default function SportsManagment() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseEditModal}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Sport</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Edit Sport</h3>
               <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Sport Name (Emertimi)
                   </label>
                   <input
@@ -542,21 +542,21 @@ export default function SportsManagment() {
                     name="emertimi"
                     value={formData.emertimi}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${formErrors.emertimi ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.emertimi ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                     placeholder="e.g., Football"
                   />
                   {formErrors.emertimi && <p className='text-red-500 text-xs mt-1'>{formErrors.emertimi}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Description (Pershkrimi)
                   </label>
                   <textarea
                     name="pershkrimi"
                     value={formData.pershkrimi}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${formErrors.pershkrimi ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.pershkrimi ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                     placeholder="Enter description"
                     rows="3"
                   />
@@ -564,7 +564,7 @@ export default function SportsManagment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Number of Players (Numri Lojtareve)
                   </label>
                   <input
@@ -572,21 +572,21 @@ export default function SportsManagment() {
                     name="numri_lojtareve"
                     value={formData.numri_lojtareve}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${formErrors.numri_lojtareve ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.numri_lojtareve ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                     placeholder="e.g., 11"
                   />
                   {formErrors.numri_lojtareve && <p className='text-red-500 text-xs mt-1'>{formErrors.numri_lojtareve}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                     Type (Lloji)
                   </label>
                   <select
                     name="lloji"
                     value={formData.lloji}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${formErrors.lloji ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.lloji ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
                   >
                     <option value="">Select type</option>
                     {sportTypeOptions.map((option) => (
@@ -623,10 +623,10 @@ export default function SportsManagment() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleCloseDeleteModal}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-2xl font-bold text-red-600 mb-4">Delete Sport?</h3>
-              <p className="text-gray-700 mb-6">
+              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Delete Sport?</h3>
+              <p className="text-gray-700 dark:text-slate-300 mb-6">
                 Are you sure you want to delete <strong>{selectedSport.emertimi}</strong>? This action cannot be undone.
               </p>
               <div className="flex gap-4">

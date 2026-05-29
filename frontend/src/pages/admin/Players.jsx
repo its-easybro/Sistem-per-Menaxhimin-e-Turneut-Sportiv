@@ -417,15 +417,15 @@ export default function Players() {
 
   if (error)
     return (
-      <div className="flex justify-center items-center h-center">
-        <p className="text-lg text-red-600">Error: {error}</p>
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-lg text-red-600 dark:text-red-400">Error: {error}</p>
       </div>
     );
 
   // Main components
 
   return (
-    <div className="bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
         <Alert 
           type={alert.type} 
@@ -436,7 +436,7 @@ export default function Players() {
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200">
               Player Management
             </h2>
             <button
@@ -455,11 +455,11 @@ export default function Players() {
               placeholder="Search player"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
             />
             {/* Search Icon (magnifying glass) */}
             <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -474,9 +474,9 @@ export default function Players() {
           </div>
         </div>
         {/* Player table section */}
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-800 text-white">
+        <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[500px]">
+            <thead className="bg-gray-800 dark:bg-slate-700 text-white">
               <tr>
                 <th className="px-4 py-3 text-center font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">Name</th>
@@ -494,7 +494,7 @@ export default function Players() {
               </tr>
             </thead>
             {/* Table Body */}
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {players.filter((s) =>
                 s.emri.toLowerCase().includes(searchQuery.toLowerCase()),
               ).length > 0 ? (
@@ -505,36 +505,36 @@ export default function Players() {
                   .map((s) => (
                     <tr
                       key={s.id}
-                      className="hover:bg-gray-100 transtion-colors duration-150"
+                      className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150"
                     >
-                      <td className="px-4 py-3 text-gray-500 text-center">
+                      <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-center">
                         {s.id}
                       </td>
-                      <td className="px-4 py-3 text-gray-900 font-semibold">
+                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
                         {s.emri}
                       </td>
-                      <td className="px-4 py-3 text-gray-900 font-semibold">
+                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
                         {s.mbiemri}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 text-center">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300 text-center">
                         {formatDate(s.data_lindjes)}
                       </td>
-                      <td className="px-4 py-3 text-gray-900 font-semibold">
+                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
                         {s.ekipi_id}
                       </td>
-                      <td className="px-4 py-3 text-gray-800">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300">
                         {s.pozicioni}
                       </td>
-                      <td className="px-4 py-3 text-gray-900 font-semibold">
+                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
                         {s.numri}
                       </td>
-                      <td className="px-4 py-3 text-gray-800">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300">
                         {s.gjatesia}
                       </td>
-                      <td className="px-4 py-3 text-gray-800">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300">
                         {s.pesha}
                       </td>
-                      <td className="px-4 py-3 text-gray-900 font-semibold">
+                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
                         {s.kombesia}
                       </td>
                       <td className="px-4 py-3">
@@ -567,8 +567,8 @@ export default function Players() {
               ) : (
                 <tr>
                   <td
-                    colSpan="6"
-                    className="px-6 py-4 text-center text-gray-600"
+                    colSpan="11"
+                    className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                   >
                     {searchQuery
                       ? `No player match "${searchQuery}". Try a differen search.`
@@ -587,13 +587,13 @@ export default function Players() {
             onClick={handleCloseModal}
           >
             <div
-              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
-                <div className="border-2 border-gray-200 rounded-xl p-4 flex flex-col">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">Player Profile Image</p>
-                  <div className="h-[340px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 overflow-hidden">
+                <div className="border-2 border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-col">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Player Profile Image</p>
+                  <div className="h-[340px] border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
                     {currentFotoPreview ? (
                       <img
                         src={currentFotoPreview}
@@ -601,29 +601,29 @@ export default function Players() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <p className="text-center text-gray-500 font-medium px-4">PLAYER IMAGE</p>
+                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">PLAYER IMAGE</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mt-4 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mt-4 mb-2">
                       Player Profile
                     </label>
                     <input
                       type="file"
                       accept="image/jpeg,image/png"
                       onChange={handleFotoUpload}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                      className="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 dark:file:bg-green-500/10 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-500/20"
                     />
-                    {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                    {uploading && <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Uploading...</p>}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2x1 font-bold text-gray-800 mb-6">Add New Player</h3>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Add New Player</h3>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* First name input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Name *
                     </label>
                     <input
@@ -631,7 +631,7 @@ export default function Players() {
                       name="emri"
                       value={formData.emri}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.emri ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border ${formErrors.emri ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
                       placeholder="First Name"
                       required
                     />
@@ -639,7 +639,7 @@ export default function Players() {
                   </div>
                   {/* Last name input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Last Name *
                     </label>
                     <input
@@ -647,7 +647,7 @@ export default function Players() {
                       name="mbiemri"
                       value={formData.mbiemri}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.mbiemri ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border ${formErrors.mbiemri ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
                       placeholder="Last Name"
                       required
                     />
@@ -656,7 +656,7 @@ export default function Players() {
 
                   {/* Date of Birth input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Date of Birth *
                     </label>
                     <input
@@ -664,7 +664,7 @@ export default function Players() {
                       name="data_lindjes"
                       value={formData.data_lindjes}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.data_lindjes ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border ${formErrors.data_lindjes ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
                       placeholder="****-**-**"
                       required
                     />
@@ -672,7 +672,7 @@ export default function Players() {
                   </div>
                   {/* Team input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Sport Filter
                     </label>
                     <select
@@ -681,7 +681,7 @@ export default function Players() {
                         setSelectedSportId(e.target.value);
                         setFormData((prev) => ({ ...prev, ekipi_id: "" }));
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                     >
                       <option value="">All sports</option>
                       {sports.map((sport) => (
@@ -692,14 +692,14 @@ export default function Players() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Team
                     </label>
                     <select
                       name="ekipi_id"
                       value={formData.ekipi_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                     >
                       <option value="">No Team</option>
                       {filteredTeams.map((team) => (
@@ -711,7 +711,7 @@ export default function Players() {
                   </div>
                   {/* Position input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Position
                     </label>
                     <input
@@ -719,13 +719,13 @@ export default function Players() {
                       name="pozicioni"
                       value={formData.pozicioni}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Pozition"
                     />
                   </div>
                   {/* Number input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Number
                     </label>
                     <input
@@ -733,13 +733,13 @@ export default function Players() {
                       name="numri"
                       value={formData.numri}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="1,2,3..."
                     />
                   </div>
                   {/* Hight input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Hight *
                     </label>
                     <input
@@ -747,7 +747,7 @@ export default function Players() {
                       name="gjatesia"
                       value={formData.gjatesia}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.gjatesia ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border ${formErrors.gjatesia ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
                       placeholder="150cm..."
                       required
                     />
@@ -755,7 +755,7 @@ export default function Players() {
                   </div>
                   {/* Weight input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Weight *
                     </label>
                     <input
@@ -763,7 +763,7 @@ export default function Players() {
                       name="pesha"
                       value={formData.pesha}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.pesha ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border ${formErrors.pesha ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
                       placeholder="Weight"
                       required
                     />
@@ -771,7 +771,7 @@ export default function Players() {
                   </div>
                   {/* Nationality input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Nationality *
                     </label>
                     <input
@@ -779,7 +779,7 @@ export default function Players() {
                       name="kombesia"
                       value={formData.kombesia}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.kombesia ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
+                      className={`w-full px-4 py-2 border ${formErrors.kombesia ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
                       placeholder="Shqiptar..."
                       required
                     />
@@ -815,13 +815,13 @@ export default function Players() {
             onClick={handleCloseViewModal}
           >
             <div
-              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
-                <div className="border-2 border-gray-200 rounded-xl p-4 flex flex-col">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">Player Profile Image</p>
-                  <div className="h-[340px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 overflow-hidden">
+                <div className="border-2 border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-col">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Player Profile Image</p>
+                  <div className="h-[340px] border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
                     {selectedPlayer.foto ? (
                       <img
                         src={resolvePlayerFoto(selectedPlayer.foto)}
@@ -829,82 +829,82 @@ export default function Players() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <p className="text-center text-gray-500 font-medium px-4">PLAYER IMAGE</p>
+                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">PLAYER IMAGE</p>
                     )}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2x1 font-bold text-gray-800 mb-6">Player Details</h3>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Player Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Player Name
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.emri}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Last Name
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.mbiemri}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Birth Day
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.data_lindjes}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Ekipi
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.ekipi_id}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Position
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.pozicioni}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Number
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.numri}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Hight
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.gjatesia}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Weight
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.pesha}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Nationality
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedPlayer.kombesia}
                   </p>
                 </div>
@@ -931,13 +931,13 @@ export default function Players() {
             onClick={handleCloseEditModal}
           >
             <div
-              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
-                <div className="border-2 border-gray-200 rounded-xl p-4 flex flex-col">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">Player Profile Image</p>
-                  <div className="h-[340px] border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 overflow-hidden">
+                <div className="border-2 border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-col">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Player Profile Image</p>
+                  <div className="h-[340px] border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
                     {currentFotoPreview ? (
                       <img
                         src={currentFotoPreview}
@@ -945,29 +945,29 @@ export default function Players() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <p className="text-center text-gray-500 font-medium px-4">PLAYER PROFILE IMAGE HERE</p>
+                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">PLAYER PROFILE IMAGE HERE</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Player Profile
                     </label>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       onChange={handleFotoUpload}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                      className="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 dark:file:bg-green-500/10 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-500/20"
                     />
-                    {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                    {uploading && <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Uploading...</p>}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2x1 font-bold text-gray-800 mb-6">Edit Player</h3>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Edit Player</h3>
                   <form onSubmit={handleEditSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* First name input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Name *
                     </label>
                     <input
@@ -975,14 +975,14 @@ export default function Players() {
                       name="emri"
                       value={formData.emri}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border borde-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="First Name"
                       required
                     />
                   </div>
                   {/* Last name input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Last Name *
                     </label>
                     <input
@@ -990,7 +990,7 @@ export default function Players() {
                       name="mbiemri"
                       value={formData.mbiemri}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Last Name"
                       required
                     />
@@ -998,7 +998,7 @@ export default function Players() {
 
                   {/* Date of Birth input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Date of Birth *
                     </label>
                     <input
@@ -1006,14 +1006,14 @@ export default function Players() {
                       name="data_lindjes"
                       value={formData.data_lindjes}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="****-**-**"
                       required
                     />
                   </div>
                   {/* Team input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Sport Filter
                     </label>
                     <select
@@ -1022,7 +1022,7 @@ export default function Players() {
                         setSelectedSportId(e.target.value);
                         setFormData((prev) => ({ ...prev, ekipi_id: "" }));
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                     >
                       <option value="">All sports</option>
                       {sports.map((sport) => (
@@ -1033,14 +1033,14 @@ export default function Players() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Team
                     </label>
                     <select
                       name="ekipi_id"
                       value={formData.ekipi_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                     >
                       <option value="">No Team</option>
                       {filteredTeams.map((team) => (
@@ -1052,7 +1052,7 @@ export default function Players() {
                   </div>
                   {/* Position input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Position
                     </label>
                     <input
@@ -1060,13 +1060,13 @@ export default function Players() {
                       name="pozicioni"
                       value={formData.pozicioni}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Pozition"
                     />
                   </div>
                   {/* Number input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Number
                     </label>
                     <input
@@ -1074,13 +1074,13 @@ export default function Players() {
                       name="numri"
                       value={formData.numri}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="1,2,3..."
                     />
                   </div>
                   {/* Hight input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Hight *
                     </label>
                     <input
@@ -1088,14 +1088,14 @@ export default function Players() {
                       name="gjatesia"
                       value={formData.gjatesia}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="150cm..."
                       required
                     />
                   </div>
                   {/* Weight input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Weight *
                     </label>
                     <input
@@ -1103,14 +1103,14 @@ export default function Players() {
                       name="pesha"
                       value={formData.pesha}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Weight"
                       required
                     />
                   </div>
                   {/* Nationality input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Nationality *
                     </label>
                     <input
@@ -1118,7 +1118,7 @@ export default function Players() {
                       name="kombesia"
                       value={formData.kombesia}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Shqiptar..."
                       required
                     />
@@ -1155,12 +1155,12 @@ export default function Players() {
             onClick={handleCloseDeleteModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-                <h3 className="text-2x1 font-bold text-red-600 mb-4">Delete Player?</h3>
+                <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Delete Player?</h3>
 
-                <p className="text-gray-700 mb-6">
+                <p className="text-gray-700 dark:text-slate-300 mb-6">
                     Are you sure you want to delete <strong>{selectedPlayer.emri} {selectedPlayer.mbiemri}</strong> This action cannot be undone.
                 </p>
                 {/* Confirm delete button */}
