@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Trash2 } from "lucide-react";
+import { Monitor, Smartphone, Trash2, Laptop, Globe } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 function formatDate(iso) {
@@ -14,6 +14,28 @@ function formatDate(iso) {
   } catch {
     return iso;
   }
+}
+
+function getBrowserLabel(userAgent) {
+  if (!userAgent) return "Unknown browser";
+  if (userAgent.includes("Edg/")) return "Microsoft Edge";
+  if (userAgent.includes("Chrome/") && !userAgent.includes("Edg/")) return "Google Chrome";
+  if (userAgent.includes("Firefox/")) return "Mozilla Firefox";
+  if (userAgent.includes("Safari/") && userAgent.includes("Version/")) return "Safari";
+  if (userAgent.includes("OPR/") || userAgent.includes("Opera/")) return "Opera";
+  return "Browser";
+}
+
+function getDeviceLabel(userAgent) {
+  if (!userAgent) return "Unknown device";
+  if (/Mobile|Android|iPhone|iPad|iPod/i.test(userAgent)) return "Mobile";
+  return "Desktop";
+}
+
+function getDeviceIcon(deviceLabel) {
+  if (deviceLabel === "Mobile") return Smartphone;
+  if (deviceLabel === "Desktop") return Monitor;
+  return Laptop;
 }
 
 export default function Sessions() {
@@ -82,6 +104,8 @@ export default function Sessions() {
   const filtered = sessions.filter((s) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
+    const browserLabel = getBrowserLabel(s.userAgent);
+    const deviceLabel = getDeviceLabel(s.userAgent);
     return (
       String(s.id).toLowerCase().includes(q) ||
       String(s.userId).toLowerCase().includes(q) ||
@@ -89,6 +113,9 @@ export default function Sessions() {
       ((s.user?.emri || "") + " " + (s.user?.mbiemri || ""))
         .toLowerCase()
         .includes(q) ||
+      browserLabel.toLowerCase().includes(q) ||
+      deviceLabel.toLowerCase().includes(q) ||
+      (s.lastSeenAt || "").toLowerCase().includes(q) ||
       (s.createdAt || "").toLowerCase().includes(q) ||
       (s.expiresAt || "").toLowerCase().includes(q)
     );
@@ -155,7 +182,10 @@ export default function Sessions() {
               <thead className="bg-gray-800 text-white">
                 <tr>
                   <th className="px-6 py-4 text-left font-semibold">User</th>
+                  <th className="px-6 py-4 text-left font-semibold">Browser</th>
+                  <th className="px-6 py-4 text-left font-semibold">Device</th>
                   <th className="px-6 py-4 text-left font-semibold">Created At</th>
+                  <th className="px-6 py-4 text-left font-semibold">Last Seen</th>
                   <th className="px-6 py-4 text-left font-semibold">Expires At</th>
                   <th className="px-6 py-4 text-center font-semibold">Actions</th>
                 </tr>
@@ -179,7 +209,22 @@ export default function Sessions() {
                           : s.userId}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
+                        {getBrowserLabel(s.userAgent)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        <span className="inline-flex items-center gap-2">
+                          {(() => {
+                            const DeviceIcon = getDeviceIcon(getDeviceLabel(s.userAgent));
+                            return <DeviceIcon size={15} className="shrink-0" />;
+                          })()}
+                          {getDeviceLabel(s.userAgent)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
                         {formatDate(s.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {formatDate(s.lastSeenAt)}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
                         {formatDate(s.expiresAt)}
@@ -217,6 +262,9 @@ export default function Sessions() {
                   {selectedSession.user?.id
                           ? `${selectedSession.user.emri} ${selectedSession.user.mbiemri} — ${selectedSession.user.email}`
                           : selectedSession.userId}</strong>{" "}
+              </p>
+              <p className="text-gray-600 mb-4">
+                Browser: {getBrowserLabel(selectedSession.userAgent)} | Device: {getDeviceLabel(selectedSession.userAgent)}
               </p>
               <div className="flex gap-4">
                 <button

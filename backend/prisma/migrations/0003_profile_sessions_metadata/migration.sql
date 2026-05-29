@@ -1,0 +1,4 @@
+ALTER TABLE "sessions"
+ADD COLUMN IF NOT EXISTS "user_agent" TEXT,
+ADD COLUMN IF NOT EXISTS "ip_address" TEXT,
+ADD COLUMN IF NOT EXISTS "last_seen_at" TIMESTAMP(6);

@@ -10,11 +10,18 @@ router.get("/", protect, requireRole("is_admin"), async(req, res) => {
     try {
         const session = await prisma.session.findMany({
             orderBy: { createdAt: "desc" },
-            include: {
+            select: {
+                id: true,
+                userId: true,
+                expiresAt: true,
+                createdAt: true,
+                userAgent: true,
+                ipAddress: true,
+                lastSeenAt: true,
                 user: {
                     select: { id: true, email: true, emri: true, mbiemri: true }
                 }
-            }
+            },
         });
 
         res.json(session);

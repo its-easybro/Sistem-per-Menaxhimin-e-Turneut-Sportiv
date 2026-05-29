@@ -67,6 +67,21 @@ const sessionCookieOptions = {
   sameSite: "strict",
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 };
+
+function getSessionMetadata(req) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const ipAddress = Array.isArray(forwardedFor)
+    ? forwardedFor[0]
+    : typeof forwardedFor === "string"
+      ? forwardedFor.split(",")[0].trim()
+      : req.ip || null;
+
+  return {
+    userAgent: req.get("user-agent") || null,
+    ipAddress,
+    lastSeenAt: new Date(),
+  };
+}
 // Helper function to generate JWT access token with user information and role-based claims
 const generateAccessToken = (user) => {
   return jwt.sign(
@@ -155,6 +170,7 @@ router.post("/register", authLimiter, async (req, res) => {
       data: {
         userId: newUser.id,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        ...getSessionMetadata(req),
       },
     });
 
@@ -200,6 +216,7 @@ router.post("/login", authLimiter, async (req, res) => {
       data: {
         userId: user.id,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        ...getSessionMetadata(req),
       }
     });
 
@@ -237,6 +254,13 @@ router.post("/refresh", async (req, res) => {
       }
       return res.status(403).json({ message: "Session expired" });
     }
+
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: {
+        ...getSessionMetadata(req),
+      },
+    });
 
     const newAccessToken = generateAccessToken(session.user);
     res.cookie("token", newAccessToken, accessCookieOptions);

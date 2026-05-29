@@ -1067,6 +1067,7 @@ export default function Matches() {
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all placeholder-gray-400"
                 />
               </div>
+            </div>
 
               <div className="relative flex-1 min-w-[160px] sm:flex-none">
                 <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
@@ -2057,6 +2058,5 @@ export default function Matches() {
           </div>
         )}
       </div>
-    </div>
   );
 }

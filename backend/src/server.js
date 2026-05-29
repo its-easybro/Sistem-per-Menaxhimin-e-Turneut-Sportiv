@@ -25,6 +25,7 @@ import tournamentRegistrationsRoutes from "./routes/tournamentRegistrationsRoute
 import refereesRoutes from "./routes/refereesRoutes.js";
 import standingsRoutes from "./routes/standingsRoutes.js";
 import contactUsRoute from "./routes/contactUsRoute.js";
+import profileRoutes from "./routes/profileRoutes.js";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import sessionRoute from "./routes/sessionRoute.js"
 
@@ -76,6 +77,7 @@ app.use("/referees", refereesRoutes);
 app.use("/standings", standingsRoutes);
 app.use("/contactUs", contactUsRoute);
 app.use("/sessions", sessionRoute);
+app.use("/profile", profileRoutes);
 
 // Start the server
 httpServer.listen(port, () => {

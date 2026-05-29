@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { AUTH_API_URL } from '../config/api';
+import api from '../config/axiosInstance';
 
 const AuthContext = createContext();
 
@@ -14,19 +15,9 @@ export const AuthProvider = ({ children }) => {
     // Restores an existing session from the server when the app first mounts.
     const checkLoggedIn = async () => {
       try {
-        const response = await fetch(`${AUTH_API_URL}/me`, {
-          method: 'GET',
-          // Sends HTTP-only auth cookies with the request.
-          credentials: 'include',
-        });
+        const response = await api.get('/api/auth/me');
 
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data);
-        } else {
-          // Treats any non-OK response as unauthenticated.
-          setUser(null);
-        }
+        setUser(response.data);
       } catch (error) {
         console.error('Failed to fetch user', error);
         // Fallback to signed-out state if session lookup fails.
@@ -42,38 +33,25 @@ export const AuthProvider = ({ children }) => {
 
   // Logs in with credentials and stores returned user info in context state.
   const login = async (email, password) => {
-    const response = await fetch(`${AUTH_API_URL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Required so cookie-based sessions are set by the backend.
-      credentials: 'include',
-      body: JSON.stringify({ email, password }),
-    });
+    const response = await api.post('/api/auth/login', { email, password });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
+    if (!response.data) {
+      throw new Error('Login failed');
     }
 
-    const nextUser = data.userData || data.user || null;
+    const nextUser = response.data.userData || response.data.user || null;
 
     // Commit the user state before the caller navigates to a protected route.
     flushSync(() => {
       setUser(nextUser);
     });
-    return data;
+    return response.data;
   };
 
   // Attempts server logout, then always clears local user state.
   const logout = async () => {
     try {
-      await fetch(`${AUTH_API_URL}/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await api.post('/api/auth/logout');
     } catch (error) {
       console.error('Logout failed', error);
     }
@@ -81,8 +59,14 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (nextUser) => {
+    setUser((currentUser) =>
+      typeof nextUser === 'function' ? nextUser(currentUser) : nextUser,
+    );
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

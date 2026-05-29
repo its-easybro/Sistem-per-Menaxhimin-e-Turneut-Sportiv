@@ -38,6 +38,27 @@ const callsToAction = [
   { name: 'Contact sales', href: '#', icon: PhoneIcon },
 ]
 
+const getInitials = (user) => {
+  const parts = [user?.emri, user?.mbiemri]
+    .filter(Boolean)
+    .map((part) => part.trim());
+
+  if (parts.length > 0) {
+    return parts.map((part) => part.charAt(0).toUpperCase()).join('').slice(0, 2);
+  }
+
+  if (user?.full_name) {
+    return user.full_name
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  }
+
+  return user?.email?.charAt(0).toUpperCase() || 'U';
+};
+
 const Navbar = () => {
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
   // Tracks open/closed state for the mobile navigation drawer.
@@ -53,6 +74,7 @@ const Navbar = () => {
       : user?.is_referee
         ? { label: 'Referee Panel', to: '/referee/dashboard' }
         : null
+  const profileInitials = getInitials(user)
 
   // Logs out the user, closes mobile UI state, then returns to home.
   const handleLogout = async () => {
@@ -166,6 +188,14 @@ const Navbar = () => {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
+            <Link
+                  to="/profile"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-white/20"
+                  aria-label="Open profile"
+                  title="Profile"
+                >
+                  {profileInitials}
+                </Link>
           </div>
         </div>
       </nav>
@@ -258,6 +288,16 @@ const Navbar = () => {
                 >
                   {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
+                <Link
+                      to="/profile"
+                      className="-mx-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
+                        {profileInitials}
+                      </span>
+                      <span>Profile</span>
+                    </Link>
               </div>
             </div>
           </div>

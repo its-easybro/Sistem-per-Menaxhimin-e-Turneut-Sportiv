@@ -18,8 +18,9 @@ const ProtectedRoute = ({ requiredRoles = [], Layout = null }) => {
     return <div>Loading...</div>;
   }
 
-  // Check if user has any of the required roles
-  const hasRequiredRole = requiredRoles.some(role => user?.[role] === true);
+  // Allow auth-only routes when no role restriction is configured.
+  const hasRequiredRole =
+    requiredRoles.length === 0 || requiredRoles.some(role => user?.[role] === true);
 
   if (!user || !hasRequiredRole) {
     return <Navigate to="/login" />;
