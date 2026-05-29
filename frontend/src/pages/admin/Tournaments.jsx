@@ -163,7 +163,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="emertimi"
           value={formData.emertimi}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 ${
             formErrors.emertimi ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
@@ -179,7 +179,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="sporti_id"
           value={formData.sporti_id}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 ${
             formErrors.sporti_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
@@ -202,7 +202,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="lloji"
           value={formData.lloji}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 ${
             formErrors.lloji ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
@@ -225,7 +225,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="statusi"
           value={formData.statusi}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 ${
             formErrors.statusi ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
         >
@@ -247,7 +247,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="data_fillimit"
           value={formData.data_fillimit}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 ${
             formErrors.data_fillimit ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
@@ -264,7 +264,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="data_perfundimit"
           value={formData.data_perfundimit}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 ${
             formErrors.data_perfundimit ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
           required
@@ -281,7 +281,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="lokacioni"
           value={formData.lokacioni}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 ${
             formErrors.lokacioni ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
         />
@@ -297,7 +297,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
             name="organizatori_id"
             value={formData.organizatori_id}
             onChange={onChange}
-            className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+            className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-700"
           >
             <option value="">No organizer</option>
             {users
@@ -320,7 +320,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           name="cmimi_regjistrimit"
           value={formData.cmimi_regjistrimit}
           onChange={onChange}
-          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 ${
+          className={`rounded-lg border px-3 py-2 bg-white text-gray-900 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 ${
             formErrors.cmimi_regjistrimit ? "border-red-500" : "border-gray-300 dark:border-slate-700"
           }`}
         />
@@ -336,7 +336,7 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
           value={formData.pershkrimi}
           onChange={onChange}
           rows={4}
-          className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+          className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-700"
         />
       </label>
     </div>
@@ -1025,10 +1025,10 @@ export default function Tournaments() {
           onClick={handleCloseModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-800 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Add Tournament</h3>
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Add Tournament</h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               <TournamentFormFields
                 formData={formData}
@@ -1064,70 +1064,70 @@ export default function Tournaments() {
           onClick={handleCloseViewModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-800 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Tournament Details</h3>
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Tournament Details</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Name</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                   {selectedTournament.emertimi || "N/A"}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Sport</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                   {getSportName(selectedTournament.sporti_id)}
                 </p>
               </div>
               {isAdmin && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Organizer</label>
-                  <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {getOrganizerName(users, selectedTournament.organizatori_id)}
                   </p>
                 </div>
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Format</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                   {selectedTournament.lloji || "N/A"}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Status</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                   {selectedTournament.statusi || "N/A"}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Start Date</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                   {formatDate(selectedTournament.data_fillimit)}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">End Date</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                   {formatDate(selectedTournament.data_perfundimit)}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Location</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                   {selectedTournament.lokacioni || "N/A"}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Registration Price</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                   {formatCurrency(selectedTournament.cmimi_regjistrimit)} EUR
                 </p>
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Description</label>
-                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-800 px-4 py-2 rounded-lg whitespace-pre-wrap">
+                <p className="text-gray-800 dark:text-slate-100 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg whitespace-pre-wrap">
                   {selectedTournament.pershkrimi || "N/A"}
                 </p>
               </div>
@@ -1151,10 +1151,10 @@ export default function Tournaments() {
           onClick={handleCloseEditModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-800 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Edit Tournament</h3>
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Edit Tournament</h3>
             <form onSubmit={handleEditSubmit} className="space-y-6">
               <TournamentFormFields
                 formData={formData}
@@ -1190,14 +1190,14 @@ export default function Tournaments() {
           onClick={handleCloseDeleteModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-800 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Delete Tournament</h3>
+            <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Delete Tournament</h3>
             <div className="space-y-4">
-              <p className="text-gray-700 dark:text-slate-300">
+              <p className="text-gray-700 dark:text-slate-200">
                 Are you sure you want to delete{" "}
-                <span className="font-semibold text-gray-900 dark:text-slate-100">
+                <span className="font-bold text-gray-900 dark:text-slate-100">
                   {selectedTournament.emertimi}
                 </span>
                 ?

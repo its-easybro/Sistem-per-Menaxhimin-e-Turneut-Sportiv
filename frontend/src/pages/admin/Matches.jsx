@@ -1361,7 +1361,7 @@ export default function Matches() {
           onClick={handleCloseModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-800 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
@@ -1378,7 +1378,7 @@ export default function Matches() {
                     name="turneu_id"
                     value={formData.turneu_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.turneu_id
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1408,7 +1408,7 @@ export default function Matches() {
                     name="ekipi_shtepiak_id"
                     value={formData.ekipi_shtepiak_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.ekipi_shtepiak_id
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1438,7 +1438,7 @@ export default function Matches() {
                     name="ekipi_mysafir_id"
                     value={formData.ekipi_mysafir_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.ekipi_mysafir_id
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1469,7 +1469,7 @@ export default function Matches() {
                     name="data_ndeshjes"
                     value={formData.data_ndeshjes}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 dark:[color-scheme:dark] rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.data_ndeshjes
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1493,7 +1493,7 @@ export default function Matches() {
                     name="ora_fillimit"
                     value={formData.ora_fillimit}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 dark:[color-scheme:dark] rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.ora_fillimit
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1515,7 +1515,7 @@ export default function Matches() {
                     name="fusha_id"
                     value={formData.fusha_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.fusha_id
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1539,7 +1539,7 @@ export default function Matches() {
                     name="referi_id"
                     value={formData.referi_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.referi_id
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1563,7 +1563,7 @@ export default function Matches() {
                     name="statusi"
                     value={formData.statusi}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.statusi
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1587,7 +1587,7 @@ export default function Matches() {
                     name="faza"
                     value={formData.faza}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    className={`w-full px-4 py-2 border dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
                       formErrors.faza
                         ? "border-red-500"
                         : "border-gray-300 dark:border-slate-700"
@@ -1625,10 +1625,10 @@ export default function Matches() {
           onClick={handleCloseViewModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-700 dark:bg-slate-800"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-200">
               Match Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1637,7 +1637,7 @@ export default function Matches() {
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                   Tournament
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-700 dark:text-slate-200">
                   {getTournamentName(selectedMatch.turneu_id)}
                 </p>
               </div>
@@ -1646,7 +1646,7 @@ export default function Matches() {
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                   Home Team
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-700 dark:text-slate-200">
                   {getTeamName(selectedMatch.ekipi_shtepiak_id)}
                 </p>
               </div>
@@ -1655,7 +1655,7 @@ export default function Matches() {
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                   Away Team
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-700 dark:text-slate-200">
                   {getTeamName(selectedMatch.ekipi_mysafir_id)}
                 </p>
               </div>
@@ -1664,7 +1664,7 @@ export default function Matches() {
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                   Date
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-700 dark:text-slate-200">
                   {formatDate(selectedMatch.data_ndeshjes)}
                 </p>
               </div>
@@ -1673,7 +1673,7 @@ export default function Matches() {
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                   Time
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-700 dark:text-slate-200">
                   {formatTime(selectedMatch.ora_fillimit) || "N/A"}
                 </p>
               </div>
@@ -1682,7 +1682,7 @@ export default function Matches() {
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                   Venue
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-700 dark:text-slate-200">
                   {getVenueName(selectedMatch.fusha_id)}
                 </p>
               </div>
@@ -1691,7 +1691,7 @@ export default function Matches() {
                 <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
                   Referee
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-700 dark:text-slate-200">
                   {getPrimaryRefereeName(selectedMatch.id)}
                 </p>
               </div>
@@ -1700,7 +1700,7 @@ export default function Matches() {
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-200">
                   Status
                 </label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg dark:bg-slate-800 dark:text-slate-100">
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg dark:bg-slate-700 dark:text-slate-200">
                   {selectedMatch.statusi}
                 </p>
               </div>
@@ -1709,14 +1709,14 @@ export default function Matches() {
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-200">
                   Phase
                 </label>
-                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg dark:bg-slate-800 dark:text-slate-100">
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg dark:bg-slate-700 dark:text-slate-200">
                   {selectedMatch.faza || "N/A"}
                 </p>
               </div>
             </div>
 
             {/* Controls */}
-            <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+            <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
               <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                 Match Status Controls
               </h4>
@@ -1766,7 +1766,7 @@ export default function Matches() {
             {/* Score Updates */}
             <form
               onSubmit={handleScoreSubmit}
-              className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950"
+              className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800"
             >
               <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                 Update Live Score
@@ -1790,7 +1790,7 @@ export default function Matches() {
                     value={scoreForm.golat_shtepiak}
                     onChange={handleScoreInputChange}
                     disabled={!isLiveMatch(selectedMatch)}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 disabled:dark:bg-slate-800"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 disabled:dark:bg-slate-800"
                   />
                 </div>
 
@@ -1805,7 +1805,7 @@ export default function Matches() {
                     value={scoreForm.golat_mysafir}
                     onChange={handleScoreInputChange}
                     disabled={!isLiveMatch(selectedMatch)}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 disabled:dark:bg-slate-800"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 disabled:dark:bg-slate-800"
                   />
                 </div>
               </div>
@@ -1822,7 +1822,7 @@ export default function Matches() {
             {/* Match Events */}
             <form
               onSubmit={handleEventSubmit}
-              className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950"
+              className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800"
             >
               <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                 Add Match Event
@@ -1838,7 +1838,7 @@ export default function Matches() {
                     value={eventForm.lloji}
                     onChange={handleEventInputChange}
                     disabled={!isLiveMatch(selectedMatch)}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 disabled:dark:bg-slate-800"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 disabled:dark:bg-slate-800"
                   >
                     <option value="Goal">Goal</option>
                     <option value="YellowCard">Yellow card</option>
@@ -1858,7 +1858,7 @@ export default function Matches() {
                       !isLiveMatch(selectedMatch) ||
                       !teamRequiredEventTypes.includes(eventForm.lloji)
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 disabled:dark:bg-slate-800"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 disabled:dark:bg-slate-800"
                   >
                     <option value="">No team</option>
                     <option value={selectedMatch.ekipi_shtepiak_id}>
@@ -1881,7 +1881,7 @@ export default function Matches() {
             </form>
 
             {/* Timeline Section */}
-            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800">
               <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
                 Match Timeline
               </h4>
@@ -1891,7 +1891,7 @@ export default function Matches() {
                   {matchEvents.map((event) => (
                     <div
                       key={event.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800"
                     >
                       <span className="font-semibold text-gray-900 dark:text-slate-100">
                         {getEventMinute(event)} -{" "}
@@ -1931,10 +1931,10 @@ export default function Matches() {
           onClick={handleCloseEditModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-700 dark:bg-slate-800"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-200">
               Edit Match
             </h3>
             <form onSubmit={handleEditSubmit} className="space-y-4">
@@ -1947,7 +1947,7 @@ export default function Matches() {
                     name="turneu_id"
                     value={formData.turneu_id}
                     onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                     required
                   >
                     <option value="">Select Tournament</option>
@@ -1967,7 +1967,7 @@ export default function Matches() {
                     name="ekipi_shtepiak_id"
                     value={formData.ekipi_shtepiak_id}
                     onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                     required
                   >
                     <option value="">Select Home Team</option>
@@ -1987,7 +1987,7 @@ export default function Matches() {
                     name="ekipi_mysafir_id"
                     value={formData.ekipi_mysafir_id}
                     onChange={handleInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                     required
                   >
                     <option value="">Select Away Team</option>
@@ -2008,7 +2008,7 @@ export default function Matches() {
                     name="data_ndeshjes"
                     value={formData.data_ndeshjes}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                     required
                   />
                 </div>
@@ -2022,7 +2022,7 @@ export default function Matches() {
                     name="ora_fillimit"
                     value={formData.ora_fillimit}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                   />
                 </div>
 
@@ -2034,7 +2034,7 @@ export default function Matches() {
                     name="fusha_id"
                     value={formData.fusha_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                   >
                     <option value="">Select Venue</option>
                     {venues.map((v) => (
@@ -2053,7 +2053,7 @@ export default function Matches() {
                     name="referi_id"
                     value={formData.referi_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                   >
                     <option value="">Select Referee</option>
                     {referees.map((r) => (
@@ -2072,7 +2072,7 @@ export default function Matches() {
                     name="statusi"
                     value={formData.statusi}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                   >
                     <option value="Planifikuar">Planifikuar</option>
                     <option value="Live">Live</option>
@@ -2091,7 +2091,7 @@ export default function Matches() {
                     name="faza"
                     value={formData.faza}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                     placeholder="e.g., Final, Semi-final"
                   />
                 </div>
@@ -2124,13 +2124,13 @@ export default function Matches() {
           onClick={handleCloseDeleteModal}
         >
           <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white text-gray-900 p-8 shadow-2xl dark:bg-slate-900 dark:text-slate-100 dark:border dark:border-slate-700"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white text-gray-900 p-8 shadow-2xl dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-2xl font-bold text-red-600 mb-4 dark:text-red-400">
               Delete Match?
             </h3>
-            <p className="text-gray-700 mb-6">
+            <p className="text-gray-700 mb-6 dark:text-slate-200">
               Are you sure you want to delete this match (
               <strong>
                 {getTeamName(selectedMatch.ekipi_shtepiak_id)} vs{" "}

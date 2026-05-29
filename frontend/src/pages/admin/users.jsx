@@ -642,7 +642,7 @@ export default function Users() {
               onClick={handleCloseCreateModal}
             >
               <div
-                className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 dark:border dark:border-slate-800 p-8 shadow-2xl"
+                className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-8 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
@@ -660,7 +660,7 @@ export default function Users() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-950 dark:text-slate-100 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
                         formErrors.email
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
@@ -684,7 +684,7 @@ export default function Users() {
                       name="username"
                       value={formData.username}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-950 dark:text-slate-100 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
                         formErrors.username
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
@@ -708,7 +708,7 @@ export default function Users() {
                       name="full_name"
                       value={formData.full_name}
                       onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Enter full name"
                     />
                   </div>
@@ -724,7 +724,7 @@ export default function Users() {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-950 dark:text-slate-100 ${
+                        className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
                           formErrors.password
                             ? "border-red-500 dark:border-red-500"
                             : "border-gray-300 dark:border-slate-700"
@@ -762,7 +762,7 @@ export default function Users() {
                       name="roli"
                       value={formData.roli}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-950 dark:text-slate-100 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
                         formErrors.roli
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
@@ -808,7 +808,7 @@ export default function Users() {
               onClick={handleCloseEditModal}
             >
               <div
-                className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 dark:border dark:border-slate-800 p-8 shadow-2xl"
+                className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 dark:border dark:border-slate-700 p-8 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
@@ -826,7 +826,7 @@ export default function Users() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-950 dark:text-slate-100 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${
                         formErrors.email
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
@@ -850,7 +850,7 @@ export default function Users() {
                       name="username"
                       value={formData.username}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-950 dark:text-slate-100 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${
                         formErrors.username
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
@@ -874,7 +874,7 @@ export default function Users() {
                       name="full_name"
                       value={formData.full_name}
                       onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Enter full name"
                     />
                   </div>
@@ -890,7 +890,7 @@ export default function Users() {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-950 dark:text-slate-100 ${
+                        className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${
                           formErrors.password
                             ? "border-red-500 dark:border-red-500"
                             : "border-gray-300 dark:border-slate-700"
@@ -928,7 +928,7 @@ export default function Users() {
                       name="roli"
                       value={formData.roli}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-950 dark:text-slate-100 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${
                         formErrors.roli
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
@@ -974,7 +974,7 @@ export default function Users() {
               onClick={handleCloseDeleteModal}
             >
               <div
-                className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 p-8 shadow-2xl"
+                className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 p-8 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">

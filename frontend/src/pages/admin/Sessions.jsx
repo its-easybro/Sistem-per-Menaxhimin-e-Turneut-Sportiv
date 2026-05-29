@@ -224,11 +224,11 @@ export default function Sessions() {
                           ? `${s.user.emri} ${s.user.mbiemri} — ${s.user.email}`
                           : s.userId}
                       </td>
-                      <td className="px-6 py-4 text-gray-600">
+                      <td className="px-6 py-4 text-gray-600 dark:text-slate-200">
                         {getBrowserLabel(s.userAgent)}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
-                        <span className="inline-flex items-center gap-2">
+                        <span className="inline-flex items-center gap-2 dark:text-slate-200">
                           {(() => {
                             const DeviceIcon = getDeviceIcon(
                               getDeviceLabel(s.userAgent),
@@ -240,13 +240,13 @@ export default function Sessions() {
                           {getDeviceLabel(s.userAgent)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">
+                      <td className="px-6 py-4 text-gray-600 dark:text-slate-200">
                         {formatDate(s.createdAt)}
                       </td>
-                      <td className="px-6 py-4 text-gray-600">
+                      <td className="px-6 py-4 text-gray-600 dark:text-slate-200">
                         {formatDate(s.lastSeenAt)}
                       </td>
-                      <td className="px-6 py-4 text-gray-600">
+                      <td className="px-6 py-4 text-gray-600 dark:text-slate-200">
                         {formatDate(s.expiresAt)}
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -274,7 +274,7 @@ export default function Sessions() {
             onClick={handleDeleteCancel}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-800"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="mb-4 text-2xl font-bold text-red-600 dark:text-red-400">
