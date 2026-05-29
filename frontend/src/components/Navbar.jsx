@@ -1,5 +1,6 @@
 'use client'
 import { useContext, useState } from 'react'
+import logo from '../assets/logo.png'
 import {
   Dialog,
   DialogPanel,
@@ -62,15 +63,15 @@ const Navbar = () => {
   }
 
   return (
-    <header className="bg-gray-900">
-      <nav aria-label="Global" className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8">
+    <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-white/10 shadow-lg transition-colors duration-300">
+      <nav aria-label="Global" className="mx-auto flex max-w-7xl items-center justify-between p-4 lg:px-8">
         <div className="flex lg:flex-1">
-          <Link to="/" className="-m-1.5 p-1.5">
+          <Link to="/" className="-m-1.5 p-1.5 group flex items-center gap-3">
             <span className="sr-only">Your Company</span>
             <img
-              alt=""
-              src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=500"
-              className="h-8 w-auto"
+              alt="Tournament Logo"
+              src={logo}
+              className="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
         </div>
@@ -86,9 +87,9 @@ const Navbar = () => {
         </div>
         <PopoverGroup className="hidden lg:flex lg:gap-x-12">
           <Popover className="relative">
-            <PopoverButton className="flex items-center gap-x-1 text-sm/6 font-semibold text-white">
+            <PopoverButton className="flex items-center gap-x-1 text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200 outline-none">
               Product
-              <ChevronDownIcon aria-hidden="true" className="size-5 flex-none text-gray-500" />
+              <ChevronDownIcon aria-hidden="true" className="size-5 flex-none text-gray-400 group-hover:text-white" />
             </PopoverButton>
 
             <PopoverPanel
@@ -129,31 +130,31 @@ const Navbar = () => {
             </PopoverPanel>
           </Popover>
 
-          <Link to="/about-us" className="text-sm/6 font-semibold text-white">
+          <Link to="/about-us" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             About Us
           </Link>
-          <Link to="/contact-us" className="text-sm/6 font-semibold text-white">
+          <Link to="/contact-us" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             Contact us
           </Link>
-          <Link to="/live-matches" className="text-sm/6 font-semibold text-white">
+          <Link to="/live-matches" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             Live Matches
           </Link>
         </PopoverGroup>
         {/* Desktop auth actions vary by user role. */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             {!user ? (
-              <Link to="/login" className="text-sm/6 font-semibold text-white">
+              <Link to="/login" className="text-sm/6 font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
                 Log in <span aria-hidden="true">→</span>
               </Link>
             ) : (
               <>
                 {rolePanel && (
-                  <Link to={rolePanel.to} className="text-sm/6 font-semibold text-white">
+                  <Link to={rolePanel.to} className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors">
                     {rolePanel.label}
                   </Link>
                 )}
-                <button onClick={handleLogout} className="text-sm/6 font-semibold text-white">
+                <button onClick={handleLogout} className="text-sm/6 font-semibold text-red-400 hover:text-red-300 transition-colors">
                   Logout
                 </button>
               </>
@@ -171,15 +172,15 @@ const Navbar = () => {
       </nav>
       {/* Mobile navigation drawer for small screens. */}
       <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
-        <div className="fixed inset-0 z-50" />
-        <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-gray-900 p-6 sm:max-w-sm sm:ring-1 sm:ring-gray-100/10">
+        <div className="fixed inset-0 z-50 backdrop-blur-sm bg-black/30" />
+        <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-slate-900 p-6 sm:max-w-sm sm:ring-1 sm:ring-white/10 shadow-2xl">
           <div className="flex items-center justify-between">
-            <Link to="/" className="-m-1.5 p-1.5">
+            <Link to="/" className="-m-1.5 p-1.5 group flex items-center gap-3">
               <span className="sr-only">Your Company</span>
               <img
-                alt=""
-                src="https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=500"
-                className="h-8 w-auto"
+                alt="Tournament Logo"
+                src={logo}
+                className="h-10 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
               />
             </Link>
             <button
