@@ -1,4 +1,4 @@
-import {useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
@@ -6,19 +6,19 @@ import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
 import { Edit, Trash2, Eye } from "lucide-react";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const formatDate = (isoDate) => {
-    if (!isoDate) return "N/A";
-    try{
-   const date = new Date(isoDate);
-   const day = String(date.getDate()).padStart(2, "0");
-   const month = String(date.getMonth() + 1).padStart(2, "0");
-   const year = date.getFullYear();
-   return `${day}/${month}/${year}`;
-    }catch{
-        return "Invalid Date";
-    }
+  if (!isoDate) return "N/A";
+  try {
+    const date = new Date(isoDate);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return "Invalid Date";
+  }
 };
 
 const resolveTeamLogoUrl = (logoValue) => {
@@ -28,7 +28,10 @@ const resolveTeamLogoUrl = (logoValue) => {
   if (!trimmed) return "";
 
   // Handle legacy saved URLs that used /sports/uploads-teams.
-  const migrated = trimmed.replace("/sports/uploads-teams/", "/teams/uploads-teams/");
+  const migrated = trimmed.replace(
+    "/sports/uploads-teams/",
+    "/teams/uploads-teams/",
+  );
 
   if (/^https?:\/\//i.test(migrated)) {
     return migrated;
@@ -59,9 +62,7 @@ const teamCreateSchema = yup.object().shape({
 });
 
 const teamUpdateSchema = yup.object().shape({
-  emertimi: yup
-    .string()
-    .min(2, "Team name must be at least 2 characters"),
+  emertimi: yup.string().min(2, "Team name must be at least 2 characters"),
   trajneri: yup.string(),
   kontakti: yup.string(),
   email: yup.string().email("Email must be valid"),
@@ -71,288 +72,282 @@ const teamUpdateSchema = yup.object().shape({
   logoja: yup.string(),
 });
 export default function Teams() {
-    // Provides admin-only team CRUD with modal-driven forms.
-    const { user } = useContext(AuthContext);
+  // Provides admin-only team CRUD with modal-driven forms.
+  const { user } = useContext(AuthContext);
 
-    // Stores team list, active dialogs, selected row, and form values.
-    const [teams , setTeams ] = useState([]);
-    const [sports, setSports] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const [showViewModal, setShowViewModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [showDeleteModal, setShowDeleteModal]= useState(false);
-    const [selectedTeam, setSelectedTeam] = useState(null);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [alert, setAlert] = useState(null);
-    const [uploading, setUploading] = useState(false)
-    const [formData, setFormData] = useState({
-                  emertimi : "",
-                logoja : "",
-                trajneri : "",
-                kontakti : "",
-                email : "",
-                qyteti : "",
-                data_themelimit : "",
-                sporti_id: "",
-    });
-    const [formErrors, setFormErrors] = useState({});
+  // Stores team list, active dialogs, selected row, and form values.
+  const [teams, setTeams] = useState([]);
+  const [sports, setSports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [alert, setAlert] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    emertimi: "",
+    logoja: "",
+    trajneri: "",
+    kontakti: "",
+    email: "",
+    qyteti: "",
+    data_themelimit: "",
+    sporti_id: "",
+  });
+  const [formErrors, setFormErrors] = useState({});
 
-    const handleLogoUpload = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-      const data = new FormData();
-      data.append("logo", file)
+    const data = new FormData();
+    data.append("logo", file);
 
-      setUploading(true)
-      try {
-        const response = await api.post("/teams/upload-team-logo", data, {
-          headers: { "Content-Type": "multipart/form-data"}
-        })
+    setUploading(true);
+    try {
+      const response = await api.post("/teams/upload-team-logo", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-        setFormData((prev) => ({ ...prev, logoja: response.data.url }))
-      } catch {
-        setAlert({ type: "error", message: "Failed to upload logo" })
-      } finally {
-        setUploading(false)
-      }
+      setFormData((prev) => ({ ...prev, logoja: response.data.url }));
+    } catch {
+      setAlert({ type: "error", message: "Failed to upload logo" });
+    } finally {
+      setUploading(false);
     }
+  };
 
-    // Loads team records after auth is ready and admin access is confirmed.
-    useEffect(() => {
-        const loadTeams = async () => {
-        if (!user?.is_admin) {
-            setLoading(false);
-            return;
-        }
-        try{
-            setLoading(true);
-            const [teamsResponse, sportsResponse] = await Promise.all([
-              api.get("/teams"),
-              api.get("/sports"),
-            ]);
+  // Loads team records after auth is ready and admin access is confirmed.
+  useEffect(() => {
+    const loadTeams = async () => {
+      if (!user?.is_admin) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const [teamsResponse, sportsResponse] = await Promise.all([
+          api.get("/teams"),
+          api.get("/sports"),
+        ]);
 
         const teamsData = teamsResponse.data;
         const sportsData = sportsResponse.data;
         setTeams(teamsData);
         setSports(Array.isArray(sportsData) ? sportsData : []);
-    }  catch(err){
+      } catch (err) {
         setError(err.message);
-
-    }finally {
+      } finally {
         setLoading(false);
+      }
+    };
+    loadTeams();
+  }, [user]);
+
+  const handleCreate = () => {
+    setShowModal(true);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
     }
+  };
 
-    };
-        loadTeams();
-}, [user]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await teamCreateSchema.validate(formData, { abortEarly: false });
 
-    const handleCreate = () => {
-        setShowModal(true);
-    };
+      const response = await api.post(`/teams`, formData);
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev)=> ({
-            ...prev,
-            [name]: value,
-        }));
+      const newTeam = response.data;
+      setTeams([...teams, newTeam]);
 
-        if (formErrors[name]) {
-          setFormErrors((prev) => ({
-            ...prev,
-            [name]: undefined,
-          }));
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try{
-            await teamCreateSchema.validate(formData, { abortEarly: false });
-             
-            const response = await api.post(`/teams`, formData)
-            
-            const newTeam = response.data;
-            setTeams([...teams, newTeam]);
-
-            setFormData({
-                emertimi : "",
-                logoja : "",
-                trajneri : "",
-                kontakti : "",
-                email : "",
-                qyteti : "",
-                data_themelimit : "",
-                sporti_id: "",
-            });
-            setFormErrors({});
-            setShowModal(false);
-            setAlert({ type: "success", message: "Team created successfully!" });
-        } catch(err){
-            if (err.inner) {
-              const validationErrors = {};
-              err.inner.forEach((error) => {
-                validationErrors[error.path] = error.message;
-              });
-              setFormErrors(validationErrors);
-            } else {
-              setAlert({
-                type: "error",
-                message:
-                  "Error creating team: " +
-                  (err.response?.data?.error || err.message),
-              });
-            }
-        }
-    };
-    const handleCloseModal = () => {
-        setFormData({
-                emertimi : "",
-                logoja : "",
-                trajneri : "",
-                kontakti : "",
-                email : "",
-                qyteti : "",
-                data_themelimit : "",
-                sporti_id: "",
+      setFormData({
+        emertimi: "",
+        logoja: "",
+        trajneri: "",
+        kontakti: "",
+        email: "",
+        qyteti: "",
+        data_themelimit: "",
+        sporti_id: "",
+      });
+      setFormErrors({});
+      setShowModal(false);
+      setAlert({ type: "success", message: "Team created successfully!" });
+    } catch (err) {
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
         });
-        setFormErrors({});
-        setShowModal(false);
-
-    };
-
-    const handleCloseEditModal = () => {
-        setFormData({
-                emertimi : "",
-                logoja : "",
-                trajneri : "",
-                kontakti : "",
-                email : "",
-                qyteti : "",
-                data_themelimit : "",
-                sporti_id: "",
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({
+          type: "error",
+          message:
+            "Error creating team: " +
+            (err.response?.data?.error || err.message),
         });
-        setFormErrors({});
-        setSelectedTeam(null);
-        setShowEditModal(false);
-
-    };
-
-    const handleCloseViewModal = () => {
-        setSelectedTeam(null);
-        setShowViewModal(false);
-    };
-
-    const handleCloseDeleteModal = () => {
-        setSelectedTeam(null);
-        setShowDeleteModal(false);
-    };
-
-    const handleView = (id) => {
-        const team = teams.find((e)=> e.id ===id);
-        setSelectedTeam(team);
-        setShowViewModal(true);
-    };
-    const handleEdit = (id) => {
-        const team = teams.find((e)=> e.id === id)
-        setSelectedTeam(team);
-
-        setFormData({
-                emertimi : team.emertimi || "",
-                logoja : team.logoja || "",
-                trajneri : team.trajneri || "",
-                kontakti : team.kontakti || "",
-                email : team.email || "",
-                qyteti : team.qyteti || "",
-                data_themelimit : team.data_themelimit || "",
-                sporti_id : team.sporti_id ? String(team.sporti_id) : "",
-        });
-      setShowEditModal(true);
-    };
-
-    const handleDelete = (id) => {
-        const team = teams.find((e)=> e.id === id);
-        setSelectedTeam(team);
-        setShowDeleteModal(true);
-    };
-
-    const handleEditSubmit = async (e) => {
-        e.preventDefault();
-        if(!selectedTeam) return;
-        try{
-          await teamUpdateSchema.validate(formData, { abortEarly: false });
-          const response = await api.put(`teams/${selectedTeam.id}`, formData)
-
-            const updatedTeam = response.data;
-
-            setTeams(teams.map((t) => (t.id === updatedTeam.id ? updatedTeam : t)));
-            setFormData({
-                emertimi : "",
-                logoja : "",
-                trajneri : "",
-                kontakti : "",
-                email : "",
-                qyteti : "",
-                data_themelimit : "",
-                sporti_id: "",
-        });
-        setFormErrors({});
-        setSelectedTeam(null);
-        setShowEditModal(false);
-        setAlert({ type: "success", message: "Team updated successfully!" });
-        } catch(err) {
-            if (err.inner) {
-              const validationErrors = {};
-              err.inner.forEach((error) => {
-                validationErrors[error.path] = error.message;
-              });
-              setFormErrors(validationErrors);
-            } else {
-              setAlert({
-                type: "error",
-                message:
-                  "Error updating team: " +
-                  (err.response?.data?.error || err.message),
-              });
-            }
-        }
-    };
-
-    const handleDeleteConfirm = async () => {
-        if(!selectedTeam) return;
-        try{
-          await api.delete(`teams/${selectedTeam.id}`)
-
-            setTeams(teams.filter((t) => t.id !== selectedTeam.id));
-
-            setSelectedTeam(null);
-            setShowDeleteModal(false);
-            setAlert({ type: "success", message: "Team deleted successfully!" });
-        }catch(err){
-            setAlert({
-              type: "error",
-              message:
-                "Error deleting team: " +
-                (err.response?.data?.error || err.message),
-            });
-        }
-
-    };
-
-    // Redirects non-admin users away from protected team management.
-    if(!user || !user.is_admin) {
-        return < Navigate to="/login" replace/>;
+      }
     }
+  };
+  const handleCloseModal = () => {
+    setFormData({
+      emertimi: "",
+      logoja: "",
+      trajneri: "",
+      kontakti: "",
+      email: "",
+      qyteti: "",
+      data_themelimit: "",
+      sporti_id: "",
+    });
+    setFormErrors({});
+    setShowModal(false);
+  };
+
+  const handleCloseEditModal = () => {
+    setFormData({
+      emertimi: "",
+      logoja: "",
+      trajneri: "",
+      kontakti: "",
+      email: "",
+      qyteti: "",
+      data_themelimit: "",
+      sporti_id: "",
+    });
+    setFormErrors({});
+    setSelectedTeam(null);
+    setShowEditModal(false);
+  };
+
+  const handleCloseViewModal = () => {
+    setSelectedTeam(null);
+    setShowViewModal(false);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setSelectedTeam(null);
+    setShowDeleteModal(false);
+  };
+
+  const handleView = (id) => {
+    const team = teams.find((e) => e.id === id);
+    setSelectedTeam(team);
+    setShowViewModal(true);
+  };
+  const handleEdit = (id) => {
+    const team = teams.find((e) => e.id === id);
+    setSelectedTeam(team);
+
+    setFormData({
+      emertimi: team.emertimi || "",
+      logoja: team.logoja || "",
+      trajneri: team.trajneri || "",
+      kontakti: team.kontakti || "",
+      email: team.email || "",
+      qyteti: team.qyteti || "",
+      data_themelimit: team.data_themelimit || "",
+      sporti_id: team.sporti_id ? String(team.sporti_id) : "",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleDelete = (id) => {
+    const team = teams.find((e) => e.id === id);
+    setSelectedTeam(team);
+    setShowDeleteModal(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedTeam) return;
+    try {
+      await teamUpdateSchema.validate(formData, { abortEarly: false });
+      const response = await api.put(`teams/${selectedTeam.id}`, formData);
+
+      const updatedTeam = response.data;
+
+      setTeams(teams.map((t) => (t.id === updatedTeam.id ? updatedTeam : t)));
+      setFormData({
+        emertimi: "",
+        logoja: "",
+        trajneri: "",
+        kontakti: "",
+        email: "",
+        qyteti: "",
+        data_themelimit: "",
+        sporti_id: "",
+      });
+      setFormErrors({});
+      setSelectedTeam(null);
+      setShowEditModal(false);
+      setAlert({ type: "success", message: "Team updated successfully!" });
+    } catch (err) {
+      if (err.inner) {
+        const validationErrors = {};
+        err.inner.forEach((error) => {
+          validationErrors[error.path] = error.message;
+        });
+        setFormErrors(validationErrors);
+      } else {
+        setAlert({
+          type: "error",
+          message:
+            "Error updating team: " +
+            (err.response?.data?.error || err.message),
+        });
+      }
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedTeam) return;
+    try {
+      await api.delete(`teams/${selectedTeam.id}`);
+
+      setTeams(teams.filter((t) => t.id !== selectedTeam.id));
+
+      setSelectedTeam(null);
+      setShowDeleteModal(false);
+      setAlert({ type: "success", message: "Team deleted successfully!" });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          "Error deleting team: " + (err.response?.data?.error || err.message),
+      });
+    }
+  };
+
+  // Redirects non-admin users away from protected team management.
+  if (!user || !user.is_admin) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (loading) {
     return (
       <div className="delay-skeleton">
         <TableSkeleton />
       </div>
-    )
+    );
   }
 
   if (error)
@@ -361,11 +356,11 @@ export default function Teams() {
         <p className="text-lg text-red-600 dark:text-red-400">Error: {error}</p>
       </div>
     );
-     return (
+  return (
     <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
-        <Alert 
-          type={alert.type} 
+        <Alert
+          type={alert.type}
           message={alert.message}
           onClose={() => setAlert(null)}
         />
@@ -422,20 +417,24 @@ export default function Teams() {
                 <th className="px-4 py-3 text-left font-semibold">Email</th>
                 <th className="px-4 py-3 text-left font-semibold">City</th>
                 <th className="px-4 py-3 text-left font-semibold">Sport</th>
-                <th className="px-4 py-3 text-center font-semibold">Founded Date</th>
+                <th className="px-4 py-3 text-center font-semibold">
+                  Founded Date
+                </th>
                 <th className="px-4 py-3 text-center font-semibold">Actions</th>
-                
-              
               </tr>
             </thead>
             {/* Table Body */}
             <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {teams.filter((s) =>
-                (s.emertimi || "").toLowerCase().includes(searchQuery.toLowerCase()),
+                (s.emertimi || "")
+                  .toLowerCase()
+                  .includes(searchQuery.toLowerCase()),
               ).length > 0 ? (
                 teams
                   .filter((s) =>
-                    (s.emertimi || "").toLowerCase().includes(searchQuery.toLowerCase()),
+                    (s.emertimi || "")
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase()),
                   )
                   .map((s) => (
                     <tr
@@ -466,9 +465,8 @@ export default function Teams() {
                       <td className="px-4 py-3 text-gray-800 dark:text-slate-300 text-center">
                         {formatDate(s.data_themelimit)}
                       </td>
-                      
-                        
-                     <td className="px-4 py-3">
+
+                      <td className="px-4 py-3">
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => handleView(s.id)}
@@ -512,9 +510,9 @@ export default function Teams() {
         </div>
 
         {/* ADD NEW TEAM MODAL */}
-        {showModal && ( 
+        {showModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4 backdrop-blur-sm"
             onClick={handleCloseModal}
           >
             <div
@@ -526,31 +524,36 @@ export default function Teams() {
               </h3>
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Team logo upload */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Team Logo
-                    </label>
-                    {formData.logoja && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                    Team Logo
+                  </label>
+                  {formData.logoja && (
                     <img
-                        src={resolveTeamLogoUrl(formData.logoja)}
-                        alt="Team logo"
-                        className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200"
-                      />
-                    )}
-
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleLogoUpload}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                      src={resolveTeamLogoUrl(formData.logoja)}
+                      alt="Team logo"
+                      className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200 dark:border-slate-600"
                     />
-                    {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
-                  </div>
+                  )}
+
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoUpload}
+                    className="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-500/10 dark:file:text-green-400 dark:hover:file:bg-green-500/20"
+                  />
+                  {uploading && (
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                      Uploading...
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Name input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                     Team Name*
+                      Team Name *
                     </label>
                     <input
                       type="text"
@@ -558,15 +561,20 @@ export default function Teams() {
                       value={formData.emertimi}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
-                        formErrors.emertimi ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+                        formErrors.emertimi
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="Name of the team"
                       required
                     />
                     {formErrors.emertimi && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.emertimi}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {formErrors.emertimi}
+                      </p>
                     )}
                   </div>
+
                   {/* Trainer input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
@@ -583,7 +591,7 @@ export default function Teams() {
                     />
                   </div>
 
-                  {/* contact input field */}
+                  {/* Contact input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Contact *
@@ -594,15 +602,20 @@ export default function Teams() {
                       value={formData.kontakti}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
-                        formErrors.kontakti ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+                        formErrors.kontakti
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="+383 12 345 678"
                       required
                     />
                     {formErrors.kontakti && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.kontakti}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {formErrors.kontakti}
+                      </p>
                     )}
                   </div>
+
                   {/* Email input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
@@ -614,19 +627,24 @@ export default function Teams() {
                       value={formData.email}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
-                        formErrors.email ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+                        formErrors.email
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="Email"
                       required
                     />
                     {formErrors.email && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {formErrors.email}
+                      </p>
                     )}
                   </div>
+
                   {/* City input field */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                        City *
+                      City *
                     </label>
                     <input
                       type="text"
@@ -634,24 +652,30 @@ export default function Teams() {
                       value={formData.qyteti}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
-                        formErrors.qyteti ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+                        formErrors.qyteti
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="City"
                       required
                     />
                     {formErrors.qyteti && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.qyteti}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {formErrors.qyteti}
+                      </p>
                     )}
                   </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+
+                  {/* Sport input field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Sport *
                     </label>
                     <select
                       name="sporti_id"
                       value={formData.sporti_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       required
                     >
                       <option value="">Select sport</option>
@@ -662,8 +686,10 @@ export default function Teams() {
                       ))}
                     </select>
                   </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+
+                  {/* Founded Date input field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Founded Date *
                     </label>
                     <input
@@ -671,16 +697,21 @@ export default function Teams() {
                       name="data_themelimit"
                       value={formData.data_themelimit}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
-                        formErrors.data_themelimit ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 dark:[color-scheme:dark] ${
+                        formErrors.data_themelimit
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-slate-600"
                       }`}
                       required
                     />
                     {formErrors.data_themelimit && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.data_themelimit}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {formErrors.data_themelimit}
+                      </p>
                     )}
                   </div>
                 </div>
+
                 {/* Form buttons */}
                 <div className="flex gap-4 pt-4">
                   <button
@@ -692,7 +723,7 @@ export default function Teams() {
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                    className="flex-1 bg-gray-400 hover:bg-gray-500 dark:bg-slate-600 dark:hover:bg-slate-500 text-white font-semibold py-2 rounded-lg transition duration-200"
                   >
                     Cancel
                   </button>
@@ -798,37 +829,43 @@ export default function Teams() {
         {/* Edit team modal */}
         {showEditModal && selectedTeam && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4 backdrop-blur-sm"
             onClick={handleCloseEditModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-               {/* Team logo upload */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Team Logo
-                    </label>
-                    {formData.logoja && (
-                    <img
-                        src={resolveTeamLogoUrl(formData.logoja)}
-                        alt="Team logo"
-                        className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200 dark:border-slate-700"
-                      />
-                    )}
-
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleLogoUpload}
-                      className="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 dark:file:bg-green-500/10 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-500/20"
-                    />
-                    {uploading && <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Uploading...</p>}
-                  </div>
               <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
                 Edit Team
               </h3>
+
+              {/* Team logo upload */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                  Team Logo
+                </label>
+                {formData.logoja && (
+                  <img
+                    src={resolveTeamLogoUrl(formData.logoja)}
+                    alt="Team logo"
+                    className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200 dark:border-slate-700"
+                  />
+                )}
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleLogoUpload}
+                  className="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 dark:file:bg-green-500/10 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-500/20"
+                />
+                {uploading && (
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                    Uploading...
+                  </p>
+                )}
+              </div>
+
               <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Team name input field */}
@@ -932,10 +969,11 @@ export default function Teams() {
                       name="data_themelimit"
                       value={formData.data_themelimit}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 dark:[color-scheme:dark]"
                     />
                   </div>
                 </div>
+
                 <div className="flex gap-4 pt-4">
                   <button
                     type="submit"
@@ -946,7 +984,7 @@ export default function Teams() {
                   <button
                     type="button"
                     onClick={handleCloseEditModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                    className="flex-1 bg-gray-400 hover:bg-gray-500 dark:bg-slate-600 dark:hover:bg-slate-500 text-white font-semibold py-2 rounded-lg transition duration-200"
                   >
                     Cancel
                   </button>
@@ -970,7 +1008,9 @@ export default function Teams() {
                 Delete Team
               </h3>
               <p className="text-gray-600 dark:text-slate-400 mb-6">
-                Are you sure you want to delete <strong>{selectedTeam.emertimi}</strong>? This action cannot be undone.
+                Are you sure you want to delete{" "}
+                <strong>{selectedTeam.emertimi}</strong>? This action cannot be
+                undone.
               </p>
               <div className="flex gap-4">
                 <button
@@ -994,4 +1034,4 @@ export default function Teams() {
       </div>
     </div>
   );
-};
+}

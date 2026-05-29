@@ -4,7 +4,7 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import { Monitor, Smartphone, Trash2, Laptop, Globe } from "lucide-react";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 function formatDate(iso) {
   if (!iso) return "-";
@@ -19,10 +19,13 @@ function formatDate(iso) {
 function getBrowserLabel(userAgent) {
   if (!userAgent) return "Unknown browser";
   if (userAgent.includes("Edg/")) return "Microsoft Edge";
-  if (userAgent.includes("Chrome/") && !userAgent.includes("Edg/")) return "Google Chrome";
+  if (userAgent.includes("Chrome/") && !userAgent.includes("Edg/"))
+    return "Google Chrome";
   if (userAgent.includes("Firefox/")) return "Mozilla Firefox";
-  if (userAgent.includes("Safari/") && userAgent.includes("Version/")) return "Safari";
-  if (userAgent.includes("OPR/") || userAgent.includes("Opera/")) return "Opera";
+  if (userAgent.includes("Safari/") && userAgent.includes("Version/"))
+    return "Safari";
+  if (userAgent.includes("OPR/") || userAgent.includes("Opera/"))
+    return "Opera";
   return "Browser";
 }
 
@@ -128,7 +131,7 @@ export default function Sessions() {
       <div className="delay-skeleton">
         <TableSkeleton />
       </div>
-    )
+    );
   }
 
   return (
@@ -144,7 +147,9 @@ export default function Sessions() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6"></div>
-          <h2 className="text-2xl font-bold dark:text-slate-200">Active sessions</h2>
+          <h2 className="text-2xl font-bold dark:text-slate-200">
+            Active sessions
+          </h2>
           <div className="relative">
             <input
               type="text"
@@ -184,10 +189,18 @@ export default function Sessions() {
                   <th className="px-6 py-4 text-left font-semibold">User</th>
                   <th className="px-6 py-4 text-left font-semibold">Browser</th>
                   <th className="px-6 py-4 text-left font-semibold">Device</th>
-                  <th className="px-6 py-4 text-left font-semibold">Created At</th>
-                  <th className="px-6 py-4 text-left font-semibold">Last Seen</th>
-                  <th className="px-6 py-4 text-left font-semibold">Expires At</th>
-                  <th className="px-6 py-4 text-center font-semibold">Actions</th>
+                  <th className="px-6 py-4 text-left font-semibold">
+                    Created At
+                  </th>
+                  <th className="px-6 py-4 text-left font-semibold">
+                    Last Seen
+                  </th>
+                  <th className="px-6 py-4 text-left font-semibold">
+                    Expires At
+                  </th>
+                  <th className="px-6 py-4 text-center font-semibold">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
@@ -202,7 +215,10 @@ export default function Sessions() {
                   </tr>
                 ) : (
                   filtered.map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150">
+                    <tr
+                      key={s.id}
+                      className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150"
+                    >
                       <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-medium">
                         {s.user?.email
                           ? `${s.user.emri} ${s.user.mbiemri} — ${s.user.email}`
@@ -214,8 +230,12 @@ export default function Sessions() {
                       <td className="px-6 py-4 text-gray-600">
                         <span className="inline-flex items-center gap-2">
                           {(() => {
-                            const DeviceIcon = getDeviceIcon(getDeviceLabel(s.userAgent));
-                            return <DeviceIcon size={15} className="shrink-0" />;
+                            const DeviceIcon = getDeviceIcon(
+                              getDeviceLabel(s.userAgent),
+                            );
+                            return (
+                              <DeviceIcon size={15} className="shrink-0" />
+                            );
                           })()}
                           {getDeviceLabel(s.userAgent)}
                         </span>
@@ -231,12 +251,12 @@ export default function Sessions() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => handleDelete(s.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                          <button
+                            onClick={() => handleDelete(s.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -247,35 +267,43 @@ export default function Sessions() {
           </div>
         )}
 
-        {/* Delete modal */}
+        {/* DELETE SESSION MODAL */}
         {showDeleteModal && selectedSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onClick={handleDeleteCancel}
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4 backdrop-blur-sm"
+            onClick={handleDeleteCancel}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            <div
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+              onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Confirm delete</h3>
-              <p className="text-gray-700 dark:text-slate-300 mb-6">
+              <h3 className="mb-4 text-2xl font-bold text-red-600 dark:text-red-400">
+                Confirm delete
+              </h3>
+              <p className="mb-6 text-gray-700 dark:text-slate-300">
                 Delete session{" "}
-                <strong className="break-all dark:text-slate-200">
+                <strong className="break-all text-gray-900 dark:text-slate-100">
                   {selectedSession.user?.id
-                          ? `${selectedSession.user.emri} ${selectedSession.user.mbiemri} — ${selectedSession.user.email}`
-                          : selectedSession.userId}</strong>{" "}
+                    ? `${selectedSession.user.emri} ${selectedSession.user.mbiemri} — ${selectedSession.user.email}`
+                    : selectedSession.userId}
+                </strong>{" "}
               </p>
-              <p className="text-gray-600 mb-4">
-                Browser: {getBrowserLabel(selectedSession.userAgent)} | Device: {getDeviceLabel(selectedSession.userAgent)}
+              <p className="mb-6 text-sm text-gray-600 dark:text-slate-400">
+                Browser: {getBrowserLabel(selectedSession.userAgent)} | Device:{" "}
+                {getDeviceLabel(selectedSession.userAgent)}
               </p>
+
+              {/* Action Buttons */}
               <div className="flex gap-4">
                 <button
                   onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                  className="flex-1 rounded-lg bg-red-500 py-2 font-semibold text-white transition duration-200 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
                 >
                   Delete
                 </button>
                 <button
                   onClick={handleDeleteCancel}
-                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+                  className="flex-1 rounded-lg bg-gray-400 py-2 font-semibold text-white transition duration-200 hover:bg-gray-500 dark:bg-slate-700 dark:hover:bg-slate-600"
                 >
                   Cancel
                 </button>

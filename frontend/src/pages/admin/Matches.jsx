@@ -4,10 +4,19 @@ import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye, Search, ChevronLeft, ChevronRight, Plus, SlidersHorizontal } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Eye,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  SlidersHorizontal,
+} from "lucide-react";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -48,7 +57,9 @@ const teamRequiredEventTypes = ["Goal", "YellowCard", "RedCard"];
 
 function getEventMinute(event) {
   const minute = event.minute ?? event.minuta;
-  return minute === null || minute === undefined || minute === "" ? "-" : `${minute}'`;
+  return minute === null || minute === undefined || minute === ""
+    ? "-"
+    : `${minute}'`;
 }
 
 function getEventTypeLabel(type) {
@@ -174,7 +185,6 @@ export default function Matches() {
         setLoading(true);
         setError("");
 
-
         const [
           tournamentsResponse,
           teamsResponse,
@@ -275,7 +285,10 @@ export default function Matches() {
   };
 
   const hasActiveFilters =
-    searchQuery.trim() !== "" || filters.statusi !== "" || filters.turneu_id !== "" || filters.team_id !== "";
+    searchQuery.trim() !== "" ||
+    filters.statusi !== "" ||
+    filters.turneu_id !== "" ||
+    filters.team_id !== "";
 
   useEffect(() => {
     const appendMatchEvent = (event) => {
@@ -751,10 +764,7 @@ export default function Matches() {
         [name]: value,
       };
 
-      if (
-        name === "lloji" &&
-        !teamRequiredEventTypes.includes(value)
-      ) {
+      if (name === "lloji" && !teamRequiredEventTypes.includes(value)) {
         next.ekipi_id = "";
       }
 
@@ -899,7 +909,10 @@ export default function Matches() {
       const nextStatus = response.data.match?.statusi || statusi;
 
       applyMatchStatus(selectedMatch.id, nextStatus);
-      setAlert({ type: "success", message: "Match status updated successfully!" });
+      setAlert({
+        type: "success",
+        message: "Match status updated successfully!",
+      });
     } catch (err) {
       setAlert({
         type: "error",
@@ -1003,7 +1016,7 @@ export default function Matches() {
       <div className="delay-skeleton">
         <TableSkeleton />
       </div>
-    )
+    );
   }
 
   // Redirects any non-admin user away from this protected page.
@@ -1025,15 +1038,9 @@ export default function Matches() {
     if (!query) return true;
 
     return (
-      getTournamentName(match.turneu_id)
-        .toLowerCase()
-        .includes(query) ||
-      getTeamName(match.ekipi_shtepiak_id)
-        .toLowerCase()
-        .includes(query) ||
-      getTeamName(match.ekipi_mysafir_id)
-        .toLowerCase()
-        .includes(query)
+      getTournamentName(match.turneu_id).toLowerCase().includes(query) ||
+      getTeamName(match.ekipi_shtepiak_id).toLowerCase().includes(query) ||
+      getTeamName(match.ekipi_mysafir_id).toLowerCase().includes(query)
     );
   });
 
@@ -1048,15 +1055,18 @@ export default function Matches() {
       )}
       <div className="w-full mx-auto">
         <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">
-              Match Management
-            </h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">
+            Match Management
+          </h2>
 
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col lg:flex-row lg:items-end gap-4">
               <div className="relative flex-1 min-w-[220px]">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                  <Search
+                    size={18}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
                 </div>
                 <input
                   type="text"
@@ -1069,994 +1079,1083 @@ export default function Matches() {
               </div>
             </div>
 
-              <div className="relative flex-1 min-w-[160px] sm:flex-none">
-                <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
-                  Status
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
-                    <SlidersHorizontal size={14} />
-                  </div>
+            <div className="relative flex-1 min-w-[160px] sm:flex-none">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
+                Status
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="statusi"
+                  value={filters.statusi}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All statuses</option>
+                  <option value="Planifikuar">Planifikuar</option>
+                  <option value="Live">Live</option>
+                  <option value="Shtyrë">Shtyrë</option>
+                  <option value="Anuluar">Anuluar</option>
+                  <option value="Përfunduar">Përfunduar</option>
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
+            >
+              <Plus size={18} />
+              Add New Match
+            </button>
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Matches table section */}
+      <div
+        className={`flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto ${loading ? "opacity-60 pointer-events-none" : ""}`}
+      >
+        <table className="w-full text-left border-collapse min-w-[500px]">
+          <thead className="bg-gray-800 dark:bg-slate-800 text-white">
+            <tr>
+              <th className="px-6 py-4 text-center font-semibold">ID</th>
+              <th className="px-6 py-4 text-left font-semibold">Tournament</th>
+              <th className="px-6 py-4 text-left font-semibold">Home Team</th>
+              <th className="px-6 py-4 text-left font-semibold">Away Team</th>
+              <th className="px-6 py-4 text-center font-semibold">Date</th>
+              <th className="px-6 py-4 text-left font-semibold">Time</th>
+              <th className="px-6 py-4 text-left font-semibold">Status</th>
+              <th className="px-6 py-4 text-left font-semibold">Referee</th>
+              <th className="px-6 py-4 text-center font-semibold">Timer</th>
+              <th className="px-6 py-4 text-center font-semibold">Actions</th>
+            </tr>
+          </thead>
+          {/* Table Body */}
+          <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
+            {filteredMatches.length > 0 ? (
+              filteredMatches.map((m) => (
+                <tr
+                  key={m.id}
+                  className="transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-slate-800"
+                >
+                  <td className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
+                    {m.id}
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
+                    {getTournamentName(m.turneu_id)}
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
+                    {getTeamName(m.ekipi_shtepiak_id)}
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
+                    {getTeamName(m.ekipi_mysafir_id)}
+                  </td>
+                  <td className="px-6 py-4 text-center font-semibold text-gray-900 dark:text-slate-100">
+                    {formatDate(m.data_ndeshjes)}
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
+                    {formatTime(m.ora_fillimit) || "N/A"}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        m.statusi === "Përfunduar"
+                          ? "bg-green-100 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-200"
+                          : m.statusi === "Live"
+                            ? "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200"
+                            : m.statusi === "Shtyrë"
+                              ? "bg-yellow-100 text-yellow-800 dark:bg-amber-500/20 dark:text-amber-200"
+                              : m.statusi === "Anuluar"
+                                ? "bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-slate-200"
+                                : "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-100"
+                      }`}
+                    >
+                      {m.statusi}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-gray-700 dark:text-slate-200">
+                    {getPrimaryRefereeName(m.id)}
+                  </td>
+                  <td className="px-6 py-4 text-center text-gray-700 dark:text-slate-200">
+                    <MatchTimer match={m} />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => handleView(m.id)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                        title="View"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(m.id)}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                        title="Edit"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(m.id)}
+                        className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleAddResult(m.id)}
+                        disabled={m.statusi !== "Përfunduar"}
+                        className={`p-2 rounded text-sm font-medium transition duration-200 ${
+                          m.statusi === "Përfunduar"
+                            ? "bg-indigo-500 hover:bg-indigo-600 text-white"
+                            : "bg-indigo-200 text-indigo-700 cursor-not-allowed"
+                        }`}
+                        title={
+                          m.statusi === "Përfunduar"
+                            ? "Add result"
+                            : "Finish the match first"
+                        }
+                      >
+                        {m.statusi === "Përfunduar"
+                          ? "Add Result"
+                          : "Finish Match First"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="10"
+                  className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
+                >
+                  {debouncedSearch
+                    ? `No matches match "${debouncedSearch}". Try a different search.`
+                    : 'No matches found. Click "Add New Match" to add a new one.'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {pagination && (
+        <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setPage(page - 1)}
+              className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+            >
+              Close
+            </button>
+            <button
+              disabled={page === pagination.totalPages}
+              onClick={() => setPage(page + 1)}
+              className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+            >
+              Forward
+            </button>
+          </div>
+
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-slate-400">
+                Page{" "}
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {page}
+                </span>{" "}
+                from{" "}
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {pagination.totalPages}
+                </span>
+                {pagination.total && (
+                  <>
+                    {" "}
+                    (Total{" "}
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {pagination.total}
+                    </span>{" "}
+                    matches)
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div>
+              <nav
+                className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1"
+                aria-label="Pagination"
+              >
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(page - 1)}
+                  className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                  aria-label="Previous Page"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+
+                {Array.from({ length: pagination.totalPages }, (_, index) => {
+                  const pageNum = index + 1;
+                  const isActive = pageNum === page;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  disabled={page === pagination.totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                  aria-label="Next Page"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ADD NEW MATCH MODAL */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4 backdrop-blur-sm"
+          onClick={handleCloseModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
+              Add New Match
+            </h3>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Tournament */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Tournament *
+                  </label>
+                  <select
+                    name="turneu_id"
+                    value={formData.turneu_id}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.turneu_id
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
+                    required
+                  >
+                    <option value="">Select Tournament</option>
+                    {tournaments.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.emertimi}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.turneu_id && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {formErrors.turneu_id}
+                    </p>
+                  )}
+                </div>
+
+                {/* Home Team */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Home Team *
+                  </label>
+                  <select
+                    name="ekipi_shtepiak_id"
+                    value={formData.ekipi_shtepiak_id}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.ekipi_shtepiak_id
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
+                    required
+                  >
+                    <option value="">Select Home Team</option>
+                    {availableTeams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.emertimi}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.ekipi_shtepiak_id && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {formErrors.ekipi_shtepiak_id}
+                    </p>
+                  )}
+                </div>
+
+                {/* Away Team */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Away Team *
+                  </label>
+                  <select
+                    name="ekipi_mysafir_id"
+                    value={formData.ekipi_mysafir_id}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.ekipi_mysafir_id
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
+                    required
+                  >
+                    <option value="">Select Away Team</option>
+                    {availableTeams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.emertimi}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.ekipi_mysafir_id && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {formErrors.ekipi_mysafir_id}
+                    </p>
+                  )}
+                </div>
+
+                {/* Match Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Match Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="data_ndeshjes"
+                    value={formData.data_ndeshjes}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.data_ndeshjes
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
+                    required
+                  />
+                  {formErrors.data_ndeshjes && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {formErrors.data_ndeshjes}
+                    </p>
+                  )}
+                </div>
+
+                {/* Start Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    name="ora_fillimit"
+                    value={formData.ora_fillimit}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.ora_fillimit
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
+                  />
+                  {formErrors.ora_fillimit && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {formErrors.ora_fillimit}
+                    </p>
+                  )}
+                </div>
+
+                {/* Venue */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Venue
+                  </label>
+                  <select
+                    name="fusha_id"
+                    value={formData.fusha_id}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.fusha_id
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
+                  >
+                    <option value="">Select Venue</option>
+                    {venues.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.emertimi}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Referee */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Referee
+                  </label>
+                  <select
+                    name="referi_id"
+                    value={formData.referi_id}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.referi_id
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
+                  >
+                    <option value="">Select Referee</option>
+                    {referees.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.emri} {r.mbiemri}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Status
+                  </label>
                   <select
                     name="statusi"
-                    value={filters.statusi}
-                    onChange={handleFilterChange}
-                    className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                    value={formData.statusi}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.statusi
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
                   >
-                    <option value="">All statuses</option>
                     <option value="Planifikuar">Planifikuar</option>
                     <option value="Live">Live</option>
+                    <option value="Përfunduar">Përfunduar</option>
                     <option value="Shtyrë">Shtyrë</option>
                     <option value="Anuluar">Anuluar</option>
-                    <option value="Përfunduar">Përfunduar</option>
                   </select>
-                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                  </div>
+                </div>
+
+                {/* Phase */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Phase
+                  </label>
+                  <input
+                    type="text"
+                    name="faza"
+                    value={formData.faza}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      formErrors.faza
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-slate-700"
+                    }`}
+                    placeholder="e.g., Final, Semi-final"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Add Match
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 bg-gray-400 hover:bg-gray-500 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW MATCH MODAL */}
+      {showViewModal && selectedMatch && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 p-4 backdrop-blur-sm"
+          onClick={handleCloseViewModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
+              Match Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Tournament */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  Tournament
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                  {getTournamentName(selectedMatch.turneu_id)}
+                </p>
+              </div>
+              {/* Home Team */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  Home Team
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                  {getTeamName(selectedMatch.ekipi_shtepiak_id)}
+                </p>
+              </div>
+              {/* Away Team */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  Away Team
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                  {getTeamName(selectedMatch.ekipi_mysafir_id)}
+                </p>
+              </div>
+              {/* Date */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  Date
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                  {formatDate(selectedMatch.data_ndeshjes)}
+                </p>
+              </div>
+              {/* Time */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  Time
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                  {formatTime(selectedMatch.ora_fillimit) || "N/A"}
+                </p>
+              </div>
+              {/* Venue */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  Venue
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                  {getVenueName(selectedMatch.fusha_id)}
+                </p>
+              </div>
+              {/* Referee */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  Referee
+                </label>
+                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
+                  {getPrimaryRefereeName(selectedMatch.id)}
+                </p>
+              </div>
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-200">
+                  Status
+                </label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg dark:bg-slate-800 dark:text-slate-100">
+                  {selectedMatch.statusi}
+                </p>
+              </div>
+              {/* Phase */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-slate-200">
+                  Phase
+                </label>
+                <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg dark:bg-slate-800 dark:text-slate-100">
+                  {selectedMatch.faza || "N/A"}
+                </p>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+              <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
+                Match Status Controls
+              </h4>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <button
+                  type="button"
+                  onClick={() => handleStatusUpdate("Live")}
+                  disabled={
+                    isLiveMatch(selectedMatch) || isFinishedMatch(selectedMatch)
+                  }
+                  className="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+                >
+                  {isHalfTimeMatch(selectedMatch)
+                    ? "Resume Match"
+                    : "Start Match"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStatusUpdate("HalfTime")}
+                  disabled={!isLiveMatch(selectedMatch)}
+                  className="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+                >
+                  Half Time
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFinishMatch}
+                  disabled={
+                    !isLiveMatch(selectedMatch) &&
+                    !isHalfTimeMatch(selectedMatch)
+                  }
+                  className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+                >
+                  Finish Match
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStatusUpdate("Anuluar")}
+                  disabled={isFinishedMatch(selectedMatch)}
+                  className="rounded-lg bg-slate-600 px-4 py-2 font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+                >
+                  Cancel Match
+                </button>
+              </div>
+            </div>
+
+            {/* Score Updates */}
+            <form
+              onSubmit={handleScoreSubmit}
+              className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950"
+            >
+              <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
+                Update Live Score
+              </h4>
+              {!isLiveMatch(selectedMatch) && (
+                <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                  The match must be live before score or event updates are
+                  allowed.
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Home Score
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    name="golat_shtepiak"
+                    value={scoreForm.golat_shtepiak}
+                    onChange={handleScoreInputChange}
+                    disabled={!isLiveMatch(selectedMatch)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 disabled:dark:bg-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Away Score
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    name="golat_mysafir"
+                    value={scoreForm.golat_mysafir}
+                    onChange={handleScoreInputChange}
+                    disabled={!isLiveMatch(selectedMatch)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 disabled:dark:bg-slate-800"
+                  />
                 </div>
               </div>
 
               <button
-                onClick={handleCreate}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
+                type="submit"
+                disabled={!isLiveMatch(selectedMatch)}
+                className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500"
               >
-                <Plus size={18} />
-                Add New Match
+                Update Score
               </button>
-            </div>
-            {hasActiveFilters && (
-                <button
-                  onClick={handleClearFilters}
-                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
-                >
-                  Clear Filters
-                </button>
-              )}
-          </div>
-        </div>
+            </form>
 
-        {/* Matches table section */}
-        <div className={`flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
-          <table className="w-full text-left border-collapse min-w-[500px]">
-            <thead className="bg-gray-800 dark:bg-slate-800 text-white">
-              <tr>
-                <th className="px-6 py-4 text-center font-semibold">ID</th>
-                <th className="px-6 py-4 text-left font-semibold">
-                  Tournament
-                </th>
-                <th className="px-6 py-4 text-left font-semibold">Home Team</th>
-                <th className="px-6 py-4 text-left font-semibold">Away Team</th>
-                <th className="px-6 py-4 text-center font-semibold">Date</th>
-                <th className="px-6 py-4 text-left font-semibold">Time</th>
-                <th className="px-6 py-4 text-left font-semibold">Status</th>
-                <th className="px-6 py-4 text-left font-semibold">Referee</th>
-                <th className="px-6 py-4 text-center font-semibold">Timer</th>
-                <th className="px-6 py-4 text-center font-semibold">Actions</th>
-              </tr>
-            </thead>
-            {/* Table Body */}
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-              {filteredMatches.length > 0 ? (
-                filteredMatches.map((m) => (
-                  <tr
-                    key={m.id}
-                    className="transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-slate-800"
-                  >
-                    <td className="px-6 py-4 text-center text-gray-500 dark:text-slate-400">
-                      {m.id}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
-                      {getTournamentName(m.turneu_id)}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
-                      {getTeamName(m.ekipi_shtepiak_id)}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
-                      {getTeamName(m.ekipi_mysafir_id)}
-                    </td>
-                    <td className="px-6 py-4 text-center font-semibold text-gray-900 dark:text-slate-100">
-                      {formatDate(m.data_ndeshjes)}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">
-                      {formatTime(m.ora_fillimit) || "N/A"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                          m.statusi === "Përfunduar"
-                            ? "bg-green-100 text-green-800 dark:bg-emerald-500/20 dark:text-emerald-200"
-                            : m.statusi === "Live"
-                              ? "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200"
-                              : m.statusi === "Shtyrë"
-                                ? "bg-yellow-100 text-yellow-800 dark:bg-amber-500/20 dark:text-amber-200"
-                                : m.statusi === "Anuluar"
-                                  ? "bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-slate-200"
-                                  : "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-100"
-                        }`}
-                      >
-                        {m.statusi}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-700 dark:text-slate-200">{getPrimaryRefereeName(m.id)}</td>
-                    <td className="px-6 py-4 text-center text-gray-700 dark:text-slate-200">
-                      <MatchTimer match={m} />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => handleView(m.id)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                          title="View"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(m.id)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(m.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleAddResult(m.id)}
-                          disabled={m.statusi !== "Përfunduar"}
-                          className={`p-2 rounded text-sm font-medium transition duration-200 ${
-                            m.statusi === "Përfunduar"
-                              ? "bg-indigo-500 hover:bg-indigo-600 text-white"
-                              : "bg-indigo-200 text-indigo-700 cursor-not-allowed"
-                          }`}
-                          title={
-                            m.statusi === "Përfunduar"
-                              ? "Add result"
-                              : "Finish the match first"
-                          }
-                        >
-                          {m.statusi === "Përfunduar"
-                            ? "Add Result"
-                            : "Finish Match First"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="10"
-                    className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
-                  >
-                    {debouncedSearch
-                      ? `No matches match "${debouncedSearch}". Try a different search.`
-                      : 'No matches found. Click "Add New Match" to add a new one.'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            {/* Match Events */}
+            <form
+              onSubmit={handleEventSubmit}
+              className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950"
+            >
+              <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
+                Add Match Event
+              </h4>
 
-        {pagination && (
-            <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
-            <div className="flex flex-1 justify-between sm:hidden">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Event Type
+                  </label>
+                  <select
+                    name="lloji"
+                    value={eventForm.lloji}
+                    onChange={handleEventInputChange}
+                    disabled={!isLiveMatch(selectedMatch)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 disabled:dark:bg-slate-800"
+                  >
+                    <option value="Goal">Goal</option>
+                    <option value="YellowCard">Yellow card</option>
+                    <option value="RedCard">Red card</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
+                    Team
+                  </label>
+                  <select
+                    name="ekipi_id"
+                    value={eventForm.ekipi_id}
+                    onChange={handleEventInputChange}
+                    disabled={
+                      !isLiveMatch(selectedMatch) ||
+                      !teamRequiredEventTypes.includes(eventForm.lloji)
+                    }
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 disabled:dark:bg-slate-800"
+                  >
+                    <option value="">No team</option>
+                    <option value={selectedMatch.ekipi_shtepiak_id}>
+                      {getTeamName(selectedMatch.ekipi_shtepiak_id)}
+                    </option>
+                    <option value={selectedMatch.ekipi_mysafir_id}>
+                      {getTeamName(selectedMatch.ekipi_mysafir_id)}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
               <button
-                onClick={() => setPage(page - 1)}
-                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                type="submit"
+                disabled={!isLiveMatch(selectedMatch)}
+                className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500"
+              >
+                Add Event
+              </button>
+            </form>
+
+            {/* Timeline Section */}
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+              <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
+                Match Timeline
+              </h4>
+
+              {matchEvents.length > 0 ? (
+                <div className="space-y-2">
+                  {matchEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <span className="font-semibold text-gray-900 dark:text-slate-100">
+                        {getEventMinute(event)} -{" "}
+                        {getEventTypeLabel(event.eventType)}
+                      </span>
+                      <span className="text-sm text-gray-600 dark:text-slate-400">
+                        {event.playerName || "No player"}
+                        {event.teamName ? ` - ${event.teamName}` : ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  No match events yet.
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-4 pt-6">
+              <button
+                type="button"
+                onClick={handleCloseViewModal}
+                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200 dark:bg-slate-700 dark:hover:bg-slate-600"
               >
                 Close
               </button>
-              <button
-                disabled={page === pagination.totalPages}
-                onClick={() => setPage(page + 1)}
-                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-              >
-                Forward
-              </button>
-            </div>
-
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-slate-400">
-                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
-                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
-                  {pagination.total && (
-                    <>
-                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> matches)
-                    </>
-                  )}
-                </p>
-              </div>
-
-              <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => setPage(page - 1)}
-                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
-                    aria-label="Previous Page"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-
-                  {Array.from({ length: pagination.totalPages }, (_, index) => {
-                    const pageNum = index + 1;
-                    const isActive = pageNum === page;
-
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setPage(pageNum)}
-                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-                          isActive
-                            ? "bg-blue-600 text-white shadow-sm"
-                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    disabled={page === pagination.totalPages}
-                    onClick={() => setPage(page + 1)}
-                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
-                    aria-label="Next Page"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </nav>
-              </div>
             </div>
           </div>
-          )}
+        </div>
+      )}
 
-        {/* ADD NEW MATCH MODAL */}
-        {showModal && (
+      {/* EDIT MATCH MODAL */}
+      {showEditModal && selectedMatch && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseEditModal}
+        >
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseModal}
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:bg-slate-900 dark:border dark:border-slate-700"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
-                Add New Match
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
-                      Tournament *
-                    </label>
-                    <select
-                      name="turneu_id"
-                      value={formData.turneu_id}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 ${formErrors.turneu_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'  } rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
-                      required
-                    >
-                      <option value="">Select Tournament</option>
-                      {tournaments.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                    {formErrors.turneu_id && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {formErrors.turneu_id}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
-                      Home Team *
-                    </label>
-                    <select
-                      name="ekipi_shtepiak_id"
-                      value={formData.ekipi_shtepiak_id}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 ${formErrors.ekipi_shtepiak_id ? 'border-red-500' : 'border-gray-300 border-gray-300 dark:border-slate-700'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
-                      required
-                    >
-                      <option value="">Select Home Team</option>
-                      {availableTeams.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                    {formErrors.ekipi_shtepiak_id && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {formErrors.ekipi_shtepiak_id}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
-                      Away Team *
-                    </label>
-                    <select
-                      name="ekipi_mysafir_id"
-                      value={formData.ekipi_mysafir_id}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 ${formErrors.ekipi_mysafir_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
-                      required
-                    >
-                      <option value="">Select Away Team</option>
-                      {availableTeams.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                    {formErrors.ekipi_mysafir_id && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {formErrors.ekipi_mysafir_id}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-slate-200">
-                      Match Date *
-                    </label>
-                    <input
-                      type="date"
-                      name="data_ndeshjes"
-                      value={formData.data_ndeshjes}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border dark:bg-slate-900 dark:text-slate-100 ${formErrors.data_ndeshjes ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500`}
-                      required
-                    />
-                    {formErrors.data_ndeshjes && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {formErrors.data_ndeshjes}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Time
-                    </label>
-                    <input
-                      type="time"
-                      name="ora_fillimit"
-                      value={formData.ora_fillimit}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      formErrors.ora_fillimit ? "border-red-500" : "border-gray-300"
-                    }`}
-                    />
-                    {formErrors.ora_fillimit && (
-                      <p className="mt-1 text-sm text-red-500">
-                        {formErrors.ora_fillimit}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Venue
-                    </label>
-                    <select
-                      name="fusha_id"
-                      value={formData.fusha_id}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      formErrors.fusha_id ? "border-red-500" : "border-gray-300"
-                    }`}
-                    >
-                      <option value="">Select Venue</option>
-                      {venues.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Referee
-                    </label>
-                    <select
-                      name="referi_id"
-                      value={formData.referi_id}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      formErrors.referi_id ? "border-red-500" : "border-gray-300"
-                    }`}
-                    >
-                      <option value="">Select Referee</option>
-                      {referees.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.emri} {r.mbiemri}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status
-                    </label>
-                    <select
-                      name="statusi"
-                      value={formData.statusi}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      formErrors.statusi ? "border-red-500" : "border-gray-300"
-                    }`}
-                    >
-                      <option value="Planifikuar">Planifikuar</option>
-                      <option value="Live">Live</option>
-                      <option value="Përfunduar">Përfunduar</option>
-                      <option value="Shtyrë">Shtyrë</option>
-                      <option value="Anuluar">Anuluar</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phase
-                    </label>
-                    <input
-                      type="text"
-                      name="faza"
-                      value={formData.faza}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      formErrors.faza ? "border-red-500" : "border-gray-300"
-                    }`}
-                      placeholder="e.g., Final, Semi-final"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Add Match
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW MATCH MODAL */}
-        {showViewModal && selectedMatch && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseViewModal}
-          >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
-                Match Details
-              </h3>
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
+              Edit Match
+            </h3>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                    Tournament
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Tournament *
                   </label>
-                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-                    {getTournamentName(selectedMatch.turneu_id)}
-                  </p>
+                  <select
+                    name="turneu_id"
+                    value={formData.turneu_id}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    required
+                  >
+                    <option value="">Select Tournament</option>
+                    {tournaments.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.emertimi}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                    Home Team
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Home Team *
                   </label>
-                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-                    {getTeamName(selectedMatch.ekipi_shtepiak_id)}
-                  </p>
+                  <select
+                    name="ekipi_shtepiak_id"
+                    value={formData.ekipi_shtepiak_id}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    required
+                  >
+                    <option value="">Select Home Team</option>
+                    {availableTeams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.emertimi}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                    Away Team
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Away Team *
                   </label>
-                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-                    {getTeamName(selectedMatch.ekipi_mysafir_id)}
-                  </p>
+                  <select
+                    name="ekipi_mysafir_id"
+                    value={formData.ekipi_mysafir_id}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    required
+                  >
+                    <option value="">Select Away Team</option>
+                    {availableTeams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.emertimi}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                    Date
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                    Match Date *
                   </label>
-                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-                    {formatDate(selectedMatch.data_ndeshjes)}
-                  </p>
+                  <input
+                    type="date"
+                    name="data_ndeshjes"
+                    value={formData.data_ndeshjes}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    required
+                  />
                 </div>
+
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                    Time
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                    Start Time
                   </label>
-                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-                    {formatTime(selectedMatch.ora_fillimit) || "N/A"}
-                  </p>
+                  <input
+                    type="time"
+                    name="ora_fillimit"
+                    value={formData.ora_fillimit}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  />
                 </div>
+
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                     Venue
                   </label>
-                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-                    {getVenueName(selectedMatch.fusha_id)}
-                  </p>
+                  <select
+                    name="fusha_id"
+                    value={formData.fusha_id}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="">Select Venue</option>
+                    {venues.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.emertimi}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-200">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                     Referee
                   </label>
-                  <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800 dark:bg-slate-800 dark:text-slate-100">
-                    {getPrimaryRefereeName(selectedMatch.id)}
-                  </p>
+                  <select
+                    name="referi_id"
+                    value={formData.referi_id}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="">Select Referee</option>
+                    {referees.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.emri} {r.mbiemri}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                     Status
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {selectedMatch.statusi}
-                  </p>
+                  <select
+                    name="statusi"
+                    value={formData.statusi}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="Planifikuar">Planifikuar</option>
+                    <option value="Live">Live</option>
+                    <option value="Përfunduar">Përfunduar</option>
+                    <option value="Shtyrë">Shtyrë</option>
+                    <option value="Anuluar">Anuluar</option>
+                  </select>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                     Phase
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
-                    {selectedMatch.faza || "N/A"}
-                  </p>
+                  <input
+                    type="text"
+                    name="faza"
+                    value={formData.faza}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    placeholder="e.g., Final, Semi-final"
+                  />
                 </div>
               </div>
-              <div className="mt-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
-                  Match Status Controls
-                </h4>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <button
-                    type="button"
-                    onClick={() => handleStatusUpdate("Live")}
-                    disabled={isLiveMatch(selectedMatch) || isFinishedMatch(selectedMatch)}
-                    className="rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                  >
-                    {isHalfTimeMatch(selectedMatch) ? "Resume Match" : "Start Match"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusUpdate("HalfTime")}
-                    disabled={!isLiveMatch(selectedMatch)}
-                    className="rounded-lg bg-amber-500 px-4 py-2 font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-gray-400"
-                  >
-                    Half Time
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleFinishMatch}
-                    disabled={!isLiveMatch(selectedMatch) && !isHalfTimeMatch(selectedMatch)}
-                    className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                  >
-                    Finish Match
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStatusUpdate("Anuluar")}
-                    disabled={isFinishedMatch(selectedMatch)}
-                    className="rounded-lg bg-slate-600 px-4 py-2 font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                  >
-                    Cancel Match
-                  </button>
-                </div>
-              </div>
-              <form
-                onSubmit={handleScoreSubmit}
-                className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-800 dark:bg-slate-950"
-              >
-                <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-100">
-                  Update Live Score
-                </h4>
-                {!isLiveMatch(selectedMatch) && (
-                  <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                    The match must be live before score or event updates are allowed.
-                  </p>
-                )}
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                      Home Score
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="golat_shtepiak"
-                      value={scoreForm.golat_shtepiak}
-                      onChange={handleScoreInputChange}
-                      disabled={!isLiveMatch(selectedMatch)}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                      Away Score
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="golat_mysafir"
-                      value={scoreForm.golat_mysafir}
-                      onChange={handleScoreInputChange}
-                      disabled={!isLiveMatch(selectedMatch)}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!isLiveMatch(selectedMatch)}
-                  className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                >
-                  Update Score
-                </button>
-              </form>
-              <form
-                onSubmit={handleEventSubmit}
-                className="mt-6 rounded-lg border border-gray-200 bg-white p-4"
-              >
-                <h4 className="mb-4 text-lg font-semibold text-gray-800">
-                  Add Match Event
-                </h4>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event Type
-                    </label>
-                    <select
-                      name="lloji"
-                      value={eventForm.lloji}
-                      onChange={handleEventInputChange}
-                      disabled={!isLiveMatch(selectedMatch)}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="Goal">Goal</option>
-                      <option value="YellowCard">Yellow card</option>
-                      <option value="RedCard">Red card</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Team
-                    </label>
-                    <select
-                      name="ekipi_id"
-                      value={eventForm.ekipi_id}
-                      onChange={handleEventInputChange}
-                      disabled={
-                        !isLiveMatch(selectedMatch) ||
-                        !teamRequiredEventTypes.includes(eventForm.lloji)
-                      }
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                    >
-                      <option value="">No team</option>
-                      <option value={selectedMatch.ekipi_shtepiak_id}>
-                        {getTeamName(selectedMatch.ekipi_shtepiak_id)}
-                      </option>
-                      <option value={selectedMatch.ekipi_mysafir_id}>
-                        {getTeamName(selectedMatch.ekipi_mysafir_id)}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!isLiveMatch(selectedMatch)}
-                  className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                >
-                  Add Event
-                </button>
-              </form>
-
-              <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <h4 className="mb-4 text-lg font-semibold text-gray-800">
-                  Match Timeline
-                </h4>
-
-                {matchEvents.length > 0 ? (
-                  <div className="space-y-2">
-                    {matchEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3"
-                      >
-                        <span className="font-semibold text-gray-900">
-                          {getEventMinute(event)} - {getEventTypeLabel(event.eventType)}
-                        </span>
-                        <span className="text-sm text-gray-600">
-                          {event.playerName || "No player"}
-                          {event.teamName ? ` - ${event.teamName}` : ""}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">
-                    No match events yet.
-                  </p>
-                )}
-              </div>
               <div className="flex gap-4 pt-4">
                 <button
+                  type="submit"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Save Changes
+                </button>
+                <button
                   type="button"
-                  onClick={handleCloseViewModal}
-                  className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* EDIT MATCH MODAL */}
-        {showEditModal && selectedMatch && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseEditModal}
-          >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-100">
-                Edit Match
-              </h3>
-              <form onSubmit={handleEditSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                      Tournament *
-                    </label>
-                    <select
-                      name="turneu_id"
-                      value={formData.turneu_id}
-                      onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                      required
-                    >
-                      <option value="">Select Tournament</option>
-                      {tournaments.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                      Home Team *
-                    </label>
-                    <select
-                      name="ekipi_shtepiak_id"
-                      value={formData.ekipi_shtepiak_id}
-                      onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                      required
-                    >
-                      <option value="">Select Home Team</option>
-                      {availableTeams.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-200">
-                      Away Team *
-                    </label>
-                    <select
-                      name="ekipi_mysafir_id"
-                      value={formData.ekipi_mysafir_id}
-                      onChange={handleInputChange}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                      required
-                    >
-                      <option value="">Select Away Team</option>
-                      {availableTeams.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                      Match Date *
-                    </label>
-                    <input
-                      type="date"
-                      name="data_ndeshjes"
-                      value={formData.data_ndeshjes}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                      Start Time
-                    </label>
-                    <input
-                      type="time"
-                      name="ora_fillimit"
-                      value={formData.ora_fillimit}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                      Venue
-                    </label>
-                    <select
-                      name="fusha_id"
-                      value={formData.fusha_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                    >
-                      <option value="">Select Venue</option>
-                      {venues.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                      Referee
-                    </label>
-                    <select
-                      name="referi_id"
-                      value={formData.referi_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                    >
-                      <option value="">Select Referee</option>
-                      {referees.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.emri} {r.mbiemri}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                      Status
-                    </label>
-                    <select
-                      name="statusi"
-                      value={formData.statusi}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                    >
-                      <option value="Planifikuar">Planifikuar</option>
-                      <option value="Live">Live</option>
-                      <option value="Përfunduar">Përfunduar</option>
-                      <option value="Shtyrë">Shtyrë</option>
-                      <option value="Anuluar">Anuluar</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
-                      Phase
-                    </label>
-                    <input
-                      type="text"
-                      name="faza"
-                      value={formData.faza}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                      placeholder="e.g., Final, Semi-final"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Save Changes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseEditModal}
-                    className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* DELETE MATCH MODAL */}
-        {showDeleteModal && selectedMatch && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-            onClick={handleCloseDeleteModal}
-          >
-            <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white text-gray-900 p-8 shadow-2xl dark:bg-slate-900 dark:text-slate-100 dark:border dark:border-slate-700"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold text-red-600 mb-4 dark:text-red-400">
-                Delete Match?
-              </h3>
-              <p className="text-gray-700 mb-6">
-                Are you sure you want to delete this match (
-                <strong>
-                  {getTeamName(selectedMatch.ekipi_shtepiak_id)} vs{" "}
-                  {getTeamName(selectedMatch.ekipi_mysafir_id)}
-                </strong>
-                )? This action cannot be undone.
-              </p>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={handleCloseDeleteModal}
+                  onClick={handleCloseEditModal}
                   className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
                 >
                   Cancel
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE MATCH MODAL */}
+      {showDeleteModal && selectedMatch && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseDeleteModal}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white text-gray-900 p-8 shadow-2xl dark:bg-slate-900 dark:text-slate-100 dark:border dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-2xl font-bold text-red-600 mb-4 dark:text-red-400">
+              Delete Match?
+            </h3>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this match (
+              <strong>
+                {getTeamName(selectedMatch.ekipi_shtepiak_id)} vs{" "}
+                {getTeamName(selectedMatch.ekipi_mysafir_id)}
+              </strong>
+              )? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-4">
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+              >
+                Delete
+              </button>
+              <button
+                onClick={handleCloseDeleteModal}
+                className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
+              >
+                Cancel
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+    </div>
   );
 }
