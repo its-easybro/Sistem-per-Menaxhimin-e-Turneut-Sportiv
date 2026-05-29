@@ -75,12 +75,12 @@ function MatchRefereeFormFields({
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Match</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Match</span>
         <select
           name="ndeshja_id"
           value={formData.ndeshja_id}
           onChange={onChange}
-          className={`rounded-lg border ${formErrors?.ndeshja_id ? 'border-red-500' : 'border-gray-300'} px-3 py-2 outline-none focus:border-blue-500`}
+          className={`rounded-lg border ${formErrors?.ndeshja_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           <option value="">Select match</option>
@@ -94,12 +94,12 @@ function MatchRefereeFormFields({
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Referee</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Referee</span>
         <select
           name="gjyqtari_id"
           value={formData.gjyqtari_id}
           onChange={onChange}
-          className={`rounded-lg border ${formErrors?.gjyqtari_id ? 'border-red-500' : 'border-gray-300'} px-3 py-2 outline-none focus:border-blue-500`}
+          className={`rounded-lg border ${formErrors?.gjyqtari_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           <option value="">Select referee</option>
@@ -113,12 +113,12 @@ function MatchRefereeFormFields({
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700">Role</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Role</span>
         <select
           name="roli"
           value={formData.roli}
           onChange={onChange}
-          className={`rounded-lg border ${formErrors?.roli ? 'border-red-500' : 'border-gray-300'} px-3 py-2 outline-none focus:border-blue-500`}
+          className={`rounded-lg border ${formErrors?.roli ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           {roles.map((role) => (
@@ -543,7 +543,7 @@ export default function MatchReferees() {
   }
 
   return (
-    <div className="bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
         <Alert
           type={alert.type}
@@ -555,7 +555,7 @@ export default function MatchReferees() {
       <div className="mx-auto w-full space-y-6">
         <div className="mb-8">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200">
               {isAdmin ? "Match Referee Assignments" : "My Matches"}
             </h2>
 
@@ -579,10 +579,10 @@ export default function MatchReferees() {
                   ? "Search by match, referee, role, date, or status"
                   : "Search by match, role, date, or status"
               }
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 placeholder:text-transparent outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:placeholder:text-gray-400"
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 px-4 py-3 placeholder:text-transparent outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:placeholder:text-gray-400 dark:placeholder:text-slate-500"
             />
             <svg
-              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400"
+              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 dark:text-slate-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -597,9 +597,9 @@ export default function MatchReferees() {
           </div>
         </div>
 
-        <div className="flex overflow-x-auto rounded-lg bg-white shadow-md">
+        <div className="flex overflow-x-auto rounded-lg bg-white dark:bg-slate-800 shadow-md">
           {filteredAssignments.length === 0 ? (
-            <div className="w-full px-6 py-12 text-center text-gray-600">
+            <div className="w-full px-6 py-12 text-center text-gray-600 dark:text-slate-400">
               {searchQuery
                 ? `No assignments match "${searchQuery}". Try a different search.`
                 : isAdmin
@@ -607,8 +607,8 @@ export default function MatchReferees() {
                   : "No matches assigned to you yet."}
             </div>
           ) : (
-            <table className="w-full border-collapse text-left">
-              <thead className="bg-gray-800 text-white">
+            <table className="w-full border-collapse text-left min-w-[800px]">
+              <thead className="bg-gray-800 dark:bg-slate-700 text-white">
                 <tr>
                   <th className="px-4 py-3 text-center font-semibold">ID</th>
                   <th className="px-4 py-3 text-left font-semibold">Match</th>
@@ -622,7 +622,7 @@ export default function MatchReferees() {
                   <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                 {filteredAssignments.map((assignment) => {
                   const match = getMatchById(assignment.ndeshja_id);
                   const referee = getRefereeById(assignment.gjyqtari_id);
@@ -630,42 +630,42 @@ export default function MatchReferees() {
                   return (
                     <tr
                       key={assignment.id}
-                      className="transition-colors duration-150 hover:bg-gray-100"
+                      className="transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-slate-700/50"
                     >
-                      <td className="px-4 py-3 text-center text-gray-500">
+                      <td className="px-4 py-3 text-center text-gray-500 dark:text-slate-400">
                         {assignment.id}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-semibold text-gray-900">
+                        <div className="font-semibold text-gray-900 dark:text-slate-200">
                           {getMatchLabel(assignment.ndeshja_id)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-slate-400">
                           {match?.ora_fillimit || "No start time"}
                         </div>
                       </td>
                       {isAdmin && (
-                        <td className="px-4 py-3 text-sm text-gray-700">
+                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">
                           {getRefereeLabel(assignment.gjyqtari_id)}
                         </td>
                       )}
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getRoleBadgeClasses(assignment.roli)}`}
                         >
                           {assignment.roli || "N/A"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-gray-700">
+                      <td className="px-4 py-3 text-center text-sm text-gray-700 dark:text-slate-300">
                         {formatDate(match?.data_ndeshjes)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClasses(match?.statusi)}`}
                         >
                           {match?.statusi || "N/A"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-slate-300">
                         {referee?.kategoria || "N/A"}
                       </td>
                       <td className="px-4 py-3">
@@ -712,10 +712,10 @@ export default function MatchReferees() {
           onClick={handleCloseModal}
         >
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-6 text-2xl font-bold text-gray-800">
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-200">
               Assign Referee to Match
             </h3>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -753,81 +753,81 @@ export default function MatchReferees() {
           onClick={handleCloseViewModal}
         >
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-6 text-2xl font-bold text-gray-800">
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-200">
               Match Assignment Details
             </h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
                   Match
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
                   {getMatchLabel(selectedAssignment.ndeshja_id)}
                 </p>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
                   Referee
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
                   {getRefereeLabel(selectedAssignment.gjyqtari_id)}
                 </p>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
                   Role
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
                   {selectedAssignment.roli || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
                   Date
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
                   {formatDate(getMatchById(selectedAssignment.ndeshja_id)?.data_ndeshjes)}
                 </p>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
                   Start Time
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
                   {getMatchById(selectedAssignment.ndeshja_id)?.ora_fillimit || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
                   Status
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
                   {getMatchById(selectedAssignment.ndeshja_id)?.statusi || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300">
                   Referee Category
                 </label>
-                <p className="rounded-lg bg-gray-100 px-4 py-2 text-gray-800">
+                <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
                   {getRefereeById(selectedAssignment.gjyqtari_id)?.kategoria || "N/A"}
                 </p>
               </div>
             </div>
             <form
               onSubmit={handleScoreSubmit}
-              className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
+              className="mt-6 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 p-4"
             >
-              <h4 className="mb-4 text-lg font-semibold text-gray-800">
+              <h4 className="mb-4 text-lg font-semibold text-gray-800 dark:text-slate-200">
                 Update Live Score
               </h4>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Home Score
                   </label>
                   <input
@@ -836,12 +836,12 @@ export default function MatchReferees() {
                     name="golat_shtepiak"
                     value={scoreForm.golat_shtepiak}
                     onChange={handleScoreInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-slate-300">
                     Away Score
                   </label>
                   <input
@@ -850,7 +850,7 @@ export default function MatchReferees() {
                     name="golat_mysafir"
                     value={scoreForm.golat_mysafir}
                     onChange={handleScoreInputChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -881,10 +881,10 @@ export default function MatchReferees() {
           onClick={handleCloseEditModal}
         >
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-6 text-2xl font-bold text-gray-800">
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-200">
               Edit Assignment
             </h3>
             <form onSubmit={handleEditSubmit} className="space-y-6">
@@ -922,16 +922,16 @@ export default function MatchReferees() {
           onClick={handleCloseDeleteModal}
         >
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-6 text-2xl font-bold text-gray-800">
+            <h3 className="mb-6 text-2xl font-bold text-gray-800 dark:text-slate-200">
               Delete Assignment
             </h3>
             <div className="space-y-4">
-              <p className="text-gray-700">
+              <p className="text-gray-700 dark:text-slate-300">
                 Are you sure you want to delete the referee assignment for{" "}
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-slate-200">
                   {getMatchLabel(selectedAssignment.ndeshja_id)}
                 </span>
                 ?

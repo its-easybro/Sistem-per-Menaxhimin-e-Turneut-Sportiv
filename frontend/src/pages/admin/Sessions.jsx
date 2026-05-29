@@ -132,7 +132,7 @@ export default function Sessions() {
   }
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen">
+    <div className="p-4 bg-gray-50 dark:bg-transparent min-h-screen">
       {alert && (
         <Alert
           type={alert.type}
@@ -144,17 +144,17 @@ export default function Sessions() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6"></div>
-          <h2 className="text-2xl font-bold">Active sessions</h2>
+          <h2 className="text-2xl font-bold dark:text-slate-200">Active sessions</h2>
           <div className="relative">
             <input
               type="text"
               placeholder="Search by id or userId"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 px-4 py-3 placeholder:text-transparent outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:placeholder:text-gray-400 dark:placeholder:text-slate-500"
             />
             <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -177,9 +177,9 @@ export default function Sessions() {
             <p className="text-lg text-red-600">Error: {error}</p>
           </div>
         ) : (
-          <div className="flex-1 bg-white rounded-lg shadow-md overflow-x-auto">
+          <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[500px]">
-              <thead className="bg-gray-800 text-white">
+              <thead className="bg-gray-800 dark:bg-slate-700 text-white">
                 <tr>
                   <th className="px-6 py-4 text-left font-semibold">User</th>
                   <th className="px-6 py-4 text-left font-semibold">Browser</th>
@@ -190,20 +190,20 @@ export default function Sessions() {
                   <th className="px-6 py-4 text-center font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                 {filtered.length === 0 ? (
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-4 py-6 text-center text-gray-500"
+                      className="px-4 py-6 text-center text-gray-500 dark:text-slate-400"
                     >
                       No sessions found.
                     </td>
                   </tr>
                 ) : (
                   filtered.map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-100 transition-colors duration-150">
-                      <td className="px-6 py-4 text-gray-800 font-medium">
+                    <tr key={s.id} className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150">
+                      <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-medium">
                         {s.user?.email
                           ? `${s.user.emri} ${s.user.mbiemri} — ${s.user.email}`
                           : s.userId}
@@ -252,13 +252,13 @@ export default function Sessions() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleDeleteCancel}
           >
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-red-600 mb-4">Confirm delete</h3>
-              <p className="text-gray-700 mb-6">
+              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Confirm delete</h3>
+              <p className="text-gray-700 dark:text-slate-300 mb-6">
                 Delete session{" "}
-                <strong className="break-all">
+                <strong className="break-all dark:text-slate-200">
                   {selectedSession.user?.id
                           ? `${selectedSession.user.emri} ${selectedSession.user.mbiemri} — ${selectedSession.user.email}`
                           : selectedSession.userId}</strong>{" "}

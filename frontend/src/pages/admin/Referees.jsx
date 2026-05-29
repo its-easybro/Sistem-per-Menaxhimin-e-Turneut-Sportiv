@@ -299,14 +299,14 @@ export default function Referees() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
         <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
       )}
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800">Referees Management</h2>
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-200">Referees Management</h2>
             <div className="flex gap-3">
               <button
                 onClick={handleOpenPromote}
@@ -330,17 +330,17 @@ export default function Referees() {
               placeholder="Search referee"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
             />
-            <svg className="absolute right-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
         </div>
 
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
+        <div className="flex bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-800 text-white">
+            <thead className="bg-gray-800 dark:bg-slate-700 text-white">
               <tr>
                 <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Name</th>
@@ -353,18 +353,18 @@ export default function Referees() {
                 <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {filteredReferees.length > 0 ? (
                 filteredReferees.map((referee) => (
-                  <tr key={referee.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-500 text-center">{referee.id}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{referee.emri}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{referee.mbiemri || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800">{referee.email || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{referee.telefoni || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{referee.nr_licences || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800">{referee.kategoria || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 text-center">{referee.pervoja_vitesh || "-"}</td>
+                  <tr key={referee.id} className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150">
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">{referee.id}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{referee.emri}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{referee.mbiemri || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-300">{referee.email || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{referee.telefoni || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{referee.nr_licences || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-300">{referee.kategoria || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-300 text-center">{referee.pervoja_vitesh || "-"}</td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <button onClick={() => handleView(referee.id)} className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200" title="View">
@@ -382,7 +382,7 @@ export default function Referees() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="9" className="px-6 py-4 text-center text-gray-600">
+                  <td colSpan="9" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
                     {searchQuery
                       ? `No referee matches "${searchQuery}". Try a different search.`
                       : 'No referees found. Click "Add New Referee" to add one.'}
@@ -396,8 +396,8 @@ export default function Referees() {
         {/* Add New Referee Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={handleCloseModal}>
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Add New Referee</h3>
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Add New Referee</h3>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <RefereeForm formData={formData} onChange={handleInputChange} />
                 <div className="flex gap-4 pt-4">
@@ -412,8 +412,8 @@ export default function Referees() {
         {/* View Modal */}
         {showViewModal && selectedReferee && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={handleCloseViewModal}>
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Referee Details</h3>
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Referee Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <RefereeDetail label="Full Name" value={`${selectedReferee.emri} ${selectedReferee.mbiemri}`} />
                 <RefereeDetail label="Email" value={selectedReferee.email || "-"} />
@@ -432,8 +432,8 @@ export default function Referees() {
         {/* Edit Modal */}
         {showEditModal && selectedReferee && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={handleCloseEditModal}>
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Referee</h3>
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Edit Referee</h3>
               <form onSubmit={handleEditSubmit} className="space-y-6">
                 <RefereeForm formData={formData} onChange={handleInputChange} />
                 <div className="flex gap-4 pt-4">
@@ -448,9 +448,9 @@ export default function Referees() {
         {/* Delete Modal */}
         {showDeleteModal && selectedReferee && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={handleCloseDeleteModal}>
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-2xl font-bold text-red-600 mb-4">Delete Referee?</h3>
-              <p className="text-gray-700 mb-6">
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Delete Referee?</h3>
+              <p className="text-gray-700 dark:text-slate-300 mb-6">
                 Are you sure you want to delete <strong>{selectedReferee.emri}</strong>? This action cannot be undone.
               </p>
               <div className="flex gap-4">
@@ -464,15 +464,15 @@ export default function Referees() {
         {/* Promote User to Referee Modal */}
         {showPromoteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowPromoteModal(false)}>
-            <div className="w-full max-w-lg bg-white rounded-lg p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Promote User to Referee</h3>
+            <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-lg p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Promote User to Referee</h3>
               <form onSubmit={handlePromoteSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select User *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Select User *</label>
                   <select
                     value={promoteData.user_id}
                     onChange={(e) => setPromoteData((p) => ({ ...p, user_id: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-200"
                     required
                   >
                     <option value="">-- Select a user --</option>
@@ -483,34 +483,34 @@ export default function Referees() {
                     ))}
                   </select>
                   {users.length === 0 && (
-                    <p className="text-sm text-gray-400 mt-1">No users with role "gjyqtar" found.</p>
+                    <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">No users with role "gjyqtar" found.</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Phone</label>
                   <input
                     type="tel"
                     placeholder="+383 12 345 678"
                     value={promoteData.telefoni}
                     onChange={(e) => setPromoteData((p) => ({ ...p, telefoni: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">License Nr</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">License Nr</label>
                   <input
                     type="text"
                     value={promoteData.nr_licences}
                     onChange={(e) => setPromoteData((p) => ({ ...p, nr_licences: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-200"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Category</label>
                   <select
                     value={promoteData.kategoria}
                     onChange={(e) => setPromoteData((p) => ({ ...p, kategoria: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-200"
                   >
                     <option value="">Select category</option>
                     <option value="FIFA">FIFA</option>
@@ -520,12 +520,12 @@ export default function Referees() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Years of Experience</label>
                   <input
                     type="number"
                     value={promoteData.pervoja_vitesh}
                     onChange={(e) => setPromoteData((p) => ({ ...p, pervoja_vitesh: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-200"
                   />
                 </div>
                 <div className="flex gap-4 pt-4">
@@ -545,34 +545,34 @@ function RefereeForm({ formData, onChange }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Referee Name *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Referee Name *</label>
         <input type="text" name="emri" value={formData.emri} onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           placeholder="Referee name" required />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Surname *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Surname *</label>
         <input type="text" name="mbiemri" value={formData.mbiemri} onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           placeholder="Surname" required />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Email *</label>
         <input type="text" name="email" value={formData.email} onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           placeholder="Email" required />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Phone Number *</label>
         <input type="tel" name="telefoni" value={formData.telefoni} onChange={onChange}
           pattern="^\+383 \d{2} \d{3} \d{3}$"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           placeholder="+383 12 345 678" required />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Category *</label>
         <select name="kategoria" value={formData.kategoria} onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200">
           <option value="">Select category</option>
           <option value="FIFA">FIFA</option>
           <option value="UEFA">UEFA</option>
@@ -581,15 +581,15 @@ function RefereeForm({ formData, onChange }) {
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Nr of License *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Nr of License *</label>
         <input type="text" name="nr_licences" value={formData.nr_licences} onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           required />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Years of Experience *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Years of Experience *</label>
         <input type="number" name="pervoja_vitesh" value={formData.pervoja_vitesh} onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           required />
       </div>
     </div>
@@ -599,8 +599,8 @@ function RefereeForm({ formData, onChange }) {
 function RefereeDetail({ label, value }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{value}</p>
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{label}</label>
+      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">{value}</p>
     </div>
   );
 }

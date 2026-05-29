@@ -357,12 +357,12 @@ export default function Teams() {
 
   if (error)
     return (
-      <div className="flex justify-center items-center h-center">
-        <p className="text-lg text-red-600">Error: {error}</p>
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-lg text-red-600 dark:text-red-400">Error: {error}</p>
       </div>
     );
      return (
-    <div className="bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
         <Alert 
           type={alert.type} 
@@ -373,7 +373,7 @@ export default function Teams() {
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200">
               Team Management
             </h2>
             <button
@@ -392,11 +392,11 @@ export default function Teams() {
               placeholder="Search team"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
             />
             {/* Search Icon (magnifying glass) */}
             <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -411,9 +411,9 @@ export default function Teams() {
           </div>
         </div>
         {/* Team table section */}
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-800 text-white">
+        <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[500px]">
+            <thead className="bg-gray-800 dark:bg-slate-700 text-white">
               <tr>
                 <th className="px-4 py-3 text-center font-semibold">ID</th>
                 <th className="px-4 py-3 text-left font-semibold">Team Name</th>
@@ -429,7 +429,7 @@ export default function Teams() {
               </tr>
             </thead>
             {/* Table Body */}
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {teams.filter((s) =>
                 (s.emertimi || "").toLowerCase().includes(searchQuery.toLowerCase()),
               ).length > 0 ? (
@@ -440,30 +440,30 @@ export default function Teams() {
                   .map((s) => (
                     <tr
                       key={s.id}
-                      className="hover:bg-gray-100 transtion-colors duration-150"
+                      className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150"
                     >
-                      <td className="px-4 py-3 text-gray-500 text-center">
+                      <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-center">
                         {s.id}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-semibold">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
                         {s.emertimi}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-semibold">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
                         {s.trajneri}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-semibold">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
                         {s.kontakti || "N/A"}
                       </td>
-                      <td className="px-4 py-3 text-gray-800">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300">
                         {s.email || "N/A"}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-semibold">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
                         {s.qyteti || "N/A"}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 font-semibold">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
                         {s.sporti_emri || "N/A"}
                       </td>
-                      <td className="px-4 py-3 text-gray-800 text-center">
+                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300 text-center">
                         {formatDate(s.data_themelimit)}
                       </td>
                       
@@ -498,8 +498,8 @@ export default function Teams() {
               ) : (
                 <tr>
                   <td
-                    colSpan="6"
-                    className="px-6 py-4 text-center text-gray-600"
+                    colSpan="9"
+                    className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                   >
                     {searchQuery
                       ? `No team match "${searchQuery}". Try a different search.`
@@ -518,10 +518,10 @@ export default function Teams() {
             onClick={handleCloseModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2x1 font-bold text-gray-800 mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
                 Add New Team
               </h3>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -549,7 +549,7 @@ export default function Teams() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Name input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                      Team Name*
                     </label>
                     <input
@@ -557,8 +557,8 @@ export default function Teams() {
                       name="emertimi"
                       value={formData.emertimi}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                        formErrors.emertimi ? "border-red-500" : "border-gray-300"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.emertimi ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="Name of the team"
                       required
@@ -569,7 +569,7 @@ export default function Teams() {
                   </div>
                   {/* Trainer input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Trainer *
                     </label>
                     <input
@@ -577,7 +577,7 @@ export default function Teams() {
                       name="trajneri"
                       value={formData.trajneri}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Trainer Name"
                       required
                     />
@@ -585,7 +585,7 @@ export default function Teams() {
 
                   {/* contact input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Contact *
                     </label>
                     <input
@@ -593,8 +593,8 @@ export default function Teams() {
                       name="kontakti"
                       value={formData.kontakti}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                        formErrors.kontakti ? "border-red-500" : "border-gray-300"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.kontakti ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="+383 12 345 678"
                       required
@@ -605,7 +605,7 @@ export default function Teams() {
                   </div>
                   {/* Email input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Email *
                     </label>
                     <input
@@ -613,8 +613,8 @@ export default function Teams() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                        formErrors.email ? "border-red-500" : "border-gray-300"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.email ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="Email"
                       required
@@ -625,7 +625,7 @@ export default function Teams() {
                   </div>
                   {/* City input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                         City *
                     </label>
                     <input
@@ -633,8 +633,8 @@ export default function Teams() {
                       name="qyteti"
                       value={formData.qyteti}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                        formErrors.qyteti ? "border-red-500" : "border-gray-300"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.qyteti ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="City"
                       required
@@ -671,8 +671,8 @@ export default function Teams() {
                       name="data_themelimit"
                       value={formData.data_themelimit}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                        formErrors.data_themelimit ? "border-red-500" : "border-gray-300"
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.data_themelimit ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
                       required
                     />
@@ -708,10 +708,10 @@ export default function Teams() {
             onClick={handleCloseViewModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2x1 font-bold text-gray-800 mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
                 Team Details
               </h3>
               {/* Add this */}
@@ -720,64 +720,64 @@ export default function Teams() {
                   <img
                     src={resolveTeamLogoUrl(selectedTeam.logoja)}
                     alt={`${selectedTeam.emertimi} logo`}
-                    className="w-24 h-24 object-cover rounded-xl border border-gray-200 shadow-sm"
+                    className="w-24 h-24 object-cover rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm"
                   />
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Team Name
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedTeam.emertimi}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Trainer
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedTeam.trajneri}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Contact
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedTeam.kontakti}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Email
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedTeam.email}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     City
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedTeam.qyteti}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Sport
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {selectedTeam.sporti_emri || "N/A"}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Founded Date
                   </label>
-                  <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                     {formatDate(selectedTeam.data_themelimit)}
                   </p>
                 </div>
@@ -807,14 +807,14 @@ export default function Teams() {
             >
                {/* Team logo upload */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Team Logo
                     </label>
                     {formData.logoja && (
                     <img
                         src={resolveTeamLogoUrl(formData.logoja)}
                         alt="Team logo"
-                        className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200"
+                        className="w-16 h-16 object-cover rounded-lg mb-2 border border-gray-200 dark:border-slate-700"
                       />
                     )}
 
@@ -822,18 +822,18 @@ export default function Teams() {
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       onChange={handleLogoUpload}
-                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                      className="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 dark:file:bg-green-500/10 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-500/20"
                     />
-                    {uploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                    {uploading && <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Uploading...</p>}
                   </div>
-              <h3 className="text-2x1 font-bold text-gray-800 mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
                 Edit Team
               </h3>
               <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Team name input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Team Name *
                     </label>
                     <input
@@ -841,14 +841,14 @@ export default function Teams() {
                       name="emertimi"
                       value={formData.emertimi}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Team Name"
                       required
                     />
                   </div>
                   {/* Trainer input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Trainer *
                     </label>
                     <input
@@ -856,14 +856,14 @@ export default function Teams() {
                       name="trajneri"
                       value={formData.trajneri}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Trainer Name"
                       required
                     />
                   </div>
                   {/* Contact input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Contact *
                     </label>
                     <input
@@ -871,13 +871,13 @@ export default function Teams() {
                       name="kontakti"
                       value={formData.kontakti}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Contact"
                     />
                   </div>
                   {/* Email input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Email
                     </label>
                     <input
@@ -885,13 +885,13 @@ export default function Teams() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="Email"
                     />
                   </div>
                   {/* City input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       City
                     </label>
                     <input
@@ -899,19 +899,19 @@ export default function Teams() {
                       name="qyteti"
                       value={formData.qyteti}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       placeholder="City"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Sport *
                     </label>
                     <select
                       name="sporti_id"
                       value={formData.sporti_id}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                       required
                     >
                       <option value="">Select sport</option>
@@ -924,7 +924,7 @@ export default function Teams() {
                   </div>
                   {/* Founded date input field */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                       Founded Date
                     </label>
                     <input
@@ -932,7 +932,7 @@ export default function Teams() {
                       name="data_themelimit"
                       value={formData.data_themelimit}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
                     />
                   </div>
                 </div>
@@ -963,13 +963,13 @@ export default function Teams() {
             onClick={handleCloseDeleteModal}
           >
             <div
-              className="w-full max-w-md rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-md rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-4">
                 Delete Team
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-slate-400 mb-6">
                 Are you sure you want to delete <strong>{selectedTeam.emertimi}</strong>? This action cannot be undone.
               </p>
               <div className="flex gap-4">

@@ -295,7 +295,7 @@ export default function Venues() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
         <Alert 
           type={alert.type} 
@@ -306,7 +306,7 @@ export default function Venues() {
       <div className="w-full mx-auto">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800">Venue Management</h2>
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-200">Venue Management</h2>
             <button
               onClick={handleCreate}
               className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
@@ -322,10 +322,10 @@ export default function Venues() {
               placeholder="Search venue"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
             />
             <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400"
+              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -340,9 +340,9 @@ export default function Venues() {
           </div>
         </div>
 
-        <div className="flex bg-white rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-800 text-white">
+        <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead className="bg-gray-800 dark:bg-slate-700 text-white">
               <tr>
                 <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Name</th>
@@ -355,22 +355,22 @@ export default function Venues() {
                 <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {filteredVenues.length > 0 ? (
                 filteredVenues.map((venue) => (
-                  <tr key={venue.id} className="hover:bg-gray-100 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-500 text-center">{venue.id}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.emertimi}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.adresa || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.qyteti }</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.kapaciteti ?? "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">
+                  <tr key={venue.id} className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150">
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">{venue.id}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.emertimi}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.adresa || "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.qyteti }</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.kapaciteti ?? "-"}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">
                       {venue.lloji_siperfaqes || "-"}
                     </td>
-                    <td className="px-6 py-4 text-gray-800">
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-300">
                       {venue.ndricimi ? "Yes" : "No"}
                     </td>
-                    <td className="px-6 py-4 text-gray-800 font-semibold">{venue.statusi}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.statusi}</td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <button
@@ -400,7 +400,7 @@ export default function Venues() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="9" className="px-6 py-4 text-center text-gray-600">
+                  <td colSpan="9" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
                     {searchQuery
                       ? `No venue matches "${searchQuery}". Try a different search.`
                       : 'No venues found. Click "Add New Venue" to add one.'}
@@ -417,10 +417,10 @@ export default function Venues() {
             onClick={handleCloseModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Add New Venue</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Add New Venue</h3>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <VenueForm formData={formData} onChange={handleInputChange} />
                 <div className="flex gap-4 pt-4">
@@ -449,10 +449,10 @@ export default function Venues() {
             onClick={handleCloseViewModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Venue Details</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Venue Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <VenueDetail label="Venue Name" value={selectedVenue.emertimi} />
                 <VenueDetail label="Address" value={selectedVenue.adresa || "-"} />
@@ -495,10 +495,10 @@ export default function Venues() {
             onClick={handleCloseEditModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Edit Venue</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Edit Venue</h3>
               <form onSubmit={handleEditSubmit} className="space-y-6">
                 <VenueForm formData={formData} onChange={handleInputChange} />
                 <div className="flex gap-4 pt-4">
@@ -527,11 +527,11 @@ export default function Venues() {
             onClick={handleCloseDeleteModal}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-red-600 mb-4">Delete Venue?</h3>
-              <p className="text-gray-700 mb-6">
+              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Delete Venue?</h3>
+              <p className="text-gray-700 dark:text-slate-300 mb-6">
                 Are you sure you want to delete <strong>{selectedVenue.emertimi}</strong>? This
                 action cannot be undone.
               </p>
@@ -561,63 +561,63 @@ function VenueForm({ formData, onChange }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Venue Name *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Venue Name *</label>
         <input
           type="text"
           name="emertimi"
           value={formData.emertimi}
           onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           placeholder="Venue name"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">City *</label>
         <input
           type="text"
           name="qyteti"
           value={formData.qyteti}
           onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           placeholder="City"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Address *</label>
         <input
           type="text"
           name="adresa"
           value={formData.adresa}
           onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           placeholder="Street address"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Capacity *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Capacity *</label>
         <input
           type="number"
           name="kapaciteti"
           value={formData.kapaciteti}
           onChange={onChange}
           min="0"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           placeholder="0"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Surface Type *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Surface Type *</label>
         <select
           name="lloji_siperfaqes"
           value={formData.lloji_siperfaqes}
           onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
         >
           <option value="">Select surface</option>
           <option value="Bari Natyror">Bari Natyror</option>
@@ -630,12 +630,12 @@ function VenueForm({ formData, onChange }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Status *</label>
         <select
           name="statusi"
           value={formData.statusi}
           onChange={onChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
           required
         >
           <option value="Aktiv">Aktiv</option>
@@ -651,9 +651,9 @@ function VenueForm({ formData, onChange }) {
           name="ndricimi"
           checked={Boolean(formData.ndricimi)}
           onChange={onChange}
-          className="h-4 w-4"
+          className="h-4 w-4 dark:bg-slate-700 dark:border-slate-600"
         />
-        <label htmlFor="ndricimi" className="text-sm font-medium text-gray-700">
+        <label htmlFor="ndricimi" className="text-sm font-medium text-gray-700 dark:text-slate-300">
           Lighting available
         </label>
       </div>
@@ -664,8 +664,8 @@ function VenueForm({ formData, onChange }) {
 function VenueDetail({ label, value }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <p className="text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">{value}</p>
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{label}</label>
+      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">{value}</p>
     </div>
   );
 }

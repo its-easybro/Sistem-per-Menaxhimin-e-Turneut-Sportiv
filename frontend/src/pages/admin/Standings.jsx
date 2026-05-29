@@ -126,20 +126,20 @@ export default function Standings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
         <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
       )}
 
       <div className="mx-auto w-full">
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-3xl font-bold text-gray-800">Standings</h2>
+          <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-200">Standings</h2>
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <select
               value={filterTournament}
               onChange={(e) => setFilterTournament(e.target.value)}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-blue-500"
+              className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500"
             >
               <option value="">All tournaments</option>
               {tournaments.map((item) => (
@@ -154,24 +154,24 @@ export default function Standings() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search team..."
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none focus:border-blue-500"
+              className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500 placeholder:text-transparent sm:placeholder:text-gray-400 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
 
         {groupedStandings.length === 0 ? (
-          <div className="rounded-lg bg-white p-6 text-center text-gray-600 shadow-sm">
+          <div className="rounded-lg bg-white dark:bg-slate-800 p-6 text-center text-gray-600 dark:text-slate-400 shadow-sm">
             No standings found for the selected filters.
           </div>
         ) : (
           <div className="space-y-6">
             {groupedStandings.map((group) => (
-              <section key={group.tournamentId} className="rounded-lg bg-white shadow-sm">
-                <div className="flex flex-col gap-3 border-b border-gray-200 p-4 md:flex-row md:items-center md:justify-between">
+              <section key={group.tournamentId} className="rounded-lg bg-white dark:bg-slate-800 shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-gray-200 dark:border-slate-700 p-4 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">{group.tournamentName}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-slate-200">{group.tournamentName}</h3>
                     {group.sportName ? (
-                      <p className="text-sm text-gray-500">Sport: {group.sportName}</p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">Sport: {group.sportName}</p>
                     ) : null}
                   </div>
                   <button
@@ -187,7 +187,7 @@ export default function Standings() {
 
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[760px] text-left">
-                    <thead className="bg-gray-800 text-white">
+                    <thead className="bg-gray-800 dark:bg-slate-700 text-white">
                       <tr>
                         <th className="px-4 py-3 text-center">#</th>
                         <th className="px-4 py-3">Team</th>
@@ -201,27 +201,27 @@ export default function Standings() {
                         <th className="px-4 py-3 text-center">Pts</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                       {group.rows.map((standing, index) => {
                         const gd = Number(standing.golat_shenuar) - Number(standing.golat_pranuar);
                         const gdDisplay = gd > 0 ? `+${gd}` : String(gd);
 
                         return (
-                          <tr key={standing.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-center font-medium text-gray-700">
+                          <tr key={standing.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors duration-150">
+                            <td className="px-4 py-3 text-center font-medium text-gray-700 dark:text-slate-400">
                               {index + 1}
                             </td>
-                            <td className="px-4 py-3 font-semibold text-gray-800">
+                            <td className="px-4 py-3 font-semibold text-gray-800 dark:text-slate-200">
                               {standing.teams?.emertimi || "Unknown team"}
                             </td>
-                            <td className="px-4 py-3 text-center">{standing.ndeshjet_luajtura}</td>
-                            <td className="px-4 py-3 text-center">{standing.fitoret}</td>
-                            <td className="px-4 py-3 text-center">{standing.barazimet}</td>
-                            <td className="px-4 py-3 text-center">{standing.humbjet}</td>
-                            <td className="px-4 py-3 text-center">{standing.golat_shenuar}</td>
-                            <td className="px-4 py-3 text-center">{standing.golat_pranuar}</td>
-                            <td className="px-4 py-3 text-center">{gdDisplay}</td>
-                            <td className="px-4 py-3 text-center font-bold">{standing.piket}</td>
+                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.ndeshjet_luajtura}</td>
+                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.fitoret}</td>
+                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.barazimet}</td>
+                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.humbjet}</td>
+                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.golat_shenuar}</td>
+                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.golat_pranuar}</td>
+                            <td className="px-4 py-3 text-center dark:text-slate-300">{gdDisplay}</td>
+                            <td className="px-4 py-3 text-center font-bold dark:text-slate-200">{standing.piket}</td>
                           </tr>
                         );
                       })}
