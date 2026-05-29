@@ -1,117 +1,92 @@
-const App = () => {
-    return (
-        <>
-            {/* Loads Geist font locally for this footer block. */}
-            <style>
-                {`
-                    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
-                    *{
-                        font-family: "Geist", sans-serif;
-                    }
-                `}
-            </style>
-            {/* Outer dark background wrapper for footer contrast. */}
-            <div className='bg-slate-950 pt-20 px-4'>
-                <footer className="bg-slate-900 w-full max-w-[1350px] mx-auto text-white pt-8 lg:pt-12 px-4 sm:px-8 md:px-16 lg:px-28 rounded-tl-3xl rounded-tr-3xl overflow-hidden border border-white/5">
-                    {/* Main footer content split into brand block and link columns. */}
-                    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-6 gap-8 md:gap-12">
-                        
-                        {/* Brand description and social links. */}
-                        <div className="lg:col-span-3 space-y-6">
-                            <a href="https://prebuiltui.com" className="block">
-                                <svg width="157" height="40" viewBox="0 0 157 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="m8.75 11.3 6.75 3.884 6.75-3.885M8.75 34.58v-7.755L2 22.939m27 0-6.75 3.885v7.754M2.405 15.408 15.5 22.954l13.095-7.546M15.5 38V22.939M29 28.915V16.962a2.98 2.98 0 0 0-1.5-2.585L17 8.4a3.01 3.01 0 0 0-3 0L3.5 14.377A3 3 0 0 0 2 16.962v11.953A2.98 2.98 0 0 0 3.5 31.5L14 37.477a3.01 3.01 0 0 0 3 0L27.5 31.5a3 3 0 0 0 1.5-2.585" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </a>
-                            <p className="text-sm/6 text-slate-300 max-w-96">PrebuiltUI helps you build faster by transforming your design vision into fully functional, production-ready UI components.</p>
-                            <div className="flex gap-5 md:gap-6 order-1 md:order-2">
-                                {/* X (Twitter) */}
-                                <a href="#" className="text-white hover:text-slate-300">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
-                                    </svg>
-                                </a>
-                                {/* Github */}
-                                <a href="#" className="text-white hover:text-slate-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>
-                                    </svg>
-                                </a>
-                                {/* Linkedin */}
-                                <a href="#" className="text-white hover:text-slate-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/>
-                                    </svg>
-                                </a>
-                                {/* Youtube */}
-                                <a href="#" className="text-white hover:text-slate-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/>
-                                    </svg>
-                                </a>
-                                {/* Instagram */}
-                                <a href="#" className="text-white hover:text-slate-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-                                </a>
-                            </div>
-                        </div>
+import { Link } from "react-router-dom";
+import logo from "../assets/logo.png";
+import { FaInstagram, FaTwitter, FaFacebook, FaLinkedin } from "react-icons/fa";
 
-                        {/* Navigation groups for products, resources, and company links. */}
-                        <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12 lg:gap-28 items-start">
-                            {/* Products */}
-                            <div>
-                                <h3 className="font-medium text-sm mb-4 text-white">Products</h3>
-                                <ul className="space-y-3 text-sm text-slate-300">
-                                    <li><a href="#" className="hover:text-slate-200">Components</a></li>
-                                    <li><a href="#" className="hover:text-slate-200">Templates</a></li>
-                                    <li><a href="#" className="hover:text-slate-200">Icons</a></li>
-                                </ul>
-                            </div>
+const Footer = () => {
+  return (
+    <footer className="bg-slate-900 border-t border-white/10 pt-16 pb-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8 mb-16">
+          {/* Brand Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <Link to="/" className="flex items-center gap-3">
+              <img src={logo} alt="Logo" className="h-10 w-auto" />
+              <span className="text-xl font-bold text-white">SportScore</span>
+            </Link>
+            <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
+              Transforming your tournament management experience with
+              production-ready UI components and seamless integration.
+            </p>
+            {/* Social Icons */}
+          <div className="flex gap-6">
+            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <FaInstagram size={22} />
+            </a>
+            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <FaTwitter size={22} />
+            </a>
+            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <FaFacebook size={22} />
+            </a>
+            <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <FaLinkedin size={22} />
+            </a>
+          </div>
+          </div>
 
-                            {/* Resources */}
-                            <div>
-                                <h3 className="font-medium text-sm mb-4 text-white">Resources</h3>
-                                <ul className="space-y-3 text-sm text-slate-300">
-                                    <li><a href="#" className="hover:text-slate-200">PrebuiltUI</a></li>
-                                    <li><a href="#" className="hover:text-slate-200">Templates</a></li>
-                                    <li><a href="#" className="hover:text-slate-200">Components</a></li>
-                                    <li><a href="#" className="hover:text-slate-200">Blogs</a></li>
-                                    <li><a href="#" className="hover:text-slate-200">Store</a></li>
-                                </ul>
-                            </div>
-
-                            {/* Company */}
-                            <div className="col-span-2 md:col-span-1">
-                                <h3 className="font-medium text-sm mb-4 text-white">Company</h3>
-                                <ul className="space-y-3 text-sm text-slate-300">
-                                    <li><a href="#" className="hover:text-slate-200">About</a></li>
-                                    <li><a href="#" className="hover:text-slate-200">Vision</a></li>
-                                    <li className="flex items-center gap-2">
-                                        <a href="#" className="hover:text-slate-200">Careers</a>
-                                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-950/70 border border-emerald-300/40 text-emerald-300">HIRING</span>
-                                    </li>
-                                    <li><a href="#" className="hover:text-slate-200">Privacy policy</a></li>
-                                    <li><a href="#" className="hover:text-slate-200">Contact Us</a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Bottom legal row with copyright and short note. */}
-                    <div className="max-w-7xl mx-auto mt-12 pt-4 border-t border-slate-700 flex justify-between items-center">
-                        <p className="text-slate-400 text-sm">© 2026 PrebuiltUI Design</p>
-                        <p className='text-sm text-slate-400'>All right reserved.</p>
-                    </div>
-                    {/* Decorative glow and outlined brand wordmark. */}
-                    <div className="relative">
-                        <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl h-full max-h-64 bg-emerald-500 rounded-full blur-[170px] pointer-events-none"/>
-                        <h3 className="text-center font-extrabold leading-[0.7] text-transparent text-[clamp(3rem,15vw,15rem)] [-webkit-text-stroke:1px_#14532d] mt-6" >
-                            PrebuiltUI
-                        </h3>
-                    </div>
-                </footer>
+          {/* Links Columns */}
+          <div className="lg:col-span-4 grid grid-cols-2 sm:grid-cols-3 gap-8">
+            
+            {/* Features */}
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-4">Features</h3>
+              <ul className="space-y-3">
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Brackets</Link></li>
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Live Scoring</Link></li>
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Registration</Link></li>
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Analytics</Link></li>
+              </ul>
             </div>
-        </>
-    )
-}
-export default App
+
+            {/* Resources */}
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-4">Resources</h3>
+              <ul className="space-y-3">
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Documentation</Link></li>
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Help Center</Link></li>
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Tournament Rules</Link></li>
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Community</Link></li>
+              </ul>
+            </div>
+
+            {/* Pages */}
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-4">Pages</h3>
+              <ul className="space-y-3">
+                <li><Link to="/about-us" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</Link></li>
+                <li><Link to="/contact-us" className="text-sm text-gray-400 hover:text-white transition-colors">Contact</Link></li>
+                <li><Link to="/live-matches" className="text-sm text-emerald-400 hover:text-emerald-300 font-medium">Live Matches</Link></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-sm text-gray-500">
+            © {new Date().getFullYear()} SportScore. All rights reserved.
+          </p>
+
+
+          <div className="flex gap-6 text-sm text-gray-500">
+            <Link to="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="#" className="hover:text-white transition-colors">Terms of Service</Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
