@@ -2,6 +2,7 @@ import { useState } from "react";
 import api from "../../config/axiosInstance";
 import * as yup from "yup";
 import { Bug, HelpCircle, ShieldAlert, UserPlus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MESSAGE_MAX_LENGTH = 500;
 const SUBJECT_MAX_LENGTH = 120;
@@ -69,6 +70,7 @@ export default function ContactUs() {
     e.preventDefault();
     setLoading(true);
     setErrors({});
+    setAlert(null);
 
     try {
       await validationSchema.validate(formData, { abortEarly: false });
@@ -99,54 +101,64 @@ export default function ContactUs() {
 
   return (
     <>
-      {/* Loads Poppins font styling for this page section. */}
       <style>{`
-                @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
-            
-                * {
-                    font-family: "Poppins", sans-serif;
-                }
-            `}</style>
-      {/* Main contact section with intro content and form panel. */}
-      <section className="relative flex flex-col justify-center gap-20 bg-slate-950 px-4 py-20 md:flex-row">
-        {/* Decorative background glow to add depth behind content. */}
+        @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+        * { font-family: "Poppins", sans-serif; }
+      `}</style>
+
+      <section className="relative flex flex-col justify-center gap-20 bg-slate-950 px-4 py-20 md:flex-row overflow-hidden">
+        
         <div className="fixed top-1/2 left-1/2 mb-10 size-140 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full bg-emerald-500/25 blur-[200px]"></div>
 
-        {/* Left side call-to-action and social proof visuals. */}
-        <div className="text-center md:text-left mt-12">
+        <motion.div 
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-center md:text-left mt-12 z-10"
+        >
           <h1 className="font-medium text-3xl md:text-5xl/15 bg-linear-to-r max-md:mx-auto from-white to-emerald-300 bg-clip-text text-transparent max-w-[470px] mt-4">
             Ready to Transform Your Digital Experience?
           </h1>
           <p className="text-sm/6 text-slate-300 max-w-[345px] mt-4 mx-auto md:mx-0">
-            Let our design team craft a website that elevates your brand. Book a
-            free session today.
+            Let our design team craft a website that elevates your brand. Book a free session today.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Right side contact form for collecting user details and message. */}
-        <div className="w-full max-w-lg max-md:mx-auto rounded-xl border border-white/10 bg-slate-900/75 p-8 backdrop-blur-sm shadow-2xl shadow-black/20">
-          {/* Alert */}
-          {alert && (
-            <div
-              className={`mb-6 px-4 py-3 rounded-lg text-sm ${
-                alert.type === "success"
-                  ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-200"
-                  : "bg-rose-500/15 border border-rose-400/30 text-rose-200"
-              }`}
-            >
-              <div className="flex justify-between items-center">
-                <span>{alert.message}</span>
-                <button
-                  onClick={() => setAlert(null)}
-                  className="ml-4 opacity-60 hover:opacity-100"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
+        <motion.div 
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+          className="w-full max-w-lg max-md:mx-auto rounded-xl border border-white/10 bg-slate-900/75 p-8 backdrop-blur-sm shadow-2xl shadow-black/20 z-10"
+        >
+          
+          <AnimatePresence>
+            {alert && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: "auto", marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`px-4 py-3 rounded-lg text-sm overflow-hidden ${
+                  alert.type === "success"
+                    ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-200"
+                    : "bg-rose-500/15 border border-rose-400/30 text-rose-200"
+                }`}
+              >
+                <div className="flex justify-between items-center">
+                  <span>{alert.message}</span>
+                  <button
+                    onClick={() => setAlert(null)}
+                    className="ml-4 opacity-60 hover:opacity-100"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* ... Field: Name ... */}
             <div>
               <label className="block text-sm mb-2 text-slate-200">Name</label>
               <input
@@ -157,11 +169,14 @@ export default function ContactUs() {
                 placeholder="Eden Johnson"
                 className={`w-full rounded-lg border bg-slate-950/60 px-4 py-3 text-slate-100 placeholder:text-slate-500 placeholder:text-sm focus:outline-none focus:border-emerald-500 transition ${errors.emri ? "border-red-500" : "border-white/10"}`}
               />
-              {errors.emri && (
-                <p className="text-red-400 text-xs mt-1">{errors.emri}</p>
-              )}
+              <AnimatePresence>
+                {errors.emri && (
+                   <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="text-red-400 text-xs mt-1">{errors.emri}</motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* ... Field: Category ... */}
             <div>
               <label className="block text-sm mb-2 text-slate-200">Category</label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -170,7 +185,8 @@ export default function ContactUs() {
                   const isActive = formData.kategoria === option.value;
 
                   return (
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
                       key={option.value}
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, kategoria: option.value }))}
@@ -182,15 +198,18 @@ export default function ContactUs() {
                     >
                       <Icon size={14} />
                       {option.label}
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
-              {errors.kategoria && (
-                <p className="text-red-400 text-xs mt-1">{errors.kategoria}</p>
-              )}
+              <AnimatePresence>
+                {errors.kategoria && (
+                   <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="text-red-400 text-xs mt-1">{errors.kategoria}</motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* ... Field: Subject ... */}
             <div>
               <label className="block text-sm mb-2 text-slate-200">Subject</label>
               <input
@@ -203,20 +222,22 @@ export default function ContactUs() {
                 className={`w-full rounded-lg border bg-slate-950/60 px-4 py-3 text-slate-100 placeholder:text-slate-500 placeholder:text-sm focus:outline-none focus:border-emerald-500 transition ${errors.subjekti ? "border-red-500" : "border-white/10"}`}
               />
               <div className="mt-2 flex items-start justify-between gap-4">
-                {errors.subjekti ? (
-                  <p className="text-red-400 text-xs mt-1">{errors.subjekti}</p>
-                ) : (
-                  <p className="text-xs text-slate-500 mt-1">
-                    Optional, used by the admin inbox.
-                  </p>
-                )}
+                <AnimatePresence>
+                  {errors.subjekti ? (
+                    <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="text-red-400 text-xs mt-1">{errors.subjekti}</motion.p>
+                  ) : (
+                    <motion.p initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="text-xs text-slate-500 mt-1">
+                      Optional, used by the admin inbox.
+                    </motion.p>
+                  )}
+                </AnimatePresence>
                 <div className="ml-auto text-xs text-slate-500 mt-1">
                   {formData.subjekti.length}/{SUBJECT_MAX_LENGTH}
                 </div>
               </div>
             </div>
 
-            {/* --- EMAIL FIELD --- */}
+            {/* ... Field: Email ... */}
             <div>
               <label className="block text-sm mb-2 text-slate-200">Email</label>
               <input
@@ -227,12 +248,14 @@ export default function ContactUs() {
                 placeholder="Eden@example.com"
                 className={`w-full rounded-lg border bg-slate-950/60 px-4 py-3 text-slate-100 placeholder:text-slate-500 placeholder:text-sm focus:outline-none focus:border-emerald-500 transition ${errors.email ? "border-red-500" : "border-white/10"}`}
               />
-              {errors.email && (
-                <p className="text-red-400 text-xs mt-1">{errors.email}</p>
-              )}
+               <AnimatePresence>
+                {errors.email && (
+                   <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="text-red-400 text-xs mt-1">{errors.email}</motion.p>
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* --- MESSAGE FIELD --- */}
+            {/* ... Field: Message ... */}
             <div>
               <label className="block text-sm mb-2 text-slate-200">Message</label>
               <textarea
@@ -246,10 +269,11 @@ export default function ContactUs() {
               ></textarea>
 
               <div className="mt-2 flex items-start justify-between">
-                {errors.mesazhi && (
-                  <p className="text-red-400 text-xs mt-1">{errors.mesazhi}</p>
-                )}
-
+                <AnimatePresence>
+                  {errors.mesazhi && (
+                     <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="text-red-400 text-xs mt-1">{errors.mesazhi}</motion.p>
+                  )}
+                </AnimatePresence>
                 <div className="ml-auto text-xs text-slate-500 mt-1">
                   {formData.mesazhi.length}/{MESSAGE_MAX_LENGTH}
                 </div>
@@ -263,16 +287,18 @@ export default function ContactUs() {
                 <span className="text-slate-100">Terms</span> and{" "}
                 <span className="text-slate-100">Privacy Policy</span>.
               </p>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 type="submit"
                 disabled={loading}
                 className="bg-linear-to-r from-emerald-600 to-slate-800 hover:from-emerald-500 hover:to-slate-900 text-white text-sm px-8 md:px-16 py-3 rounded-full transition duration-300 cursor-pointer"
               >
                 {loading ? "Sending..." : "Send Message"}
-              </button>
+              </motion.button>
             </div>
           </form>
-        </div>
+        </motion.div>
       </section>
     </>
   );
