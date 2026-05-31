@@ -4,7 +4,7 @@ import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const initialFormData = {
@@ -16,6 +16,8 @@ const initialFormData = {
   kategoria: "",
   pervoja_vitesh: "",
 };
+
+const categoryOptions = ['FIFA', 'UEFA', 'Kombëtar', 'Rajonal'];
 
 const refereeCreateSchema = yup.object().shape({
   emri: yup.string().trim().min(2, "First name must be at least 2 characters").required("First name is required"),
@@ -61,6 +63,10 @@ export default function Referees() {
     kategoria: "",
     pervoja_vitesh: "",
   });
+  const [filters, setFilters] = useState({
+    search: "",
+    kategoria: "",
+  })
 
   useEffect(() => {
     const loadReferees = async () => {
@@ -70,7 +76,11 @@ export default function Referees() {
       }
       try {
         setLoading(true);
-        const response = await api.get(`/referees`);
+      const params = new URLSearchParams({
+        ...(filters.search ? { search: filters.search } : {}),
+        ...(filters.kategoria ? { kategoria: filters.kategoria } : {}),
+      });
+        const response = await api.get(`/referees?${params.toString()}`);
         const normalizedReferees = Array.isArray(response.data)
           ? response.data
           : Array.isArray(response.data?.data)
@@ -84,12 +94,44 @@ export default function Referees() {
       }
     };
     loadReferees();
-  }, [user]);
+  }, [user, filters]);
 
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }))
+      if (searchQuery !== filters.search) {
+        // Already handled by the dependency on filters in loadVenues
+      }
+    }, 400);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, filters.search]);
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
   const resetForm = () => {
     setFormData(initialFormData);
     setFormErrors({});
   };
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setFilters({
+      search: "",
+      kategoria: "",
+    });
+  };
+
+  const hasActiveFilters = filters.search !== "" || filters.kategoria !== "";
 
   const handleCreate = () => {
     resetForm();
@@ -299,81 +341,158 @@ export default function Referees() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
-        <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+        <Alert 
+          type={alert.type} 
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
       )}
+      {loading ? (
+        <div className="delay-skeleton mt-4">
+          <TableSkeleton />
+        </div>
+      ) : (
       <div className="w-full mx-auto">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-200">Referees Management</h2>
-            <div className="flex gap-3">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">
+            Referees Management
+          </h2>
+
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-2xl">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search referee..."
+                  name="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+                />
+              </div>
+
+              <div className="relative min-w-[160px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="kategoria"
+                  value={filters.kategoria}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All Categories</option>
+                  {categoryOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2">
               <button
                 onClick={handleOpenPromote}
-                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
               >
-                + Promote User to Referee
+                <Plus size={18} />
+                Promote User
               </button>
               <button
                 onClick={handleCreate}
-                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
               >
-                + Add New Referee
+                <Plus size={18} />
+                Add Referee
               </button>
             </div>
           </div>
-
-          <div className="relative">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search referee"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
-            />
-            <svg className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
         </div>
 
-        <div className="flex bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-800 dark:bg-slate-700 text-white">
+        {/* Referees table section */}
+        <div className={`flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto ${loading ? "opacity-60 pointer-events-none" : ""}`}>
+          <table className="w-full text-left border-collapse min-w-[500px]">
+            <thead className="bg-gray-800 dark:bg-slate-800 text-white">
               <tr>
                 <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Name</th>
                 <th className="px-6 py-4 text-left font-semibold">Surname</th>
                 <th className="px-6 py-4 text-left font-semibold">Email</th>
-                <th className="px-6 py-4 text-left font-semibold">Phone Number</th>
-                <th className="px-6 py-4 text-left font-semibold">Nr of License</th>
+                <th className="px-6 py-4 text-left font-semibold">Phone</th>
+                <th className="px-6 py-4 text-left font-semibold">License</th>
                 <th className="px-6 py-4 text-left font-semibold">Category</th>
-                <th className="px-6 py-4 text-center font-semibold">Years of experience</th>
+                <th className="px-6 py-4 text-center font-semibold">Experience</th>
                 <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-              {filteredReferees.length > 0 ? (
-                filteredReferees.map((referee) => (
-                  <tr key={referee.id} className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">{referee.id}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{referee.emri}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{referee.mbiemri || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-300">{referee.email || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{referee.telefoni || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{referee.nr_licences || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-300">{referee.kategoria || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-300 text-center">{referee.pervoja_vitesh || "-"}</td>
+              {referees.length > 0 ? (
+                referees.map((referee) => (
+                  <tr key={referee.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center font-medium">{referee.id}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-slate-200 font-semibold">{referee.emri}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">{referee.mbiemri || "-"}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">{referee.email || "-"}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">{referee.telefoni || "-"}</td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">{referee.nr_licences || "-"}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400">
+                        {referee.kategoria || "-"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300 text-center">{referee.pervoja_vitesh || "-"}</td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
-                        <button onClick={() => handleView(referee.id)} className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200" title="View">
+                        <button 
+                          onClick={() => handleView(referee.id)} 
+                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition-colors duration-150" 
+                          title="View"
+                        >
                           <Eye size={16} />
                         </button>
-                        <button onClick={() => handleEdit(referee.id)} className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200" title="Edit">
+                        <button 
+                          onClick={() => handleEdit(referee.id)} 
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition-colors duration-150" 
+                          title="Edit"
+                        >
                           <Edit size={16} />
                         </button>
-                        <button onClick={() => handleDelete(referee.id)} className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200" title="Delete">
+                        <button 
+                          onClick={() => handleDelete(referee.id)} 
+                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition-colors duration-150" 
+                          title="Delete"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -382,10 +501,10 @@ export default function Referees() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="9" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
-                    {searchQuery
-                      ? `No referee matches "${searchQuery}". Try a different search.`
-                      : 'No referees found. Click "Add New Referee" to add one.'}
+                  <td colSpan="9" className="px-6 py-8 text-center text-gray-600 dark:text-slate-400">
+                    {filters.search || filters.kategoria
+                      ? 'No referees found matching your filters.'
+                      : 'No referees found. Click "Add Referee" to add one.'}
                   </td>
                 </tr>
               )}
@@ -537,6 +656,7 @@ export default function Referees() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

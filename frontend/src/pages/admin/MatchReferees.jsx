@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Calendar, Edit, Eye, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import socket from "../../socket";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
@@ -32,6 +32,15 @@ const roles = [
   "Asistent 2",
   "Gjyqtar i 4-të",
   "VAR",
+];
+
+const statusOptions = [
+  "Planifikuar",
+  "Live",
+  "HalfTime",
+  "Përfunduar",
+  "Shtyrë",
+  "Anuluar",
 ];
 
 function formatDate(value) {
@@ -144,8 +153,15 @@ export default function MatchReferees() {
   const [referees, setReferees] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filters, setFilters] = useState({
+    statusi: "",
+    date_from: "",
+    date_to: "",
+  });
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -159,47 +175,65 @@ export default function MatchReferees() {
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!canAccessPage) {
-        setLoading(false);
-        return;
-      }
+  const loadData = useCallback(async (filtersObj) => {
+    if (!canAccessPage) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        setLoading(true);
-        setError("");
+    try {
+      setLoading(true);
+      setError("");
 
-        const [
-          assignmentsResponse,
-          matchesResponse,
-          refereesResponse,
-          teamsResponse,
-        ] =
-          await Promise.all([
-            api.get("/match-referees"),
-            api.get("/matches"),
-            api.get("/referees"),
-            api.get("/teams"),
-          ]);
+      const params = new URLSearchParams({
+        ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
+        ...(filtersObj.date_from && { date_from: filtersObj.date_from }),
+        ...(filtersObj.date_to && { date_to: filtersObj.date_to }),
+      });
+      const assignmentsUrl = params.toString()
+        ? `/match-referees?${params}`
+        : "/match-referees";
 
-        setAssignments(
-          Array.isArray(assignmentsResponse.data) ? assignmentsResponse.data : [],
-        );
-        setMatches(Array.isArray(matchesResponse.data) ? matchesResponse.data : []);
-        setReferees(
-          Array.isArray(refereesResponse.data) ? refereesResponse.data : [],
-        );
-        setTeams(Array.isArray(teamsResponse.data) ? teamsResponse.data : []);
-      } catch (err) {
-        setError(err?.response?.data?.error || err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const [
+        assignmentsResponse,
+        matchesResponse,
+        refereesResponse,
+        teamsResponse,
+      ] =
+        await Promise.all([
+          api.get(assignmentsUrl),
+          api.get("/matches"),
+          api.get("/referees"),
+          api.get("/teams"),
+        ]);
 
-    loadData();
+      setAssignments(
+        Array.isArray(assignmentsResponse.data) ? assignmentsResponse.data : [],
+      );
+      setMatches(Array.isArray(matchesResponse.data) ? matchesResponse.data : []);
+      setReferees(
+        Array.isArray(refereesResponse.data) ? refereesResponse.data : [],
+      );
+      setTeams(Array.isArray(teamsResponse.data) ? teamsResponse.data : []);
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message);
+    } finally {
+      setLoading(false);
+      setHasLoaded(true);
+    }
   }, [canAccessPage]);
+
+  useEffect(() => {
+    loadData(filters);
+  }, [filters, loadData]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     const handleScoreUpdate = ({ matchId, homeScore, awayScore }) => {
@@ -235,6 +269,20 @@ export default function MatchReferees() {
   const resetForm = () => {
     setFormData(initialFormData);
     setFormErrors({});
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setFilters({ statusi: "", date_from: "", date_to: "" });
+    setSearchQuery("");
+    setDebouncedSearch("");
   };
 
   const getMatchById = (matchId) =>
@@ -426,10 +474,9 @@ export default function MatchReferees() {
     try {
       await matchRefereeSchema.validate(formData, { abortEarly: false });
 
-      const response = await api.post("/match-referees", buildPayload());
-      const data = response.data || {};
+      await api.post("/match-referees", buildPayload());
 
-      setAssignments((prev) => [...prev, data]);
+      await loadData(filters);
       handleCloseModal();
       setFormErrors({});
       setAlert({ type: "success", message: "Assignment created successfully!" });
@@ -459,15 +506,12 @@ export default function MatchReferees() {
     try {
       await matchRefereeUpdateSchema.validate(formData, { abortEarly: false });
 
-      const response = await api.put(
+      await api.put(
         `/match-referees/${selectedAssignment.id}`,
         buildPayload(),
       );
-      const data = response.data || {};
 
-      setAssignments((prev) =>
-        prev.map((item) => (item.id === data.id ? data : item)),
-      );
+      await loadData(filters);
 
       handleCloseEditModal();
       setAlert({ type: "success", message: "Assignment updated successfully!" });
@@ -487,9 +531,7 @@ export default function MatchReferees() {
     try {
       await api.delete(`/match-referees/${selectedAssignment.id}`);
 
-      setAssignments((prev) =>
-        prev.filter((item) => item.id !== selectedAssignment.id),
-      );
+      await loadData(filters);
 
       handleCloseDeleteModal();
       setAlert({ type: "success", message: "Assignment deleted successfully!" });
@@ -503,8 +545,18 @@ export default function MatchReferees() {
     }
   };
 
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    filters.statusi !== "" ||
+    filters.date_from !== "" ||
+    filters.date_to !== "";
+
   const filteredAssignments = assignments.filter((item) => {
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearch.toLowerCase();
+    if (!query) {
+      return true;
+    }
+
     const match = getMatchById(item.ndeshja_id);
     const referee = getRefereeById(item.gjyqtari_id);
 
@@ -524,7 +576,7 @@ export default function MatchReferees() {
     return <Navigate to="/login" replace />;
   }
 
-  if (loading) {
+  if (loading && !hasLoaded) {
     return (
       <div className="delay-skeleton">
         <TableSkeleton />
@@ -554,54 +606,111 @@ export default function MatchReferees() {
 
       <div className="mx-auto w-full space-y-6">
         <div className="mb-8">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200">
-              {isAdmin ? "Match Referee Assignments" : "My Matches"}
-            </h2>
+          <h2 className="mb-5 text-2xl font-bold text-gray-800 dark:text-slate-200">
+            {isAdmin ? "Match Referee Assignments" : "My Matches"}
+          </h2>
 
-            {isAdmin && (
+          <div className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row">
+              <div className="relative max-w-2xl flex-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={
+                    isAdmin
+                      ? "Search by match, referee, role, date, or status"
+                      : "Search by match, role, date, or status"
+                  }
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-gray-900 transition-all placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:focus:ring-blue-600"
+                />
+              </div>
+
+              {isAdmin && (
+                <button
+                  onClick={handleCreate}
+                  className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow active:scale-[0.98]"
+                >
+                  <Plus size={18} />
+                  Assign Referee
+                </button>
+              )}
+            </div>
+
+            <div className="mt-1 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3 dark:border-slate-800/60">
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
+                <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="statusi"
+                  value={filters.statusi}
+                  onChange={handleFilterChange}
+                  className="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-8 text-sm font-medium text-gray-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                >
+                  <option value="">All statuses</option>
+                  {statusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
+                <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                  <Calendar size={14} />
+                </div>
+                <input
+                  type="date"
+                  name="date_from"
+                  value={filters.date_from}
+                  max={filters.date_to || undefined}
+                  onChange={handleFilterChange}
+                  aria-label="From date"
+                  title="From date"
+                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-gray-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                />
+              </div>
+
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
+                <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                  <Calendar size={14} />
+                </div>
+                <input
+                  type="date"
+                  name="date_to"
+                  value={filters.date_to}
+                  min={filters.date_from || undefined}
+                  onChange={handleFilterChange}
+                  aria-label="To date"
+                  title="To date"
+                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-gray-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                />
+              </div>
+            </div>
+
+            {hasActiveFilters && (
               <button
-                onClick={handleCreate}
-                className="rounded-lg bg-green-500 px-6 py-2 font-semibold text-white shadow-md transition duration-200 ease-in-out hover:bg-green-600"
+                onClick={handleClearFilters}
+                className="ml-auto flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-gray-500 transition-all duration-200 hover:bg-gray-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-red-400"
               >
-                + Assign Referee
+                Clear Filters
               </button>
             )}
           </div>
-
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                isAdmin
-                  ? "Search by match, referee, role, date, or status"
-                  : "Search by match, role, date, or status"
-              }
-              className="w-full rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 px-4 py-3 placeholder:text-transparent outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:placeholder:text-gray-400 dark:placeholder:text-slate-500"
-            />
-            <svg
-              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 dark:text-slate-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
         </div>
 
-        <div className="flex overflow-x-auto rounded-lg bg-white dark:bg-slate-800 shadow-md">
+        <div className={`flex overflow-x-auto rounded-lg bg-white shadow-md dark:bg-slate-800 ${loading ? "pointer-events-none opacity-60" : ""}`}>
           {filteredAssignments.length === 0 ? (
             <div className="w-full px-6 py-12 text-center text-gray-600 dark:text-slate-400">
-              {searchQuery
-                ? `No assignments match "${searchQuery}". Try a different search.`
+              {hasActiveFilters
+                ? debouncedSearch
+                  ? `No assignments match "${debouncedSearch}". Try a different search.`
+                  : "No assignments match the selected filters."
                 : isAdmin
                   ? 'No assignments found. Click "Assign Referee" to add a new one.'
                   : "No matches assigned to you yet."}
