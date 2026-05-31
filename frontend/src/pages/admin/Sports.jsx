@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import * as yup from 'yup';
 import AuthContext from '../../context/AuthContext';
 import api from '../../config/axiosInstance';
 import { Alert } from '../../components/Alert';
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Trash2, Edit, Eye } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const initialFormData = {
@@ -23,7 +23,6 @@ const sportCreateSchema = yup.object().shape({
     .required('Sport name is required'),
   pershkrimi: yup
     .string()
-    .min(5, 'Description must be at least 5 characters')
     .nullable()
     .notRequired(),
   numri_lojtareve: yup
@@ -42,7 +41,8 @@ const sportUpdateSchema = yup.object().shape({
     .min(2, 'Sport name must be at least 2 characters'),
   pershkrimi: yup
     .string()
-    .min(5, 'Description must be at least 5 characters'),
+    .nullable()
+    .notRequired(),
   numri_lojtareve: yup
     .number()
     .positive('Number of players must be positive')
@@ -55,6 +55,7 @@ const sportUpdateSchema = yup.object().shape({
 export default function SportsManagment() {
   // Uses auth context for access control and initial auth-loading state.
   const { user, loading: authLoading } = useContext(AuthContext);
+  const isAdmin = user?.is_admin;
 
   // State variables
   const [sports, setSports] = useState([]);
@@ -65,33 +66,50 @@ export default function SportsManagment() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSport, setSelectedSport] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [alert, setAlert] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
+  const [filters, setFilters] = useState({
+    search: "",
+    lloji: "",
+  });
 
-  // Fetch sports data from backend
+  const loadSports = useCallback(async (filtersObj) => {
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const params = {};
+      const search = filtersObj.search.trim();
+
+      if (search) params.search = search;
+      if (filtersObj.lloji) params.lloji = filtersObj.lloji;
+
+      const response = await api.get(`/sports`, { params });
+      setSports(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
-    const loadSports = async () => {
-      if (!user?.is_admin) {
-        setLoading(false);
-        return;
-      }
+    if (!authLoading) {
+      loadSports(filters);
+    }
+  }, [authLoading, filters, loadSports]);
 
-      try {
-        setLoading(true);
-        const response = await api.get(`/sports`)
+  const handleClearFilters = () => {
+    setFilters({ search: "", lloji: "" });
+  };
 
-        const data = response.data;
-        setSports(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadSports();
-  }, [user]);
+  const hasActiveFilters = filters.search.trim() !== "" || filters.lloji !== "";
 
   // Create sport handlers
   const handleCreate = () => {
@@ -124,13 +142,12 @@ export default function SportsManagment() {
     setFormErrors({});
 
     try {
-      const validatedData = await sportCreateSchema.validate(formData, { abortEarly: false });
-      const response = await api.post(`/sports`, buildSportPayload())
+      await sportCreateSchema.validate(formData, { abortEarly: false });
+      await api.post(`/sports`, buildSportPayload())
 
-      const newSport = response.data;
-      setSports((prev) => [...prev, newSport]);
       setFormData(initialFormData);
       setShowModal(false);
+      await loadSports(filters);
       setAlert({ type: 'success', message: 'Sport created successfully!' });
     } catch (err) {
       if (err.inner) {
@@ -172,24 +189,30 @@ export default function SportsManagment() {
   // Button handlers
   const handleView = (id) => {
     const sport = sports.find(s => s.id === id);
+    if (!sport) return;
+
     setSelectedSport(sport);
     setShowViewModal(true);
   };
 
   const handleEdit = (id) => {
     const sport = sports.find(s => s.id === id);
+    if (!sport) return;
+
     setSelectedSport(sport);
     setFormData({
-      emertimi: sport.emertimi,
-      pershkrimi: sport.pershkrimi,
-      numri_lojtareve: sport.numri_lojtareve,
-      lloji: sport.lloji
+      emertimi: sport.emertimi || '',
+      pershkrimi: sport.pershkrimi || '',
+      numri_lojtareve: sport.numri_lojtareve ?? '',
+      lloji: sport.lloji || ''
     });
     setShowEditModal(true);
   };
 
   const handleDelete = (id) => {
     const sport = sports.find(s => s.id === id);
+    if (!sport) return;
+
     setSelectedSport(sport);
     setShowDeleteModal(true);
   };
@@ -202,13 +225,12 @@ export default function SportsManagment() {
 
     try {
       await sportUpdateSchema.validate(formData, { abortEarly: false });
-      const response = await api.put(`/sports/${selectedSport.id}`, buildSportPayload())
+      await api.put(`/sports/${selectedSport.id}`, buildSportPayload())
 
-      const updatedSport = response.data;
-      setSports((prev) => prev.map((s) => (s.id === updatedSport.id ? updatedSport : s)));
       setFormData(initialFormData);
       setSelectedSport(null);
       setShowEditModal(false);
+      await loadSports(filters);
       setAlert({ type: 'success', message: 'Sport updated successfully!' });
     } catch (err) {
       if (err.inner) {
@@ -221,6 +243,14 @@ export default function SportsManagment() {
         setAlert({ type: 'error', message: 'Error updating sport: ' + err.message });
       }
     }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleDeleteConfirm = async () => {
@@ -237,7 +267,6 @@ export default function SportsManagment() {
       setAlert({ type: 'error', message: 'Error deleting sport: ' + err.message });
     }
   };
-
   // Conditional loading / skeleton loading
 
   if (authLoading) return (
@@ -264,10 +293,7 @@ export default function SportsManagment() {
     </div>
   );
 
-  // Filters sports by name, description, or competition type.
-  const filteredSports = sports.filter((sport) =>
-    sport.emertimi?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const filteredSports = sports;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
@@ -291,27 +317,53 @@ export default function SportsManagment() {
           </div>
 
           {/* Search bar */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search by sport name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
-            />
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search by sport name..."
+                name="search"
+                value={filters.search}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
               />
-            </svg>
+              <svg
+                className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+
+            <select
+              name="lloji"
+              value={filters.lloji}
+              onChange={handleFilterChange}
+              className="px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:text-slate-200"
+            >
+              <option value="">All types</option>
+              {sportTypeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              disabled={!hasActiveFilters}
+              className="px-4 py-3 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+            >
+              Clear
+            </button>
           </div>
         </div>
 
@@ -367,7 +419,7 @@ export default function SportsManagment() {
               ) : (
                 <tr>
                   <td colSpan="6" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
-                    {searchQuery ? `No sports match "${searchQuery}". Try a different search.` : 'No sports found. Click "Create New Sport" to add one.'}
+                    {hasActiveFilters ? 'No sports match these filters.' : 'No sports found. Click "Create New Sport" to add one.'}
                   </td>
                 </tr>
               )}

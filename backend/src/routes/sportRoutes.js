@@ -5,6 +5,8 @@ import Joi from "joi";
 
 const router = express.Router();
 
+const sportTypeOptions = ["Ekipor", "Individual", "I dyfishtë"];
+
 // Validation Schemas
 const sportCreateSchema = Joi.object({
   emertimi: Joi.string().trim().required().messages({
@@ -19,8 +21,8 @@ const sportCreateSchema = Joi.object({
     "number.positive": "The number of players must be a positive integer.",
     "any.required": "The number of players is required.",
   }),
-  lloji: Joi.string().trim().valid("Ekipor", "Individual", "I dyfishtë").required().messages({
-    "any.only": "The type must be one of: Ekipor, Individual, I dyfishtë.",
+  lloji: Joi.string().trim().valid(...sportTypeOptions).required().messages({
+    "any.only": `The type must be one of: ${sportTypeOptions.join(", ")}.`,
     "any.required": "Sport type is required.",
   }),
 });
@@ -36,8 +38,8 @@ const sportUpdateSchema = Joi.object({
     "number.base": "The number of players must be a valid number.",
     "number.positive": "The number of players must be a positive integer.",
   }),
-  lloji: Joi.string().trim().valid("Ekipor", "Individual", "I dyfishtë").optional().messages({
-    "any.only": "The type must be one of: Ekipor, Individual, I dyfishtë.",
+  lloji: Joi.string().trim().valid(...sportTypeOptions).optional().messages({
+    "any.only": `The type must be one of: ${sportTypeOptions.join(", ")}.`,
   }),
 });
 
@@ -50,19 +52,51 @@ function parsePositiveInt(value) {
   return parsed;
 }
 
-// Route for getting all sports. This route is public.
+function parseStringQuery(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function buildSportsFilters(query) {
+  const search = parseStringQuery(query.search);
+  const lloji = parseStringQuery(query.lloji);
+
+  const where = {};
+
+  if (search) {
+    where.OR = [
+      { emertimi: { contains: search, mode: "insensitive" } },
+      { pershkrimi: { contains: search, mode: "insensitive" } },
+      { lloji: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  if (lloji) {
+    where.lloji = { equals: lloji, mode: "insensitive" };
+  }
+
+  return where;
+}
+
+// Route for getting all sports.
 router.get("/", protect, async (req, res) => {
   try {
+    const where = buildSportsFilters(req.query);
     const sports = await prisma.sports.findMany({
+      where,
       orderBy: { id: "asc" },
     });
-    res.send(sports);
+    res.json(sports);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Route for getting a specific sport by its ID. This route is public.
+// Route for getting a specific sport by its ID.
 router.get("/:id", protect, async (req, res) => {
   const sportId = parsePositiveInt(req.params.id);
   if (!sportId) {
