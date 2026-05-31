@@ -243,7 +243,31 @@ router.post("/upload-player-foto", protect, requireRole("is_admin", "is_organize
 // Route for getting all players with their team information attached. This route is protected.
 router.get("/", protect, async (req, res) => {
   try {
+    const { search, ekipi_id, pozicioni, kombesia } = req.query;
+
+    const where = {};
+
+    if (search) {
+      where.OR = [
+        { emri: { contains: search, mode: "insensitive" } },
+        { mbiemri: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (ekipi_id) {
+      where.ekipi_id = parseInt(ekipi_id, 10);
+    }
+
+    if (pozicioni) {
+      where.pozicioni = { contains: pozicioni, mode: "insensitive" };
+    }
+
+    if (kombesia) {
+      where.kombesia = { contains: kombesia, mode: "insensitive" };
+    }
+
     const players = await prisma.players.findMany({
+      where,
       orderBy: { id: "asc" },
       select: {
         id: true,
@@ -278,6 +302,7 @@ router.get("/", protect, async (req, res) => {
       foto: players.foto,
       team_id: players.ekipi_id,
       ekipi_id: players.teams?.emertimi ?? "No Team",
+      ekipi_emri: players.teams?.emertimi ?? "No Team",
     }))
     res.json(result);
   } catch (err) {

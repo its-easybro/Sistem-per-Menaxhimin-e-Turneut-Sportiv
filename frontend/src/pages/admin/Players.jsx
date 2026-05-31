@@ -1,11 +1,11 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
@@ -85,17 +85,26 @@ export default function Players() {
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [sports, setSports] = useState([]);
+  const [teamOptions, setTeamOptions] = useState([]);
+  const [positionOptions, setPositionOptions] = useState([]);
+  const [nationalityOptions, setNationalityOptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [alert, setAlert] = useState(null);
   const [uploading, setUploading] = useState(false)
   const [selectedSportId, setSelectedSportId] = useState("");
+  const [filters, setFilters] = useState({
+    search: "",
+    ekipi_id: "",
+    pozicioni: "",
+    kombesia: "",
+  });
   const [formData, setFormData] = useState({
     emri: "",
     mbiemri: "",
@@ -135,35 +144,80 @@ export default function Players() {
   };
 
   // Fetch players data from backend via API
-  useEffect(() => {
-    const loadPlayers = async () => {
-      if (!user?.is_admin) {
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        const [playersResponse, teamsResponse, sportsResponse] = await Promise.all([
-          api.get(`/players`),
-          api.get(`/teams`),
-          api.get(`/sports`),
-        ]);
+  const loadPlayers = useCallback(async (filtersObj) => {
+    if (!user?.is_admin) {
+      setLoading(false);
+      setHasLoaded(true);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError("");
 
-        const playersData = playersResponse.data;
-        const teamsData = teamsResponse.data;
-        const sportsData = sportsResponse.data;
+      const params = {};
+      const search = filtersObj.search.trim();
 
-        setPlayers(playersData);
-        setTeams(teamsData);
-        setSports(Array.isArray(sportsData) ? sportsData : []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadPlayers();
+      if (search) params.search = search;
+      if (filtersObj.ekipi_id) params.ekipi_id = filtersObj.ekipi_id;
+      if (filtersObj.pozicioni) params.pozicioni = filtersObj.pozicioni;
+      if (filtersObj.kombesia) params.kombesia = filtersObj.kombesia;
+
+      const [playersResponse, teamsResponse, sportsResponse] = await Promise.all([
+        api.get(`/players`, { params }),
+        api.get(`/teams`),
+        api.get(`/sports`),
+      ]);
+
+      const playersData = Array.isArray(playersResponse.data) ? playersResponse.data : [];
+      const teamsData = teamsResponse.data;
+      const sportsData = sportsResponse.data;
+
+      setPlayers(playersData);
+      setTeams(teamsData);
+      setSports(Array.isArray(sportsData) ? sportsData : []);
+
+      // Extract unique teams
+      const uniqueTeams = Array.from(
+        new Map(
+          teamsData.map((team) => [team.id, team.emertimi])
+        ).entries()
+      ).map(([id, emertimi]) => ({ id, emertimi }));
+      setTeamOptions(uniqueTeams);
+
+      // Extract unique positions
+      const uniquePositions = Array.from(
+        new Set(
+          playersData
+            .map((p) => p.pozicioni)
+            .filter(Boolean)
+            .map((p) => p.trim())
+            .filter(Boolean)
+        )
+      ).sort((a, b) => a.localeCompare(b));
+      setPositionOptions(uniquePositions);
+
+      // Extract unique nationalities
+      const uniqueNationalities = Array.from(
+        new Set(
+          playersData
+            .map((p) => p.kombesia)
+            .filter(Boolean)
+            .map((p) => p.trim())
+            .filter(Boolean)
+        )
+      ).sort((a, b) => a.localeCompare(b));
+      setNationalityOptions(uniqueNationalities);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setHasLoaded(true);
+    }
   }, [user]);
+
+  useEffect(() => {
+    loadPlayers(filters);
+  }, [filters, loadPlayers]);
 
   // Create players handlers
 
@@ -171,6 +225,12 @@ export default function Players() {
     setSelectedSportId("");
     setShowModal(true);
   };
+
+  const handleClearFilters = () => {
+    setFilters({ search: "", ekipi_id: "", pozicioni: "", kombesia: "" });
+  };
+
+  const hasActiveFilters = filters.search.trim() !== "" || filters.ekipi_id !== "" || filters.pozicioni !== "" || filters.kombesia !== "";
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -185,6 +245,14 @@ export default function Players() {
         [name]: undefined,
       }));
     }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const getTeamSelectValue = (teamValue) => {
@@ -213,11 +281,7 @@ export default function Players() {
     e.preventDefault();
     try {
       await playerCreateSchema.validate(formData, { abortEarly: false });
-      const response = await api.post(`/players`, buildPlayerPayload());
-
-      const newPlayer = response.data;
-
-      setPlayers([...players, newPlayer]);
+      await api.post(`/players`, buildPlayerPayload());
 
       setFormData({
         emri: "",
@@ -235,6 +299,7 @@ export default function Players() {
       setSelectedSportId("");
       setShowModal(false);
       
+      await loadPlayers(filters);
       setAlert({ type: 'success', message: 'Player created successfully!' });
     } catch (err) {
       if (err.inner) {
@@ -343,13 +408,7 @@ export default function Players() {
 
     try {
       await playerUpdateSchema.validate(formData, { abortEarly: false });
-      const response = await api.put(`/players/${selectedPlayer.id}`, buildPlayerPayload());
-
-      const updatedPlayer = response.data;
-
-      setPlayers(
-        players.map((e) => (e.id === updatedPlayer.id ? updatedPlayer : e)),
-      );
+      await api.put(`/players/${selectedPlayer.id}`, buildPlayerPayload());
 
       setFormData({
         emri: "",
@@ -368,6 +427,8 @@ export default function Players() {
 
       setSelectedPlayer(null);
       setShowEditModal(false);
+      
+      await loadPlayers(filters);
       setAlert({ type: 'success', message: 'Player updated successfully!' });
     } catch (err) {
       if (err.inner) {
@@ -390,10 +451,10 @@ export default function Players() {
     try {
       await api.delete(`/players/${selectedPlayer.id}`);
 
-      setPlayers(players.filter((e) => e.id !== selectedPlayer.id));
-
       setSelectedPlayer(null);
       setShowDeleteModal(false);
+      
+      await loadPlayers(filters);
       setAlert({ type: 'success', message: 'Player deleted successfully!' });
     } catch (err) {
       setAlert({ type: 'error', message: 'Error deleting player: ' + err.message });
@@ -422,10 +483,12 @@ export default function Players() {
       </div>
     );
 
+  const filteredPlayers = players;
+
   // Main components
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
         <Alert 
           type={alert.type} 
@@ -435,144 +498,210 @@ export default function Players() {
       )}
       <div className="w-full mx-auto">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200">
-              Player Management
-            </h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">
+            Player Management
+          </h2>
+
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-4xl">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by player name..."
+                  name="search"
+                  value={filters.search}
+                  onChange={handleFilterChange}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+                />
+              </div>
+
+              <div className="relative min-w-[140px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="ekipi_id"
+                  value={filters.ekipi_id}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All Teams</option>
+                  {teamOptions.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.emertimi}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="relative min-w-[140px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="pozicioni"
+                  value={filters.pozicioni}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All Positions</option>
+                  {positionOptions.map((position) => (
+                    <option key={position} value={position}>
+                      {position}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="relative min-w-[140px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="kombesia"
+                  value={filters.kombesia}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All Nationalities</option>
+                  {nationalityOptions.map((nationality) => (
+                    <option key={nationality} value={nationality}>
+                      {nationality}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
             <button
               onClick={handleCreate}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
             >
-              + Add New Player
+              <Plus size={18} />
+              Add Player
             </button>
-          </div>
-
-          {/* SEARCH BAR */}
-          <div className="relative">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search player"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
-            />
-            {/* Search Icon (magnifying glass) */}
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
           </div>
         </div>
         {/* Player table section */}
-        <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
+        <div className="flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[500px]">
-            <thead className="bg-gray-800 dark:bg-slate-700 text-white">
+            <thead className="bg-gray-800 dark:bg-slate-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-center font-semibold">ID</th>
-                <th className="px-4 py-3 text-left font-semibold">Name</th>
-                <th className="px-4 py-3 text-left font-semibold">Last Name</th>
-                <th className="px-4 py-3 text-center font-semibold">Birthday</th>
-                <th className="px-4 py-3 text-left font-semibold">Team</th>
-                <th className="px-4 py-3 text-left font-semibold">Pozition</th>
-                <th className="px-4 py-3 text-left font-semibold">Number</th>
-                <th className="px-4 py-3 text-left font-semibold">Hight</th>
-                <th className="px-4 py-3 text-left font-semibold">Wheight</th>
-                <th className="px-4 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-center font-semibold">ID</th>
+                <th className="px-6 py-4 text-left font-semibold">Name</th>
+                <th className="px-6 py-4 text-left font-semibold">Last Name</th>
+                <th className="px-6 py-4 text-center font-semibold">Birthday</th>
+                <th className="px-6 py-4 text-left font-semibold">Team</th>
+                <th className="px-6 py-4 text-left font-semibold">Position</th>
+                <th className="px-6 py-4 text-left font-semibold">Number</th>
+                <th className="px-6 py-4 text-left font-semibold">Height</th>
+                <th className="px-6 py-4 text-left font-semibold">Weight</th>
+                <th className="px-6 py-4 text-left font-semibold">
                   Nationality
                 </th>
-                <th className="px-4 py-3 text-center font-semibold">Actions</th>
+                <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
             {/* Table Body */}
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-              {players.filter((s) =>
-                s.emri.toLowerCase().includes(searchQuery.toLowerCase()),
-              ).length > 0 ? (
-                players
-                  .filter((s) =>
-                    s.emri.toLowerCase().includes(searchQuery.toLowerCase()),
-                  )
-                  .map((s) => (
-                    <tr
-                      key={s.id}
-                      className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150"
-                    >
-                      <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-center">
-                        {s.id}
-                      </td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
-                        {s.emri}
-                      </td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
-                        {s.mbiemri}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300 text-center">
-                        {formatDate(s.data_lindjes)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
-                        {s.ekipi_id}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300">
-                        {s.pozicioni}
-                      </td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
-                        {s.numri}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300">
-                        {s.gjatesia}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300">
-                        {s.pesha}
-                      </td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-slate-200 font-semibold">
-                        {s.kombesia}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => handleView(s.id)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                            title="View"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(s.id)}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                            title="Edit"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(s.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
+              {filteredPlayers.length > 0 ? (
+                filteredPlayers.map((s) => (
+                  <tr
+                    key={s.id}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150"
+                  >
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">
+                      {s.id}
+                    </td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-slate-100 font-semibold">
+                      {s.emri}
+                    </td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-slate-100 font-semibold">
+                      {s.mbiemri}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300 text-center">
+                      {formatDate(s.data_lindjes)}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.ekipi_emri || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.pozicioni}
+                    </td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-slate-100 font-semibold">
+                      {s.numri}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.gjatesia}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.pesha}
+                    </td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-slate-100 font-semibold">
+                      {s.kombesia}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => handleView(s.id)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="View"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(s.id)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="Edit"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(s.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
                   <td
                     colSpan="11"
                     className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                   >
-                    {searchQuery
-                      ? `No player match "${searchQuery}". Try a differen search.`
-                      : 'No players found. Click "Add New Player" to add a new one.'}
+                    {hasActiveFilters ? 'No players match these filters.' : 'No players found. Click "Add Player" to add a new one.'}
                   </td>
                 </tr>
               )}
