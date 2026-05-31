@@ -1,11 +1,11 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const formatDate = (isoDate) => {
@@ -19,6 +19,22 @@ const formatDate = (isoDate) => {
   } catch {
     return "Invalid Date";
   }
+};
+
+const initialFormData = {
+  emertimi: "",
+  logoja: "",
+  trajneri: "",
+  kontakti: "",
+  email: "",
+  qyteti: "",
+  data_themelimit: "",
+  sporti_id: "",
+};
+
+const toDateInputValue = (value) => {
+  if (!value) return "";
+  return String(value).slice(0, 10);
 };
 
 const resolveTeamLogoUrl = (logoValue) => {
@@ -73,32 +89,29 @@ const teamUpdateSchema = yup.object().shape({
 });
 export default function Teams() {
   // Provides admin-only team CRUD with modal-driven forms.
-  const { user } = useContext(AuthContext);
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const isAdmin = user?.is_admin;
 
   // Stores team list, active dialogs, selected row, and form values.
   const [teams, setTeams] = useState([]);
   const [sports, setSports] = useState([]);
+  const [cityOptions, setCityOptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [alert, setAlert] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [formData, setFormData] = useState({
-    emertimi: "",
-    logoja: "",
-    trajneri: "",
-    kontakti: "",
-    email: "",
-    qyteti: "",
-    data_themelimit: "",
-    sporti_id: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
+  const [filters, setFilters] = useState({
+    search: "",
+    qyteti: "",
+  });
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
@@ -121,34 +134,79 @@ export default function Teams() {
     }
   };
 
-  // Loads team records after auth is ready and admin access is confirmed.
+  const buildTeamPayload = () => ({
+    emertimi: formData.emertimi.trim(),
+    logoja: formData.logoja.trim(),
+    trajneri: formData.trajneri.trim(),
+    kontakti: formData.kontakti.trim(),
+    email: formData.email.trim(),
+    qyteti: formData.qyteti.trim(),
+    data_themelimit: formData.data_themelimit || null,
+    sporti_id: Number(formData.sporti_id),
+  });
+
+  // Loads team records and sport options after auth is ready and admin access is confirmed.
+  const loadTeams = useCallback(async (filtersObj) => {
+    if (!isAdmin) {
+      setLoading(false);
+      setHasLoaded(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {};
+      const search = filtersObj.search.trim();
+
+      if (search) params.search = search;
+      if (filtersObj.qyteti.trim()) params.qyteti = filtersObj.qyteti.trim();
+
+      const [teamsResponse, sportsResponse] = await Promise.all([
+        api.get(`/teams`, { params }),
+        api.get(`/sports`),
+      ]);
+
+      const teamsData = Array.isArray(teamsResponse.data) ? teamsResponse.data : [];
+
+      setTeams(teamsData);
+      setSports(Array.isArray(sportsResponse.data) ? sportsResponse.data : []);
+      
+      // Extract all unique cities from teams and sort them
+      const cities = teamsData
+        .map((team) => team.qyteti)
+        .filter(Boolean)
+        .map((city) => city.trim())
+        .filter(Boolean);
+      
+      const uniqueCities = Array.from(new Set(cities)).sort((a, b) =>
+        a.localeCompare(b),
+      );
+      
+      setCityOptions(uniqueCities);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setHasLoaded(true);
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
-    const loadTeams = async () => {
-      if (!user?.is_admin) {
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        const [teamsResponse, sportsResponse] = await Promise.all([
-          api.get("/teams"),
-          api.get("/sports"),
-        ]);
+    if (!authLoading) {
+      loadTeams(filters);
+    }
+  }, [authLoading, filters, loadTeams]);
 
-        const teamsData = teamsResponse.data;
-        const sportsData = sportsResponse.data;
-        setTeams(teamsData);
-        setSports(Array.isArray(sportsData) ? sportsData : []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTeams();
-  }, [user]);
+  const handleClearFilters = () => {
+    setFilters({ search: "", qyteti: "" });
+  };
 
+  const hasActiveFilters = filters.search.trim() !== "" || filters.qyteti !== "";
   const handleCreate = () => {
+    setFormData(initialFormData);
+    setFormErrors({});
     setShowModal(true);
   };
 
@@ -169,26 +227,14 @@ export default function Teams() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormErrors({});
+
     try {
       await teamCreateSchema.validate(formData, { abortEarly: false });
+      await api.post(`/teams`, buildTeamPayload());
 
-      const response = await api.post(`/teams`, formData);
-
-      const newTeam = response.data;
-      setTeams([...teams, newTeam]);
-
-      setFormData({
-        emertimi: "",
-        logoja: "",
-        trajneri: "",
-        kontakti: "",
-        email: "",
-        qyteti: "",
-        data_themelimit: "",
-        sporti_id: "",
-      });
-      setFormErrors({});
-      setShowModal(false);
+      handleCloseModal();
+      await loadTeams(filters);
       setAlert({ type: "success", message: "Team created successfully!" });
     } catch (err) {
       if (err.inner) {
@@ -208,31 +254,13 @@ export default function Teams() {
     }
   };
   const handleCloseModal = () => {
-    setFormData({
-      emertimi: "",
-      logoja: "",
-      trajneri: "",
-      kontakti: "",
-      email: "",
-      qyteti: "",
-      data_themelimit: "",
-      sporti_id: "",
-    });
+    setFormData(initialFormData);
     setFormErrors({});
     setShowModal(false);
   };
 
   const handleCloseEditModal = () => {
-    setFormData({
-      emertimi: "",
-      logoja: "",
-      trajneri: "",
-      kontakti: "",
-      email: "",
-      qyteti: "",
-      data_themelimit: "",
-      sporti_id: "",
-    });
+    setFormData(initialFormData);
     setFormErrors({});
     setSelectedTeam(null);
     setShowEditModal(false);
@@ -250,11 +278,15 @@ export default function Teams() {
 
   const handleView = (id) => {
     const team = teams.find((e) => e.id === id);
+    if (!team) return;
+
     setSelectedTeam(team);
     setShowViewModal(true);
   };
   const handleEdit = (id) => {
     const team = teams.find((e) => e.id === id);
+    if (!team) return;
+
     setSelectedTeam(team);
 
     setFormData({
@@ -264,7 +296,7 @@ export default function Teams() {
       kontakti: team.kontakti || "",
       email: team.email || "",
       qyteti: team.qyteti || "",
-      data_themelimit: team.data_themelimit || "",
+      data_themelimit: toDateInputValue(team.data_themelimit),
       sporti_id: team.sporti_id ? String(team.sporti_id) : "",
     });
     setShowEditModal(true);
@@ -272,6 +304,8 @@ export default function Teams() {
 
   const handleDelete = (id) => {
     const team = teams.find((e) => e.id === id);
+    if (!team) return;
+
     setSelectedTeam(team);
     setShowDeleteModal(true);
   };
@@ -279,26 +313,14 @@ export default function Teams() {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!selectedTeam) return;
+    setFormErrors({});
+
     try {
       await teamUpdateSchema.validate(formData, { abortEarly: false });
-      const response = await api.put(`teams/${selectedTeam.id}`, formData);
+      await api.put(`/teams/${selectedTeam.id}`, buildTeamPayload());
 
-      const updatedTeam = response.data;
-
-      setTeams(teams.map((t) => (t.id === updatedTeam.id ? updatedTeam : t)));
-      setFormData({
-        emertimi: "",
-        logoja: "",
-        trajneri: "",
-        kontakti: "",
-        email: "",
-        qyteti: "",
-        data_themelimit: "",
-        sporti_id: "",
-      });
-      setFormErrors({});
-      setSelectedTeam(null);
-      setShowEditModal(false);
+      handleCloseEditModal();
+      await loadTeams(filters);
       setAlert({ type: "success", message: "Team updated successfully!" });
     } catch (err) {
       if (err.inner) {
@@ -317,16 +339,20 @@ export default function Teams() {
       }
     }
   };
-
+ const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
   const handleDeleteConfirm = async () => {
     if (!selectedTeam) return;
     try {
-      await api.delete(`teams/${selectedTeam.id}`);
+      await api.delete(`/teams/${selectedTeam.id}`);
 
-      setTeams(teams.filter((t) => t.id !== selectedTeam.id));
-
-      setSelectedTeam(null);
-      setShowDeleteModal(false);
+      handleCloseDeleteModal();
+      await loadTeams(filters);
       setAlert({ type: "success", message: "Team deleted successfully!" });
     } catch (err) {
       setAlert({
@@ -336,6 +362,14 @@ export default function Teams() {
       });
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-lg text-gray-600 dark:text-slate-400">Checking access...</p>
+      </div>
+    );
+  }
 
   // Redirects non-admin users away from protected team management.
   if (!user || !user.is_admin) {
@@ -356,8 +390,10 @@ export default function Teams() {
         <p className="text-lg text-red-600 dark:text-red-400">Error: {error}</p>
       </div>
     );
+  const filteredTeams = teams;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
         <Alert
           type={alert.type}
@@ -367,141 +403,166 @@ export default function Teams() {
       )}
       <div className="w-full mx-auto">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200">
-              Team Management
-            </h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">
+            Team Management
+          </h2>
+
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-2xl">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by team name..."
+                  name="search"
+                  value={filters.search}
+                  onChange={handleFilterChange}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+                />
+              </div>
+
+              <div className="relative min-w-[160px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="qyteti"
+                  value={filters.qyteti}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All Cities</option>
+                  {cityOptions.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
             <button
               onClick={handleCreate}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
             >
-              + Add New Team
+              <Plus size={18} />
+              Add Team
             </button>
           </div>
-
-          {/* SEARCH BAR */}
-          <div className="relative">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search team"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
-            />
-            {/* Search Icon (magnifying glass) */}
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
         </div>
+
         {/* Team table section */}
-        <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
+        <div className="flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[500px]">
-            <thead className="bg-gray-800 dark:bg-slate-700 text-white">
+            <thead className="bg-gray-800 dark:bg-slate-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-center font-semibold">ID</th>
-                <th className="px-4 py-3 text-left font-semibold">Team Name</th>
-                <th className="px-4 py-3 text-left font-semibold">Trainer</th>
-                <th className="px-4 py-3 text-left font-semibold">Contact</th>
-                <th className="px-4 py-3 text-left font-semibold">Email</th>
-                <th className="px-4 py-3 text-left font-semibold">City</th>
-                <th className="px-4 py-3 text-left font-semibold">Sport</th>
-                <th className="px-4 py-3 text-center font-semibold">
+                <th className="px-6 py-4 text-center font-semibold">ID</th>
+                <th className="px-6 py-4 text-left font-semibold">Team Name</th>
+                <th className="px-6 py-4 text-left font-semibold">Trainer</th>
+                <th className="px-6 py-4 text-left font-semibold">Contact</th>
+                <th className="px-6 py-4 text-left font-semibold">Email</th>
+                <th className="px-6 py-4 text-left font-semibold">City</th>
+                <th className="px-6 py-4 text-left font-semibold">Sport</th>
+                <th className="px-6 py-4 text-center font-semibold">
                   Founded Date
                 </th>
-                <th className="px-4 py-3 text-center font-semibold">Actions</th>
+                <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
             {/* Table Body */}
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-              {teams.filter((s) =>
-                (s.emertimi || "")
-                  .toLowerCase()
-                  .includes(searchQuery.toLowerCase()),
-              ).length > 0 ? (
-                teams
-                  .filter((s) =>
-                    (s.emertimi || "")
-                      .toLowerCase()
-                      .includes(searchQuery.toLowerCase()),
-                  )
-                  .map((s) => (
-                    <tr
-                      key={s.id}
-                      className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150"
-                    >
-                      <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-center">
-                        {s.id}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
-                        {s.emertimi}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
-                        {s.trajneri}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
-                        {s.kontakti || "N/A"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300">
-                        {s.email || "N/A"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
-                        {s.qyteti || "N/A"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-200 font-medium">
-                        {s.sporti_emri || "N/A"}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-slate-300 text-center">
-                        {formatDate(s.data_themelimit)}
-                      </td>
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
+              {filteredTeams.length > 0 ? (
+                filteredTeams.map((s) => (
+                  <tr
+                    key={s.id}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150"
+                  >
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">
+                      {s.id}
+                    </td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-100 font-semibold">
+                      {s.emertimi}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.trajneri || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.kontakti || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.email || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.qyteti || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      {s.sporti_emri || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300 text-center">
+                      {formatDate(s.data_themelimit)}
+                    </td>
 
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => handleView(s.id)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                            title="View"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(s.id)}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                            title="Edit"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(s.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => handleView(s.id)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="View"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(s.id)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="Edit"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(s.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
                   <td
                     colSpan="9"
                     className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                   >
-                    {searchQuery
-                      ? `No team match "${searchQuery}". Try a different search.`
-                      : 'No teams found. Click "Add New Team" to add a new one.'}
+                    {hasActiveFilters ? 'No teams match these filters.' : 'No teams found. Click "Add Team" to add a new one.'}
                   </td>
                 </tr>
               )}
@@ -656,7 +717,7 @@ export default function Teams() {
                           ? "border-red-500"
                           : "border-gray-300 dark:border-slate-600"
                       }`}
-                      placeholder="City"
+                      placeholder="Enter city name"
                       required
                     />
                     {formErrors.qyteti && (
@@ -937,7 +998,7 @@ export default function Teams() {
                       value={formData.qyteti}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="City"
+                      placeholder="Enter city name"
                     />
                   </div>
                   <div>

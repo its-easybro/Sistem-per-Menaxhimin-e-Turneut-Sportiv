@@ -116,7 +116,37 @@ const formatTeam = (team) => ({
   ...team,
   sporti_emri: team.sports?.emertimi ?? null,
 });
+function parseStringQuery(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
 
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function buildTeamFilters(query) {
+  const search = parseStringQuery(query.search);
+  const qyteti = parseStringQuery(query.qyteti);
+
+  const where = {};
+
+  if (search) {
+    where.OR = [
+      { emertimi: { contains: search, mode: "insensitive" } },
+      { trajneri: { contains: search, mode: "insensitive" } },
+      { kontakti: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { qyteti: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  if (qyteti) {
+    where.qyteti = { equals: qyteti, mode: "insensitive" };
+  }
+
+  return where;
+}
 router.use("/uploads-teams", express.static(path.join(__dirname + "/../uploads/teams")));
 const uploadDir = path.join(__dirname, "../uploads/teams")
 if (!fs.existsSync(uploadDir)) {
@@ -158,13 +188,17 @@ router.post("/upload-team-logo", protect, requireRole("is_admin", "is_organizer"
 // Route for getting all teams
 router.get("/", protect, async (req, res) => {
   try {
+    const teamFilters = buildTeamFilters(req.query);
     const sportIdFilter = req.query.sporti_id ? parsePositiveInt(req.query.sporti_id) : null;
     if (req.query.sporti_id && !sportIdFilter) {
       return res.status(400).json({ error: "Invalid sport id" });
     }
 
     const teams = await prisma.teams.findMany({
-      where: sportIdFilter ? { sporti_id: sportIdFilter } : undefined,
+      where: {
+        ...teamFilters,
+        ...(sportIdFilter ? { sporti_id: sportIdFilter } : {}),
+      },
       include: teamInclude,
       orderBy: { id: "asc" },
     });
