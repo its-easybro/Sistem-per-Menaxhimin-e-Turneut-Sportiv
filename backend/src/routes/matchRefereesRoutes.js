@@ -45,13 +45,63 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
+function parseStringQuery(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function parseMatchDate(value) {
+  const dateValue = parseStringQuery(value);
+  if (!dateValue) {
+    return null;
+  }
+
+  const dateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.test(dateValue);
+  const parsed = dateOnlyMatch
+    ? new Date(`${dateValue}T00:00:00.000Z`)
+    : new Date(dateValue);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function buildMatchRefereeFilters(query) {
+  const statusi = parseStringQuery(query.statusi);
+  const exactDate = parseMatchDate(query.date);
+  const dateFrom = parseMatchDate(query.date_from);
+  const dateTo = parseMatchDate(query.date_to);
+  const matchFilters = {};
+
+  if (statusi) {
+    matchFilters.statusi = { equals: statusi, mode: "insensitive" };
+  }
+
+  if (exactDate) {
+    matchFilters.data_ndeshjes = { equals: exactDate };
+  } else if (dateFrom || dateTo) {
+    matchFilters.data_ndeshjes = {
+      ...(dateFrom ? { gte: dateFrom } : {}),
+      ...(dateTo ? { lte: dateTo } : {}),
+    };
+  }
+
+  return Object.keys(matchFilters).length > 0
+    ? { matches: matchFilters }
+    : {};
+}
+
 // Route for managing match referees. This route is protected and only admins can use it.
 router.get("/", protect, async (req, res) => {
   try {
     let result;
+    const filters = buildMatchRefereeFilters(req.query);
 
     if (req.user.is_admin) {
       result = await prisma.matchreferees.findMany({
+        where: filters,
         orderBy: { id: "asc" },
       });
     } else if (req.user.is_referee) {
@@ -66,7 +116,7 @@ router.get("/", protect, async (req, res) => {
 
       // Tani përdor ID e referee (jo user ID) për të gjetur ndeshjet
       result = await prisma.matchreferees.findMany({
-        where: { gjyqtari_id: refereeRecord.id },
+        where: { ...filters, gjyqtari_id: refereeRecord.id },
         orderBy: { id: "asc" },
       });
     } else {

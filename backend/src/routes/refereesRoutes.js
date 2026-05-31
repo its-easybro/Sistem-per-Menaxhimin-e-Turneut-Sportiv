@@ -121,11 +121,46 @@ function parsePositiveInt(value) {
   }
   return parsed;
 }
+function parseStringQuery(value) {
+  if (!value || typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function buildRefereeFilters(query) {
+  const search = parseStringQuery(query.search);
+  const kategoria = parseStringQuery(query.kategoria);
+  
+
+  const where = {};
+
+  if (search) {
+    where.OR = [
+      { emri: { contains: search, mode: "insensitive" } },
+      { mbiemri: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { kategoria: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  if (kategoria) {
+    where.kategoria = { equals: kategoria, mode: "insensitive" };
+  }
+
+  
+
+  return where;
+}
 
 // Route for getting all referees. This route is protected.
 router.get("/", protect, async (req, res) => {
   try {
+    const where = buildRefereeFilters(req.query);
     const referees = await prisma.referees.findMany({
+      where,
       orderBy: { id: "asc" },
     });
     res.json(referees);
