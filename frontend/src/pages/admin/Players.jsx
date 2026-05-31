@@ -5,7 +5,7 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
@@ -496,29 +496,37 @@ export default function Players() {
           onClose={() => setAlert(null)}
         />
       )}
-      <div className="w-full mx-auto">
+      <div className="w-full mx-auto space-y-6">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">
-            Player Management
-          </h2>
-
-          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-4xl">
-              <div className="relative flex-1">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">Player Management</h2>
+          
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <div className="relative flex-1 max-w-2xl">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search size={18} className="text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   type="text"
-                  placeholder="Search by player name..."
                   name="search"
                   value={filters.search}
                   onChange={handleFilterChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+                  placeholder="Search by player name..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all placeholder-gray-400"
                 />
               </div>
 
-              <div className="relative min-w-[140px]">
+              <button
+                onClick={handleCreate}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98] shrink-0"
+              >
+                <Plus size={18} />
+                Add Player
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 dark:border-slate-800/60 pt-3 mt-1">
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                   <SlidersHorizontal size={14} />
                 </div>
@@ -535,14 +543,9 @@ export default function Players() {
                     </option>
                   ))}
                 </select>
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
               </div>
 
-              <div className="relative min-w-[140px]">
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                   <SlidersHorizontal size={14} />
                 </div>
@@ -559,14 +562,9 @@ export default function Players() {
                     </option>
                   ))}
                 </select>
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
               </div>
 
-              <div className="relative min-w-[140px]">
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                   <SlidersHorizontal size={14} />
                 </div>
@@ -583,31 +581,18 @@ export default function Players() {
                     </option>
                   ))}
                 </select>
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
               </div>
 
               {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0"
-                >
-                  Clear
-                </button>
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto"
+              >
+                <X size={16} />
+                Clear Filters
+              </button>
               )}
             </div>
-
-            <button
-              onClick={handleCreate}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
-            >
-              <Plus size={18} />
-              Add Player
-            </button>
           </div>
         </div>
         {/* Player table section */}

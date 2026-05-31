@@ -4,7 +4,7 @@ import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const initialFormData = {
@@ -87,6 +87,12 @@ export default function Venues() {
   const [formData, setFormData] = useState(initialFormData);
   const [alert, setAlert] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [filters, setFilters] = useState({
+    search: "",
+    qyteti: "",
+    statusi: "",
+  });
+
   // Loads venues when admin access is confirmed.
   useEffect(() => {
     const loadVenues = async () => {
@@ -97,7 +103,12 @@ export default function Venues() {
 
       try {
         setLoading(true);
-        const response = await api.get(`/venues`)
+        const params = new URLSearchParams({
+          ...(filters.search && { search: filters.search }),
+          ...(filters.qyteti && { qyteti: filters.qyteti }),
+          ...(filters.statusi && { statusi: filters.statusi }),
+        });
+        const response = await api.get(`/venues?${params}`)
 
         const data = response.data;
         setVenues(data);
@@ -109,11 +120,42 @@ export default function Venues() {
     };
 
     loadVenues();
-  }, [user]);
+  }, [user, filters]);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }))
+      if (searchQuery !== filters.search) {
+        // Already handled by the dependency on filters in loadVenues
+      }
+    }, 400);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, filters.search])
 
   const resetForm = () => {
     setFormData(initialFormData);
   };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setFilters({
+      search: "",
+      qyteti: "",
+      statusi: "",
+    });
+  };
+
+  const hasActiveFilters = filters.search !== "" || filters.qyteti !== "" || filters.statusi !== "";
 
   const handleCreate = () => {
     resetForm();
@@ -260,18 +302,12 @@ export default function Venues() {
     }
   };
 
-  // Filters venue list by key searchable fields from the search box.
-  const filteredVenues = venues.filter((venue) => {
-    const query = searchQuery.toLowerCase();
+  // Get unique cities from venues
+  const uniqueCities = [...new Set(venues.map(v => v.qyteti).filter(Boolean))].sort();
 
-    return (
-      venue.emertimi?.toLowerCase().includes(query) ||
-      venue.adresa?.toLowerCase().includes(query) ||
-      venue.qyteti?.toLowerCase().includes(query) ||
-      venue.lloji_siperfaqes?.toLowerCase().includes(query) ||
-      venue.statusi?.toLowerCase().includes(query)
-    );
-  });
+  // Filters venue list by key searchable fields from the search box.
+  // Note: Filtering is done on the backend, so venues array is already filtered
+  const filteredVenues = venues;
 
   if (!user || !user.is_admin) {
     return <Navigate to="/login" replace />;
@@ -303,40 +339,84 @@ export default function Venues() {
           onClose={() => setAlert(null)}
         />
       )}
-      <div className="w-full mx-auto">
+      <div className="w-full mx-auto space-y-6">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-200">Venue Management</h2>
-            <button
-              onClick={handleCreate}
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition duration-200 ease-in-out"
-            >
-              + Add New Venue
-            </button>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">Venue Management</h2>
+          
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <div className="relative flex-1 max-w-2xl">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                </div>
+                <input
+                  type="text"
+                  name="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by Venue, Address, City, Surface or Status"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all placeholder-gray-400"
+                />
+              </div>
 
-          <div className="relative">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search venue"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-transparent sm:placeholder:text-gray-400 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
-            />
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+              <button
+                onClick={handleCreate}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98] shrink-0"
+              >
+                <Plus size={18} />
+               Add New Venue
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 dark:border-slate-800/60 pt-3 mt-1">
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="qyteti"
+                  value={filters.qyteti}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All cities</option>
+                  {uniqueCities.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="statusi"
+                  value={filters.statusi}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All statuses</option>
+                  {statusOptions.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {hasActiveFilters && (
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto"
+              >
+                <X size={16} />
+                Clear Filters
+              </button>
+              )}
+            </div>
           </div>
         </div>
 

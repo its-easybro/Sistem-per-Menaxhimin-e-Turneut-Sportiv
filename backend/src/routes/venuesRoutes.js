@@ -66,10 +66,49 @@ function parsePositiveInt(value) {
   return parsed;
 }
 
+function parseStringQuery(value) {
+  if (!value || typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function buildVenueFilters(query) {
+  const search = parseStringQuery(query.search);
+  const qyteti = parseStringQuery(query.qyteti);
+  const statusi = parseStringQuery(query.statusi);
+
+  const where = {};
+
+  if (search) {
+    where.OR = [
+      { emertimi: { contains: search, mode: "insensitive" } },
+      { adresa: { contains: search, mode: "insensitive" } },
+      { qyteti: { contains: search, mode: "insensitive" } },
+      { lloji_siperfaqes: { contains: search, mode: "insensitive" } },
+      { statusi: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  if (qyteti) {
+    where.qyteti = { equals: qyteti, mode: "insensitive" };
+  }
+
+  if (statusi) {
+    where.statusi = { equals: statusi, mode: "insensitive" };
+  }
+
+  return where;
+}
+
 // Route for getting all venues. This route is public.
 router.get("/", protect, async (req, res) => {
   try {
+    const where = buildVenueFilters(req.query);
     const venues = await prisma.venues.findMany({
+      where,
       orderBy: { id: "asc" },
     });
     res.json(venues);
