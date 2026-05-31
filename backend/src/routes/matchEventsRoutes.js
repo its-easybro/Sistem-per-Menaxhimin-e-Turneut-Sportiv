@@ -255,7 +255,9 @@ function validateTeamForEvent(match, eventType, teamId) {
 }
 
 async function validatePlayerForEvent(match, teamId, playerId) {
-  if (!playerId) return null;
+  if (!playerId) {
+    return "Goal and card events require a selected player.";
+  }
 
   const player = await prisma.players.findUnique({
     where: { id: playerId },

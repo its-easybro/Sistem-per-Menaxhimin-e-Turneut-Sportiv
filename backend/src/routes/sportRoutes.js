@@ -5,6 +5,11 @@ import Joi from "joi";
 
 const router = express.Router();
 
+const periodLabelOptions = ["Half", "Quarter", "Period", "Set"];
+const DEFAULT_SPORT_DURATION_MINUTES = 60;
+const DEFAULT_SPORT_PERIODS = 2;
+const DEFAULT_SPORT_PERIOD_LABEL = "Half";
+
 const sportTypeOptions = ["Ekipor", "Individual", "I dyfishtë"];
 
 // Validation Schemas
@@ -25,6 +30,21 @@ const sportCreateSchema = Joi.object({
     "any.only": `The type must be one of: ${sportTypeOptions.join(", ")}.`,
     "any.required": "Sport type is required.",
   }),
+  kohezgjatja_default: Joi.number().integer().positive().optional().messages({
+    "number.base": "Default match duration must be a valid number.",
+    "number.positive": "Default match duration must be positive.",
+  }),
+  numri_periodave: Joi.number().integer().positive().optional().messages({
+    "number.base": "Number of periods must be a valid number.",
+    "number.positive": "Number of periods must be positive.",
+  }),
+  emri_periodave: Joi.string()
+    .trim()
+    .valid(...periodLabelOptions)
+    .optional()
+    .messages({
+      "any.only": `Period label must be one of: ${periodLabelOptions.join(", ")}.`,
+    }),
 });
 
 const sportUpdateSchema = Joi.object({
@@ -41,6 +61,21 @@ const sportUpdateSchema = Joi.object({
   lloji: Joi.string().trim().valid(...sportTypeOptions).optional().messages({
     "any.only": `The type must be one of: ${sportTypeOptions.join(", ")}.`,
   }),
+  kohezgjatja_default: Joi.number().integer().positive().optional().messages({
+    "number.base": "Default match duration must be a valid number.",
+    "number.positive": "Default match duration must be positive.",
+  }),
+  numri_periodave: Joi.number().integer().positive().optional().messages({
+    "number.base": "Number of periods must be a valid number.",
+    "number.positive": "Number of periods must be positive.",
+  }),
+  emri_periodave: Joi.string()
+    .trim()
+    .valid(...periodLabelOptions)
+    .optional()
+    .messages({
+      "any.only": `Period label must be one of: ${periodLabelOptions.join(", ")}.`,
+    }),
 });
 
 function parsePositiveInt(value) {
@@ -124,7 +159,15 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { emertimi, pershkrimi, numri_lojtareve, lloji } = value;
+    const {
+      emertimi,
+      pershkrimi,
+      numri_lojtareve,
+      lloji,
+      kohezgjatja_default,
+      numri_periodave,
+      emri_periodave,
+    } = value;
 
     const sport = await prisma.sports.create({
       data: {
@@ -132,6 +175,10 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
         pershkrimi: pershkrimi || null,
         numri_lojtareve,
         lloji,
+        kohezgjatja_default:
+          kohezgjatja_default ?? DEFAULT_SPORT_DURATION_MINUTES,
+        numri_periodave: numri_periodave ?? DEFAULT_SPORT_PERIODS,
+        emri_periodave: emri_periodave || DEFAULT_SPORT_PERIOD_LABEL,
       },
     });
     res.status(201).json(sport);
@@ -160,13 +207,24 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(404).json({ error: "Sport not found" });
     }
 
-    const { emertimi, pershkrimi, numri_lojtareve, lloji } = value;
+    const {
+      emertimi,
+      pershkrimi,
+      numri_lojtareve,
+      lloji,
+      kohezgjatja_default,
+      numri_periodave,
+      emri_periodave,
+    } = value;
 
     const sportData = {
       ...(emertimi !== undefined && { emertimi }),
       ...(pershkrimi !== undefined && { pershkrimi: pershkrimi || null }),
       ...(numri_lojtareve !== undefined && { numri_lojtareve }),
       ...(lloji !== undefined && { lloji }),
+      ...(kohezgjatja_default !== undefined && { kohezgjatja_default }),
+      ...(numri_periodave !== undefined && { numri_periodave }),
+      ...(emri_periodave !== undefined && { emri_periodave }),
     };
 
     const sport = await prisma.sports.update({

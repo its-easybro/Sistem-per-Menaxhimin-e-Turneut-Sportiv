@@ -168,7 +168,19 @@ async function validateMatchTeamsForTournament({
     await Promise.all([
       prisma.tournaments.findUnique({
         where: { id: turneu_id },
-        select: { id: true, sporti_id: true },
+        select: {
+          id: true,
+          sporti_id: true,
+          sports: {
+            select: {
+              id: true,
+              emertimi: true,
+              kohezgjatja_default: true,
+              numri_periodave: true,
+              emri_periodave: true,
+            },
+          },
+        },
       }),
       prisma.teams.findUnique({
         where: { id: ekipi_shtepiak_id },
@@ -223,7 +235,7 @@ async function validateMatchTeamsForTournament({
     };
   }
 
-  return { ok: true };
+  return { ok: true, sport: tournament.sports };
 }
 
 async function organizerOwnsTournament(tournamentId, organizerId) {
@@ -309,8 +321,21 @@ function normalizeMatchEventType(eventType) {
   return types[eventType] || eventType;
 }
 
+function getSportTiming(match) {
+  const sport = match.tournaments?.sports;
+
+  return {
+    kohezgjatja_default:
+      sport?.kohezgjatja_default ?? DEFAULT_MATCH_DURATION_MINUTES,
+    numri_periodave: sport?.numri_periodave ?? 2,
+    emri_periodave: sport?.emri_periodave ?? "Half",
+  };
+}
+
 function formatPublicMatch(match){
   const result = match.matchresults;
+  const sport = match.tournaments?.sports;
+  const sportTiming = getSportTiming(match);
 
   return{
     id: match.id,
@@ -322,12 +347,17 @@ function formatPublicMatch(match){
     ekipi_mysafir:
       match.teams_matches_ekipi_mysafir_idToteams?.emertimi ?? null,
     turneu_emri: match.tournaments?.emertimi ?? null,
+    sporti_emri: sport?.emertimi ?? null,
     data_ndeshjes: match.data_ndeshjes,
     ora_fillimit: match.ora_fillimit,
     starts_at: `${getDatePart(match.data_ndeshjes)}T${getTimePart(match.ora_fillimit)}`,
     statusi: match.statusi,
     faza: match.faza,
-    kohezgjatja: match.kohezgjatja ?? DEFAULT_MATCH_DURATION_MINUTES,
+    kohezgjatja:
+      match.kohezgjatja ??
+      sportTiming.kohezgjatja_default ??
+      DEFAULT_MATCH_DURATION_MINUTES,
+    sport_timing: sportTiming,
     score: {
       golat_shtepiak: result?.golat_shtepiak ?? 0,
       golat_mysafir: result?.golat_mysafir ?? 0,
@@ -384,7 +414,18 @@ router.get("/public/live", async (req, res) => {
           select: { emertimi: true },
         },
         tournaments: {
-          select: { emertimi: true },
+          select: {
+            emertimi: true,
+            sports: {
+              select: {
+                id: true,
+                emertimi: true,
+                kohezgjatja_default: true,
+                numri_periodave: true,
+                emri_periodave: true,
+              },
+            },
+          },
         },
         matchresults: true,
         matchevents: {
@@ -454,7 +495,18 @@ router.get("/public/live/:id", async (req, res) => {
           select: { emertimi: true },
         },
         tournaments: {
-          select: { emertimi: true },
+          select: {
+            emertimi: true,
+            sports: {
+              select: {
+                id: true,
+                emertimi: true,
+                kohezgjatja_default: true,
+                numri_periodave: true,
+                emri_periodave: true,
+              },
+            },
+          },
         },
         matchresults: true,
         matchevents: {
@@ -671,6 +723,9 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
     if (!matchValidation.ok) {
       return res.status(matchValidation.status).json({ error: matchValidation.error });
     }
+    const defaultDuration =
+      matchValidation.sport?.kohezgjatja_default ??
+      DEFAULT_MATCH_DURATION_MINUTES;
 
     const created = await prisma.matches.create({
       data: {
@@ -682,7 +737,7 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
         fusha_id: fusha_id || null,
         statusi: statusi || "Planifikuar",
         faza: faza || null,
-        kohezgjatja: DEFAULT_MATCH_DURATION_MINUTES,
+        kohezgjatja: defaultDuration,
       },
     });
 

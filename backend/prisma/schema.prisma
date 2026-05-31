@@ -113,14 +113,17 @@ model referees {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model sports {
-  id              Int           @id @default(autoincrement())
-  emertimi        String
-  pershkrimi      String?
-  numri_lojtareve Int
-  lloji           String
-  created_at      DateTime?     @default(now()) @db.Timestamp(6)
-  teams           teams[]
-  tournaments     tournaments[]
+  id                  Int           @id @default(autoincrement())
+  emertimi            String
+  pershkrimi          String?
+  numri_lojtareve     Int
+  lloji               String
+  kohezgjatja_default Int?          @default(60)
+  numri_periodave     Int?          @default(2)
+  emri_periodave      String?       @default("Half")
+  created_at          DateTime?     @default(now()) @db.Timestamp(6)
+  teams               teams[]
+  tournaments         tournaments[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

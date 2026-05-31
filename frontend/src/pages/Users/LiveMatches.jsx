@@ -2,13 +2,11 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
-  AlertTriangle,
   CalendarDays,
   CircleDot,
   Clock3,
   Edit2,
   ExternalLink,
-  Flag,
   Radio,
   RefreshCcw,
   Save,
@@ -18,6 +16,7 @@ import {
   Wifi,
   X,
 } from "lucide-react";
+import { FaFutbol } from "react-icons/fa";
 import api from "../../config/axiosInstance";
 import socket from "../../socket";
 import { Alert } from "../../components/Alert";
@@ -66,8 +65,12 @@ function isHalfTime(match) {
 }
 
 function isFinished(match) {
-  const status = String(match?.statusi || "");
-  return status.includes("rfunduar");
+  const status = String(match?.statusi || "").toLowerCase();
+  return (
+    status.includes("rfunduar") ||
+    status.includes("finished") ||
+    status.includes("final")
+  );
 }
 
 function getEventType(event) {
@@ -76,6 +79,14 @@ function getEventType(event) {
 
 function isGoalEventType(type) {
   return type === "Goal" || type === "Gol";
+}
+
+function isYellowCardEventType(type) {
+  return type === "YellowCard" || type === "E verdhe";
+}
+
+function isRedCardEventType(type) {
+  return type === "RedCard" || type === "E kuqe";
 }
 
 function getEventMinute(event) {
@@ -131,6 +142,124 @@ function getTimelineEvents(match) {
   });
 }
 
+function getTimelineEventsAscending(match) {
+  return [...(match?.cards || []), ...(match?.events || [])].sort((a, b) => {
+    const minuteA = Number(getEventMinute(a));
+    const minuteB = Number(getEventMinute(b));
+    const safeMinuteA = Number.isFinite(minuteA)
+      ? minuteA
+      : Number.MAX_SAFE_INTEGER;
+    const safeMinuteB = Number.isFinite(minuteB)
+      ? minuteB
+      : Number.MAX_SAFE_INTEGER;
+
+    if (safeMinuteA !== safeMinuteB) return safeMinuteA - safeMinuteB;
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function getEventTeamSide(event, match) {
+  const eventTeamId = Number(
+    event.teamId ?? event.team_id ?? event.ekipi_id ?? event.ekipiId,
+  );
+  const homeTeamId = Number(match?.ekipi_shtepiak_id);
+  const awayTeamId = Number(match?.ekipi_mysafir_id);
+
+  if (Number.isFinite(eventTeamId)) {
+    if (eventTeamId === homeTeamId) return "home";
+    if (eventTeamId === awayTeamId) return "away";
+  }
+
+  const teamName = normalizeText(event.teamName || event.team_name);
+  if (teamName) {
+    if (teamName === normalizeText(match?.ekipi_shtepiak)) return "home";
+    if (teamName === normalizeText(match?.ekipi_mysafir)) return "away";
+  }
+
+  return "home";
+}
+
+function getOrdinal(value) {
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${value}TH`;
+
+  const mod10 = value % 10;
+  if (mod10 === 1) return `${value}ST`;
+  if (mod10 === 2) return `${value}ND`;
+  if (mod10 === 3) return `${value}RD`;
+
+  return `${value}TH`;
+}
+
+function getPeriodConfig(match) {
+  const timing = match?.sport_timing || {};
+  const duration = Number(match?.kohezgjatja ?? timing.kohezgjatja_default);
+  const periods = Number(timing.numri_periodave);
+
+  return {
+    duration:
+      Number.isFinite(duration) && duration > 0
+        ? duration
+        : DEFAULT_MATCH_DURATION_MINUTES,
+    periods: Number.isInteger(periods) && periods > 0 ? periods : 2,
+    label: timing.emri_periodave || "Half",
+  };
+}
+
+function getMatchReportSections(match) {
+  const { duration, periods, label } = getPeriodConfig(match);
+  const periodLength = Math.max(1, duration / periods);
+  let homeScore = 0;
+  let awayScore = 0;
+  const sections = Array.from({ length: periods }, (_, index) => ({
+    key: `period-${index + 1}`,
+    label: `${getOrdinal(index + 1)} ${label}`.toUpperCase(),
+    score: "0 - 0",
+    events: [],
+  }));
+
+  getTimelineEventsAscending(match).forEach((event) => {
+    const type = getEventType(event);
+    const side = getEventTeamSide(event, match);
+
+    if (isGoalEventType(type)) {
+      if (side === "away") {
+        awayScore += 1;
+      } else {
+        homeScore += 1;
+      }
+    }
+
+    const reportEvent = {
+      event,
+      type,
+      side,
+      scoreLabel: isGoalEventType(type) ? `${homeScore} - ${awayScore}` : "",
+    };
+    const minute = Number(getEventMinute(event));
+    const periodIndex =
+      Number.isFinite(minute) && minute > 0
+        ? Math.min(periods - 1, Math.floor((minute - 1) / periodLength))
+        : 0;
+    const section = sections[periodIndex];
+
+    section.events.push(reportEvent);
+    sections.forEach((item, index) => {
+      if (index >= periodIndex) {
+        item.score = `${homeScore} - ${awayScore}`;
+      }
+    });
+  });
+
+  return sections;
+}
+
 function getInitials(value) {
   const text = value || "Team";
   return text
@@ -154,6 +283,44 @@ function formatMinute(minute) {
   return `${parsed}'`;
 }
 
+function EventIcon({ type, size = 18 }) {
+  if (isGoalEventType(type)) {
+    return <FaFutbol size={size} aria-hidden="true" />;
+  }
+
+  if (isYellowCardEventType(type)) {
+    return (
+      <span
+        className="block h-5 w-3.5 rounded-sm border border-amber-500 bg-amber-300 shadow-sm"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  if (isRedCardEventType(type)) {
+    return (
+      <span
+        className="block h-5 w-3.5 rounded-sm border border-red-600 bg-red-500 shadow-sm"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return <CircleDot size={size} aria-hidden="true" />;
+}
+
+function EmptyEventsState({ title, description }) {
+  return (
+    <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-500 dark:border-slate-700 dark:text-slate-400">
+      <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl border border-gray-200 bg-gray-50 text-gray-400 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-500">
+        <FaFutbol size={20} aria-hidden="true" />
+      </div>
+      <p className={`font-bold ${strongText}`}>{title}</p>
+      <p className={`mt-1 text-sm ${mutedText}`}>{description}</p>
+    </div>
+  );
+}
+
 function getPlayerTeamId(player) {
   return player?.team_id ?? player?.ekipiId ?? player?.teamId ?? null;
 }
@@ -170,6 +337,21 @@ function getPlayersForTeam(players, teamId) {
   if (!Number.isInteger(parsedTeamId)) return [];
 
   return players.filter((player) => Number(getPlayerTeamId(player)) === parsedTeamId);
+}
+
+function hasSelectedPlayerForTeam(details, teamId, players) {
+  const parsedTeamId = Number(teamId);
+  const selectedPlayerId = Number(details.lojtari_id);
+
+  if (!Number.isInteger(parsedTeamId) || !Number.isInteger(selectedPlayerId)) {
+    return false;
+  }
+
+  return players.some(
+    (player) =>
+      Number(player.id) === selectedPlayerId &&
+      Number(getPlayerTeamId(player)) === parsedTeamId,
+  );
 }
 
 function normalizeEventDetails(details, teamId, players) {
@@ -244,6 +426,15 @@ function StatusBadge({ match }) {
     );
   }
 
+  if (isFinished(match)) {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+        <Trophy size={14} />
+        FINAL
+      </span>
+    );
+  }
+
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-700 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-300">
       <CircleDot size={14} />
@@ -257,6 +448,10 @@ function ClockBadge({ match }) {
 
   if (isHalfTime(match)) {
     return <span className="text-emerald-600 dark:text-emerald-300">HT</span>;
+  }
+
+  if (isFinished(match)) {
+    return <span className="text-emerald-600 dark:text-emerald-300">FT</span>;
   }
 
   if (!isLive(match)) {
@@ -274,11 +469,14 @@ function ClockBadge({ match }) {
   );
 }
 
-function StatRow({ label, value, tone, width }) {
+function StatRow({ label, value, tone, width, icon }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-sm">
-        <span className={mutedText}>{label}</span>
+        <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+          {icon}
+          {label}
+        </span>
         <span className={`font-bold ${strongText}`}>{value}</span>
       </div>
       <div className="h-2 rounded-full bg-gray-100 dark:bg-slate-700">
@@ -312,6 +510,10 @@ function LiveMatches() {
     () => getTimelineEvents(selectedMatch),
     [selectedMatch],
   );
+  const matchReportSections = useMemo(
+    () => getMatchReportSections(selectedMatch),
+    [selectedMatch],
+  );
 
   const score = getScore(selectedMatch);
   const homePlayers = useMemo(
@@ -321,6 +523,16 @@ function LiveMatches() {
   const awayPlayers = useMemo(
     () => getPlayersForTeam(players, selectedMatch?.ekipi_mysafir_id),
     [players, selectedMatch?.ekipi_mysafir_id],
+  );
+  const homePlayerSelected = hasSelectedPlayerForTeam(
+    eventDetails,
+    selectedMatch?.ekipi_shtepiak_id,
+    players,
+  );
+  const awayPlayerSelected = hasSelectedPlayerForTeam(
+    eventDetails,
+    selectedMatch?.ekipi_mysafir_id,
+    players,
   );
 
   const liveSummary = useMemo(() => {
@@ -576,6 +788,14 @@ function LiveMatches() {
   const handleCreateEvent = async (lloji, teamId) => {
     if (!selectedMatch) return;
 
+    if (!hasSelectedPlayerForTeam(eventDetails, teamId, players)) {
+      setAlert({
+        type: "error",
+        message: "Select a player before adding a goal or card.",
+      });
+      return;
+    }
+
     try {
       setSavingAction(`${lloji}-${teamId}`);
       const response = await api.post(`/matches/${selectedMatch.id}/events`, {
@@ -642,6 +862,14 @@ function LiveMatches() {
 
   const handleUpdateEvent = async (event) => {
     if (!eventEditForm) return;
+
+    if (!eventEditForm.lojtari_id) {
+      setAlert({
+        type: "error",
+        message: "Select a player before saving this event.",
+      });
+      return;
+    }
 
     try {
       setSavingAction(`update-${event.id}`);
@@ -843,6 +1071,11 @@ function LiveMatches() {
                   <div className="mt-2 text-2xl font-black">
                     <ClockBadge match={selectedMatch} />
                   </div>
+                  {isFinished(selectedMatch) && (
+                    <p className="mt-1 text-xs font-bold uppercase text-emerald-600 dark:text-emerald-300">
+                      Final score
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex min-w-0 items-center gap-4 md:flex-row-reverse md:justify-end">
@@ -909,13 +1142,13 @@ function LiveMatches() {
 
                 <div className="mb-4 grid gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/50 md:grid-cols-[1fr_110px]">
                   <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                    Manual player name
+                    Optional display note
                     <input
                       type="text"
                       name="player_name"
                       value={eventDetails.player_name}
                       onChange={handleEventDetailChange}
-                      placeholder="Optional fallback"
+                      placeholder="Optional note"
                       className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
                     />
                   </label>
@@ -980,7 +1213,7 @@ function LiveMatches() {
                         onChange={handleEventDetailChange}
                         className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
                       >
-                        <option value="">No player selected</option>
+                        <option value="">Select a player first</option>
                         {homePlayers.map((player) => (
                           <option key={player.id} value={player.id}>
                             {getPlayerNameOption(player)}
@@ -988,10 +1221,15 @@ function LiveMatches() {
                         ))}
                       </select>
                     </label>
+                    {!homePlayerSelected && (
+                      <p className="mt-2 text-xs font-semibold text-amber-600 dark:text-amber-300">
+                        Select a player to add goals or cards.
+                      </p>
+                    )}
                     <div className="mt-4 grid gap-2 sm:grid-cols-3">
                       <ActionButton
                         tone="blue"
-                        icon={<CircleDot size={16} />}
+                        icon={<EventIcon type="Goal" size={16} />}
                         onClick={() =>
                           handleCreateEvent(
                             "Goal",
@@ -1000,14 +1238,15 @@ function LiveMatches() {
                         }
                         disabled={
                           !isLive(selectedMatch) ||
-                          !selectedMatch.ekipi_shtepiak_id
+                          !selectedMatch.ekipi_shtepiak_id ||
+                          !homePlayerSelected
                         }
                       >
                         Goal
                       </ActionButton>
                       <ActionButton
                         tone="amber"
-                        icon={<AlertTriangle size={16} />}
+                        icon={<EventIcon type="YellowCard" />}
                         onClick={() =>
                           handleCreateEvent(
                             "YellowCard",
@@ -1016,14 +1255,15 @@ function LiveMatches() {
                         }
                         disabled={
                           !isLive(selectedMatch) ||
-                          !selectedMatch.ekipi_shtepiak_id
+                          !selectedMatch.ekipi_shtepiak_id ||
+                          !homePlayerSelected
                         }
                       >
                         Yellow
                       </ActionButton>
                       <ActionButton
                         tone="red"
-                        icon={<Flag size={16} />}
+                        icon={<EventIcon type="RedCard" />}
                         onClick={() =>
                           handleCreateEvent(
                             "RedCard",
@@ -1032,7 +1272,8 @@ function LiveMatches() {
                         }
                         disabled={
                           !isLive(selectedMatch) ||
-                          !selectedMatch.ekipi_shtepiak_id
+                          !selectedMatch.ekipi_shtepiak_id ||
+                          !homePlayerSelected
                         }
                       >
                         Red
@@ -1075,7 +1316,7 @@ function LiveMatches() {
                         onChange={handleEventDetailChange}
                         className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
                       >
-                        <option value="">No player selected</option>
+                        <option value="">Select a player first</option>
                         {awayPlayers.map((player) => (
                           <option key={player.id} value={player.id}>
                             {getPlayerNameOption(player)}
@@ -1083,10 +1324,15 @@ function LiveMatches() {
                         ))}
                       </select>
                     </label>
+                    {!awayPlayerSelected && (
+                      <p className="mt-2 text-xs font-semibold text-amber-600 dark:text-amber-300">
+                        Select a player to add goals or cards.
+                      </p>
+                    )}
                     <div className="mt-4 grid gap-2 sm:grid-cols-3">
                       <ActionButton
                         tone="blue"
-                        icon={<CircleDot size={16} />}
+                        icon={<EventIcon type="Goal" size={16} />}
                         onClick={() =>
                           handleCreateEvent(
                             "Goal",
@@ -1095,14 +1341,15 @@ function LiveMatches() {
                         }
                         disabled={
                           !isLive(selectedMatch) ||
-                          !selectedMatch.ekipi_mysafir_id
+                          !selectedMatch.ekipi_mysafir_id ||
+                          !awayPlayerSelected
                         }
                       >
                         Goal
                       </ActionButton>
                       <ActionButton
                         tone="amber"
-                        icon={<AlertTriangle size={16} />}
+                        icon={<EventIcon type="YellowCard" />}
                         onClick={() =>
                           handleCreateEvent(
                             "YellowCard",
@@ -1111,14 +1358,15 @@ function LiveMatches() {
                         }
                         disabled={
                           !isLive(selectedMatch) ||
-                          !selectedMatch.ekipi_mysafir_id
+                          !selectedMatch.ekipi_mysafir_id ||
+                          !awayPlayerSelected
                         }
                       >
                         Yellow
                       </ActionButton>
                       <ActionButton
                         tone="red"
-                        icon={<Flag size={16} />}
+                        icon={<EventIcon type="RedCard" />}
                         onClick={() =>
                           handleCreateEvent(
                             "RedCard",
@@ -1127,7 +1375,8 @@ function LiveMatches() {
                         }
                         disabled={
                           !isLive(selectedMatch) ||
-                          !selectedMatch.ekipi_mysafir_id
+                          !selectedMatch.ekipi_mysafir_id ||
+                          !awayPlayerSelected
                         }
                       >
                         Red
@@ -1150,183 +1399,256 @@ function LiveMatches() {
                 </div>
 
                 {selectedEvents.length > 0 ? (
-                  <div className="space-y-3">
-                    {selectedEvents.slice(0, 7).map((event) => {
-                      const type = getEventType(event);
-                      const isEditing = editingEventId === event.id;
-                      const editPlayers =
-                        isEditing && eventEditForm
-                          ? getPlayersForTeam(players, eventEditForm.ekipi_id)
-                          : [];
-                      return (
-                        <div
-                          key={`${event.id}-${getEventMinute(event)}-${type}`}
-                          className={`rounded-xl border px-4 py-3 ${getEventClasses(type)}`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 text-lg font-black">
-                              {formatMinute(getEventMinute(event))}
-                            </div>
-                            <div className="grid h-10 w-10 place-items-center rounded-lg bg-white/80 dark:bg-slate-800/80">
-                              {isGoalEventType(type) ? (
-                                <CircleDot size={18} />
-                              ) : (
-                                <Flag size={18} />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className={`font-bold ${strongText}`}>
-                                {getEventLabel(type)}
-                                {event.teamName ? ` - ${event.teamName}` : ""}
-                              </p>
-                              <p className={`truncate text-sm ${mutedText}`}>
-                                {getEventPerson(event) || "Match official update"}
-                              </p>
-                              {event.description && (
-                                <p className={`truncate text-xs ${mutedText}`}>
-                                  {event.description}
-                                </p>
-                              )}
-                            </div>
-                            {canManageLive && (
-                              <div className="flex shrink-0 items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => beginEditEvent(event)}
-                                  disabled={Boolean(savingAction)}
-                                  className="rounded-lg p-2 text-gray-500 transition hover:bg-white/70 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-                                  aria-label="Edit event"
-                                >
-                                  <Edit2 size={16} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteEvent(event)}
-                                  disabled={Boolean(savingAction)}
-                                  className="rounded-lg p-2 text-red-500 transition hover:bg-white/70 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
-                                  aria-label="Delete event"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          {isEditing && eventEditForm && (
-                            <div className="mt-4 grid gap-3 border-t border-current/10 pt-4 md:grid-cols-2">
-                              <label className="text-sm font-semibold">
-                                Event
-                                <select
-                                  name="lloji"
-                                  value={eventEditForm.lloji}
-                                  onChange={handleEventEditChange}
-                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                                >
-                                  <option value="Goal">Goal</option>
-                                  <option value="YellowCard">Yellow Card</option>
-                                  <option value="RedCard">Red Card</option>
-                                </select>
-                              </label>
-                              <label className="text-sm font-semibold">
-                                Team
-                                <select
-                                  name="ekipi_id"
-                                  value={eventEditForm.ekipi_id}
-                                  onChange={handleEventEditChange}
-                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                                >
-                                  <option value="">No team</option>
-                                  <option value={selectedMatch.ekipi_shtepiak_id}>
-                                    {selectedMatch.ekipi_shtepiak || "Home Team"}
-                                  </option>
-                                  <option value={selectedMatch.ekipi_mysafir_id}>
-                                    {selectedMatch.ekipi_mysafir || "Away Team"}
-                                  </option>
-                                </select>
-                              </label>
-                              <label className="text-sm font-semibold">
-                                Player
-                                <select
-                                  name="lojtari_id"
-                                  value={
-                                    editPlayers.some(
-                                      (player) =>
-                                        String(player.id) ===
-                                        eventEditForm.lojtari_id,
-                                    )
-                                      ? eventEditForm.lojtari_id
-                                      : ""
-                                  }
-                                  onChange={handleEventEditChange}
-                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                                >
-                                  <option value="">No player selected</option>
-                                  {editPlayers.map((player) => (
-                                    <option key={player.id} value={player.id}>
-                                      {getPlayerNameOption(player)}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                              <label className="text-sm font-semibold">
-                                Manual player name
-                                <input
-                                  type="text"
-                                  name="player_name"
-                                  value={eventEditForm.player_name}
-                                  onChange={handleEventEditChange}
-                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                                />
-                              </label>
-                              <label className="text-sm font-semibold">
-                                Minute
-                                <input
-                                  type="number"
-                                  min="0"
-                                  name="minuta"
-                                  value={eventEditForm.minuta}
-                                  onChange={handleEventEditChange}
-                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                                />
-                              </label>
-                              <label className="text-sm font-semibold md:col-span-2">
-                                Description
-                                <input
-                                  type="text"
-                                  name="description"
-                                  value={eventEditForm.description}
-                                  onChange={handleEventEditChange}
-                                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                                />
-                              </label>
-                              <div className="flex justify-end gap-2 md:col-span-2">
-                                <button
-                                  type="button"
-                                  onClick={cancelEditEvent}
-                                  className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                                >
-                                  <X size={15} />
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateEvent(event)}
-                                  disabled={Boolean(savingAction)}
-                                  className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-                                >
-                                  <Save size={15} />
-                                  Save
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                  <div className="space-y-5">
+                    {matchReportSections.map((section) => (
+                      <section key={section.key} className="space-y-3">
+                        <div className="flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-xs font-black uppercase tracking-wide text-gray-700 dark:bg-slate-900/70 dark:text-slate-300">
+                          <span>{section.label}</span>
+                          <span>{section.score}</span>
                         </div>
-                      );
-                    })}
+
+                        {section.events.length > 0 ? (
+                          <div className="space-y-2">
+                            {section.events.map((reportEvent) => {
+                              const { event, type, side, scoreLabel } =
+                                reportEvent;
+                              const isAway = side === "away";
+                              const isEditing = editingEventId === event.id;
+                              const editPlayers =
+                                isEditing && eventEditForm
+                                  ? getPlayersForTeam(players, eventEditForm.ekipi_id)
+                                  : [];
+                              const primary =
+                                getEventPerson(event) || getEventLabel(type);
+                              const secondary =
+                                event.description ||
+                                event.teamName ||
+                                (getEventPerson(event)
+                                  ? getEventLabel(type)
+                                  : "Match official update");
+
+                              return (
+                                <div
+                                  key={`${event.id}-${getEventMinute(event)}-${type}`}
+                                  className={`rounded-xl p-2 transition ${
+                                    isEditing
+                                      ? "border border-gray-200 bg-gray-50 dark:border-slate-700 dark:bg-slate-900/50"
+                                      : ""
+                                  }`}
+                                >
+                                  <div
+                                    className={`flex w-full items-center gap-3 ${
+                                      isAway
+                                        ? "sm:ml-auto sm:w-[52%] sm:justify-end sm:text-right"
+                                        : "sm:w-[52%]"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`order-1 w-10 shrink-0 text-base font-black ${strongText} ${
+                                        isAway ? "sm:order-4 sm:text-right" : ""
+                                      }`}
+                                    >
+                                      {formatMinute(getEventMinute(event))}
+                                    </span>
+                                    <span
+                                      className={`order-2 grid h-10 w-10 shrink-0 place-items-center rounded-xl border bg-white shadow-sm dark:bg-slate-800 ${getEventClasses(type)}`}
+                                    >
+                                      <EventIcon type={type} />
+                                    </span>
+                                    <div
+                                      className={`order-3 min-w-0 flex-1 ${
+                                        isAway ? "sm:order-1" : ""
+                                      }`}
+                                    >
+                                      <p
+                                        className={`flex min-w-0 flex-wrap items-center gap-2 text-sm font-black ${strongText} ${
+                                          isAway ? "sm:justify-end" : ""
+                                        }`}
+                                      >
+                                        {scoreLabel && (
+                                          <span className="inline-flex shrink-0 rounded-lg border border-gray-200 bg-white px-2 py-0.5 text-xs font-black text-gray-900 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                                            {scoreLabel}
+                                          </span>
+                                        )}
+                                        <span className="truncate">{primary}</span>
+                                      </p>
+                                      <p className={`truncate text-sm ${mutedText}`}>
+                                        {secondary}
+                                      </p>
+                                    </div>
+                                    {canManageLive && (
+                                      <div
+                                        className={`order-4 flex shrink-0 items-center gap-1 ${
+                                          isAway ? "sm:order-2" : ""
+                                        }`}
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() => beginEditEvent(event)}
+                                          disabled={Boolean(savingAction)}
+                                          className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                                          aria-label="Edit event"
+                                        >
+                                          <Edit2 size={15} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDeleteEvent(event)}
+                                          disabled={Boolean(savingAction)}
+                                          className="rounded-lg p-2 text-red-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
+                                          aria-label="Delete event"
+                                        >
+                                          <Trash2 size={15} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {isEditing && eventEditForm && (
+                                    <div className="mt-4 grid gap-3 border-t border-gray-200 pt-4 md:grid-cols-2 dark:border-slate-700">
+                                      <label className="text-sm font-semibold">
+                                        Event
+                                        <select
+                                          name="lloji"
+                                          value={eventEditForm.lloji}
+                                          onChange={handleEventEditChange}
+                                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                        >
+                                          <option value="Goal">Goal</option>
+                                          <option value="YellowCard">
+                                            Yellow Card
+                                          </option>
+                                          <option value="RedCard">Red Card</option>
+                                        </select>
+                                      </label>
+                                      <label className="text-sm font-semibold">
+                                        Team
+                                        <select
+                                          name="ekipi_id"
+                                          value={eventEditForm.ekipi_id}
+                                          onChange={handleEventEditChange}
+                                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                        >
+                                          <option value="">No team</option>
+                                          <option
+                                            value={selectedMatch.ekipi_shtepiak_id}
+                                          >
+                                            {selectedMatch.ekipi_shtepiak ||
+                                              "Home Team"}
+                                          </option>
+                                          <option
+                                            value={selectedMatch.ekipi_mysafir_id}
+                                          >
+                                            {selectedMatch.ekipi_mysafir ||
+                                              "Away Team"}
+                                          </option>
+                                        </select>
+                                      </label>
+                                      <label className="text-sm font-semibold">
+                                        Player
+                                        <select
+                                          name="lojtari_id"
+                                          value={
+                                            editPlayers.some(
+                                              (player) =>
+                                                String(player.id) ===
+                                                eventEditForm.lojtari_id,
+                                            )
+                                              ? eventEditForm.lojtari_id
+                                              : ""
+                                          }
+                                          onChange={handleEventEditChange}
+                                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                        >
+                                          <option value="">
+                                            Select a player first
+                                          </option>
+                                          {editPlayers.map((player) => (
+                                            <option key={player.id} value={player.id}>
+                                              {getPlayerNameOption(player)}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                      {isEditing &&
+                                        eventEditForm &&
+                                        !eventEditForm.lojtari_id && (
+                                          <p className="text-xs font-semibold text-amber-600 dark:text-amber-300">
+                                            Select a player before saving this event.
+                                          </p>
+                                        )}
+                                      <label className="text-sm font-semibold">
+                                        Optional display note
+                                        <input
+                                          type="text"
+                                          name="player_name"
+                                          value={eventEditForm.player_name}
+                                          onChange={handleEventEditChange}
+                                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                        />
+                                      </label>
+                                      <label className="text-sm font-semibold">
+                                        Minute
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          name="minuta"
+                                          value={eventEditForm.minuta}
+                                          onChange={handleEventEditChange}
+                                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                        />
+                                      </label>
+                                      <label className="text-sm font-semibold md:col-span-2">
+                                        Description
+                                        <input
+                                          type="text"
+                                          name="description"
+                                          value={eventEditForm.description}
+                                          onChange={handleEventEditChange}
+                                          className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                                        />
+                                      </label>
+                                      <div className="flex justify-end gap-2 md:col-span-2">
+                                        <button
+                                          type="button"
+                                          onClick={cancelEditEvent}
+                                          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                        >
+                                          <X size={15} />
+                                          Cancel
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUpdateEvent(event)}
+                                          disabled={
+                                            Boolean(savingAction) ||
+                                            !eventEditForm.lojtari_id
+                                          }
+                                          className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
+                                        >
+                                          <Save size={15} />
+                                          Save
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className={`px-2 py-3 text-sm ${mutedText}`}>
+                            No events in this half.
+                          </p>
+                        )}
+                      </section>
+                    ))}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-500 dark:border-slate-700 dark:text-slate-400">
-                    No goals or cards yet.
-                  </div>
+                  <EmptyEventsState
+                    title="Waiting for the first match event"
+                    description="Goals, cards, and live updates will appear here as the match changes."
+                  />
                 )}
               </div>
 
@@ -1340,21 +1662,26 @@ function LiveMatches() {
                     value={liveSummary.goals}
                     tone="bg-emerald-500"
                     width={`${Math.min(100, liveSummary.goals * 25)}%`}
+                    icon={<EventIcon type="Goal" size={14} />}
                   />
                   <StatRow
                     label="Yellow Cards"
                     value={liveSummary.yellowCards}
                     tone="bg-amber-400"
                     width={`${Math.min(100, liveSummary.yellowCards * 20)}%`}
+                    icon={<EventIcon type="YellowCard" />}
                   />
                   <StatRow
                     label="Red Cards"
                     value={liveSummary.redCards}
                     tone="bg-red-500"
                     width={`${Math.min(100, liveSummary.redCards * 25)}%`}
+                    icon={<EventIcon type="RedCard" />}
                   />
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
-                    <p className={`text-sm ${mutedText}`}>Winner</p>
+                    <p className={`text-sm ${mutedText}`}>
+                      {isFinished(selectedMatch) ? "Final Result" : "Winner"}
+                    </p>
                     <p className={`mt-1 text-2xl font-black ${strongText}`}>
                       {isFinished(selectedMatch)
                         ? score.home > score.away
@@ -1442,11 +1769,7 @@ function LiveMatches() {
                       <div
                         className={`grid h-10 w-10 place-items-center rounded-lg border ${getEventClasses(type)}`}
                       >
-                        {isGoalEventType(type) ? (
-                          <CircleDot size={16} />
-                        ) : (
-                          <Flag size={16} />
-                        )}
+                        <EventIcon type={type} size={16} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
@@ -1465,7 +1788,17 @@ function LiveMatches() {
                   );
                 })}
                 {selectedEvents.length === 0 && (
-                  <p className={`text-sm ${mutedText}`}>No updates yet.</p>
+                  <div className="rounded-xl border border-dashed border-gray-200 p-4 text-center dark:border-slate-700">
+                    <div className="mx-auto mb-2 grid h-9 w-9 place-items-center rounded-lg bg-gray-50 text-gray-400 dark:bg-slate-900/60 dark:text-slate-500">
+                      <FaFutbol size={17} aria-hidden="true" />
+                    </div>
+                    <p className={`text-sm font-semibold ${strongText}`}>
+                      No live updates yet
+                    </p>
+                    <p className={`mt-1 text-xs ${mutedText}`}>
+                      Match moments will show here instantly.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

@@ -12,9 +12,14 @@ const initialFormData = {
   pershkrimi: '',
   numri_lojtareve: '',
   lloji: '',
+  kohezgjatja_default: '60',
+  numri_periodave: '2',
+  emri_periodave: 'Half',
 };
 
 const sportTypeOptions = ['Ekipor', 'Individual', 'I dyfishtë'];
+
+const periodLabelOptions = ['Half', 'Quarter', 'Period', 'Set'];
 
 const sportCreateSchema = yup.object().shape({
   emertimi: yup
@@ -33,6 +38,18 @@ const sportCreateSchema = yup.object().shape({
     .string()
     .oneOf(sportTypeOptions, 'Invalid sport type')
     .required('Sport type is required'),
+  kohezgjatja_default: yup
+    .number()
+    .positive('Default duration must be positive')
+    .required('Default duration is required'),
+  numri_periodave: yup
+    .number()
+    .positive('Number of periods must be positive')
+    .required('Number of periods is required'),
+  emri_periodave: yup
+    .string()
+    .oneOf(periodLabelOptions, 'Invalid period label')
+    .required('Period label is required'),
 });
 
 const sportUpdateSchema = yup.object().shape({
@@ -50,6 +67,17 @@ const sportUpdateSchema = yup.object().shape({
   lloji: yup
     .string()
     .oneOf(sportTypeOptions, 'Invalid sport type'),
+  kohezgjatja_default: yup
+    .number()
+    .positive('Default duration must be positive')
+    .nullable(),
+  numri_periodave: yup
+    .number()
+    .positive('Number of periods must be positive')
+    .nullable(),
+  emri_periodave: yup
+    .string()
+    .oneOf(periodLabelOptions, 'Invalid period label'),
 });
 
 function getSportTypeBadgeClasses(type) {
@@ -150,6 +178,13 @@ export default function SportsManagment() {
     numri_lojtareve:
       formData.numri_lojtareve === '' ? '' : Number(formData.numri_lojtareve),
     lloji: formData.lloji,
+    kohezgjatja_default:
+      formData.kohezgjatja_default === ''
+        ? ''
+        : Number(formData.kohezgjatja_default),
+    numri_periodave:
+      formData.numri_periodave === '' ? '' : Number(formData.numri_periodave),
+    emri_periodave: formData.emri_periodave,
   });
 
   const handleSubmit = async (e) => {
@@ -219,7 +254,10 @@ export default function SportsManagment() {
       emertimi: sport.emertimi || '',
       pershkrimi: sport.pershkrimi || '',
       numri_lojtareve: sport.numri_lojtareve ?? '',
-      lloji: sport.lloji || ''
+      lloji: sport.lloji || '',
+      kohezgjatja_default: sport.kohezgjatja_default ?? '60',
+      numri_periodave: sport.numri_periodave ?? '2',
+      emri_periodave: sport.emri_periodave || 'Half',
     });
     setShowEditModal(true);
   };
@@ -395,7 +433,7 @@ export default function SportsManagment() {
 
         {/* Sports table section */}
         <div className={`flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto ${loading ? "opacity-60 pointer-events-none" : ""}`}>
-          <table className="w-full text-left border-collapse min-w-[500px]">
+          <table className="w-full text-left border-collapse min-w-[760px]">
             <thead className="bg-gray-800 dark:bg-slate-800 text-white">
               <tr>
                 <th className="px-6 py-4 text-center font-semibold">ID</th>
@@ -403,6 +441,7 @@ export default function SportsManagment() {
                 <th className="px-6 py-4 text-left font-semibold">Description</th>
                 <th className="px-6 py-4 text-left font-semibold">Players</th>
                 <th className="px-6 py-4 text-left font-semibold">Type</th>
+                <th className="px-6 py-4 text-left font-semibold">Timing</th>
                 <th className="px-6 py-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
@@ -417,6 +456,14 @@ export default function SportsManagment() {
                     <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">
                       <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getSportTypeBadgeClasses(s.lloji)}`}>
                         {s.lloji || "-"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                      <span className="font-semibold">
+                        {s.kohezgjatja_default ?? 60} min
+                      </span>
+                      <span className="block text-xs text-gray-500 dark:text-slate-400">
+                        {s.numri_periodave ?? 2} x {s.emri_periodave || "Half"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -448,7 +495,7 @@ export default function SportsManagment() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
+                  <td colSpan="7" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
                     {hasActiveFilters ? 'No sports match these filters.' : 'No sports found. Click "Create New Sport" to add one.'}
                   </td>
                 </tr>
@@ -533,6 +580,57 @@ export default function SportsManagment() {
                   {formErrors.lloji && <p className='text-red-500 text-xs mt-1'>{formErrors.lloji}</p>}
                 </div>
 
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Duration (min)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      name="kohezgjatja_default"
+                      value={formData.kohezgjatja_default}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.kohezgjatja_default ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'}`}
+                      placeholder="90"
+                    />
+                    {formErrors.kohezgjatja_default && <p className='text-red-500 text-xs mt-1'>{formErrors.kohezgjatja_default}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Periods
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      name="numri_periodave"
+                      value={formData.numri_periodave}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.numri_periodave ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'}`}
+                      placeholder="2"
+                    />
+                    {formErrors.numri_periodave && <p className='text-red-500 text-xs mt-1'>{formErrors.numri_periodave}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Period Label
+                    </label>
+                    <select
+                      name="emri_periodave"
+                      value={formData.emri_periodave}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.emri_periodave ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'}`}
+                    >
+                      {periodLabelOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.emri_periodave && <p className='text-red-500 text-xs mt-1'>{formErrors.emri_periodave}</p>}
+                  </div>
+                </div>
+
                 <div className="flex gap-4 pt-4">
                   <button
                     type="submit"
@@ -589,6 +687,17 @@ export default function SportsManagment() {
                     Type (Lloji)
                   </label>
                   <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">{selectedSport.lloji}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                    Match Timing
+                  </label>
+                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                    {selectedSport.kohezgjatja_default ?? 60} min /{" "}
+                    {selectedSport.numri_periodave ?? 2} x{" "}
+                    {selectedSport.emri_periodave || "Half"}
+                  </p>
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -678,6 +787,57 @@ export default function SportsManagment() {
                     ))}
                   </select>
                   {formErrors.lloji && <p className='text-red-500 text-xs mt-1'>{formErrors.lloji}</p>}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Duration (min)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      name="kohezgjatja_default"
+                      value={formData.kohezgjatja_default}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.kohezgjatja_default ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'}`}
+                      placeholder="90"
+                    />
+                    {formErrors.kohezgjatja_default && <p className='text-red-500 text-xs mt-1'>{formErrors.kohezgjatja_default}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Periods
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      name="numri_periodave"
+                      value={formData.numri_periodave}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.numri_periodave ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'}`}
+                      placeholder="2"
+                    />
+                    {formErrors.numri_periodave && <p className='text-red-500 text-xs mt-1'>{formErrors.numri_periodave}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                      Period Label
+                    </label>
+                    <select
+                      name="emri_periodave"
+                      value={formData.emri_periodave}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.emri_periodave ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-700'}`}
+                    >
+                      {periodLabelOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.emri_periodave && <p className='text-red-500 text-xs mt-1'>{formErrors.emri_periodave}</p>}
+                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-4">
