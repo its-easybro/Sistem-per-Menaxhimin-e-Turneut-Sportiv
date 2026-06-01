@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { FaInstagram, FaTwitter, FaFacebook, FaLinkedin } from "react-icons/fa";
+import { FaGithub } from "react-icons/fa";
 
 const Footer = () => {
   return (
@@ -15,22 +15,13 @@ const Footer = () => {
               <span className="text-xl font-bold text-white">SportScore</span>
             </Link>
             <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
-              Transforming your tournament management experience with
-              production-ready UI components and seamless integration.
+              Elevate your game with our comprehensive tournament management system. 
+              Organize events, track live scores, and manage teams effortlessly.
             </p>
             {/* Social Icons */}
           <div className="flex gap-6">
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
-              <FaInstagram size={22} />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
-              <FaTwitter size={22} />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
-              <FaFacebook size={22} />
-            </a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">
-              <FaLinkedin size={22} />
+            <a href="https://github.com/Erik-Jashari/Sistem-per-Menaxhimin-e-Turneut-Sportiv" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+              <FaGithub size={22} />
             </a>
           </div>
           </div>
@@ -42,10 +33,10 @@ const Footer = () => {
             <div>
               <h3 className="text-sm font-semibold text-white mb-4">Features</h3>
               <ul className="space-y-3">
-                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Brackets</Link></li>
-                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Live Scoring</Link></li>
-                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Registration</Link></li>
-                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Analytics</Link></li>
+                <li><Link to="/live-matches" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Live Matches</Link></li>
+                <li><Link to="/public/standings" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Standings & Results</Link></li>
+                <li><Link to="/dashboard" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Match Scheduling</Link></li>
+                <li><Link to="/organizer/dashboard" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Tournament Management</Link></li>
               </ul>
             </div>
 
@@ -53,10 +44,10 @@ const Footer = () => {
             <div>
               <h3 className="text-sm font-semibold text-white mb-4">Resources</h3>
               <ul className="space-y-3">
-                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Documentation</Link></li>
-                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Help Center</Link></li>
-                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Tournament Rules</Link></li>
-                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Community</Link></li>
+                <li><Link to="/about-us" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> About the System</Link></li>
+                <li><Link to="/contact-us" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Support Center</Link></li>
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Rules & Regulations</Link></li>
+                <li><Link to="/#" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> FAQ</Link></li>
               </ul>
             </div>
 

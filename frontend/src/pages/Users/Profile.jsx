@@ -24,23 +24,23 @@ import { API_BASE_URL } from "../../config/api";
 import api from "../../config/axiosInstance";
 
 const roleMeta = {
-  admin: { label: "Admin", badge: "bg-slate-900 text-white dark:bg-slate-700" },
-  organizator: { label: "Organizer", badge: "bg-emerald-600 text-white" },
-  gjyqtar: { label: "Referee", badge: "bg-amber-500 text-white" },
-  user: { label: "Spectator", badge: "bg-sky-600 text-white" },
+  admin: { label: "Admin", badge: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" },
+  organizator: { label: "Organizer", badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300" },
+  gjyqtar: { label: "Referee", badge: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300" },
+  user: { label: "Spectator", badge: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300" },
 };
 
 const baseTabs = [
-  { key: "account", label: "Account Management", icon: User },
-  { key: "security", label: "Security & Sessions", icon: Shield },
-  { key: "tickets", label: "Support Tickets", icon: Ticket },
+  { key: "account", label: "Account", icon: User },
+  { key: "security", label: "Security", icon: Shield },
+  { key: "tickets", label: "Tickets", icon: Ticket },
 ];
 
 function formatDate(value) {
-  if (!value) return "Not available";
+  if (!value) return "N/A";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-  return new Intl.DateTimeFormat("en", {
+  if (Number.isNaN(date.getTime())) return "N/A";
+  return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -48,25 +48,27 @@ function formatDate(value) {
 }
 
 function formatDateTime(value) {
-  if (!value) return "Not available";
+  if (!value) return "N/A";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-  return new Intl.DateTimeFormat("en", {
+  if (Number.isNaN(date.getTime())) return "N/A";
+  return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   }).format(date);
 }
 
 function formatTime(value) {
-  if (!value) return "Not available";
+  if (!value) return "N/A";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-  return new Intl.DateTimeFormat("en", {
+  if (Number.isNaN(date.getTime())) return "N/A";
+  return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   }).format(date);
 }
 
@@ -80,28 +82,31 @@ function initialsFromName(firstName = "", lastName = "") {
 
 function statusPillClass(active) {
   return active
-    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-    : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300";
+    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300"
+    : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
 }
 
 function sectionCardClass(extra = "") {
-  return `rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800 ${extra}`;
+  return `rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 ${extra}`;
 }
 
 function ProfileField({ label, value, readOnly = false, onChange, name, type = "text" }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</span>
+    <div className="grid w-full items-center gap-1.5">
+      <label htmlFor={name} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        {label}
+      </label>
       <input
         type={type}
+        id={name}
         name={name}
         value={value}
         readOnly={readOnly}
         disabled={readOnly}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-slate-400 dark:focus:ring-slate-700 dark:disabled:bg-slate-900/60"
+        className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-50 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-900"
       />
-    </label>
+    </div>
   );
 }
 
@@ -112,10 +117,10 @@ const Profile = () => {
   const tabs = useMemo(() => {
     const items = [...baseTabs];
     if (user?.is_organizer) {
-      items.push({ key: "organizer", label: "Organizer Dashboard", icon: Trophy });
+      items.push({ key: "organizer", label: "Organizer", icon: Trophy });
     }
     if (user?.is_referee) {
-      items.push({ key: "referee", label: "Referee Dashboard", icon: Fingerprint });
+      items.push({ key: "referee", label: "Referee", icon: Fingerprint });
     }
     return items;
   }, [user]);
@@ -299,7 +304,7 @@ const Profile = () => {
   const renderTabContent = () => {
     if (loading) {
       return (
-        <div className={sectionCardClass("flex min-h-[280px] items-center justify-center") }>
+        <div className="flex min-h-[280px] items-center justify-center rounded-xl bg-white p-6 dark:bg-slate-900">
           <div className="text-center">
             <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-white" />
             <p className="text-sm text-slate-500 dark:text-slate-400">Loading profile data...</p>
@@ -310,27 +315,25 @@ const Profile = () => {
 
     if (activeTab === "account") {
       return (
-        <form onSubmit={handleAccountSubmit} className={`${sectionCardClass()} space-y-5`}>
-          <div className="flex items-center gap-3">
-            <PenLine className="h-5 w-5 text-slate-500" />
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Account Management</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Update your personal details. Email stays locked for this profile.</p>
+        <form onSubmit={handleAccountSubmit} className={sectionCardClass("p-6")}>
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Account Management</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Update your personal details. Email is read-only.</p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <ProfileField label="First Name" name="emri" value={accountForm.emri} onChange={handleAccountChange} />
+              <ProfileField label="Last Name" name="mbiemri" value={accountForm.mbiemri} onChange={handleAccountChange} />
             </div>
+            <ProfileField label="Email" name="email" value={accountForm.email} readOnly />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <ProfileField label="First Name" name="emri" value={accountForm.emri} onChange={handleAccountChange} />
-            <ProfileField label="Last Name" name="mbiemri" value={accountForm.mbiemri} onChange={handleAccountChange} />
-          </div>
-
-          <ProfileField label="Email" name="email" value={accountForm.email} readOnly />
-
-          <div className="flex justify-end">
+          <div className="mt-6 flex justify-end border-t border-slate-200 pt-6 dark:border-slate-800">
             <button
               type="submit"
               disabled={savingAccount}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-900"
             >
               {savingAccount ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
               Save Changes
@@ -342,14 +345,11 @@ const Profile = () => {
 
     if (activeTab === "security") {
       return (
-        <div className="space-y-6">
-          <form onSubmit={handlePasswordSubmit} className={sectionCardClass()}>
-            <div className="mb-5 flex items-center gap-3">
-              <LockKeyhole className="h-5 w-5 text-slate-500" />
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Change Password</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Use your current password to set a new one.</p>
-              </div>
+        <div className="space-y-8">
+          <form onSubmit={handlePasswordSubmit} className={sectionCardClass("p-6")}>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Change Password</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Use your current password to set a new one.</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -369,11 +369,11 @@ const Profile = () => {
               />
             </div>
 
-            <div className="mt-5 flex justify-end">
+            <div className="mt-6 flex justify-end border-t border-slate-200 pt-6 dark:border-slate-800">
               <button
                 type="submit"
                 disabled={savingPassword}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-900"
               >
                 {savingPassword ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                 Update Password
@@ -381,59 +381,51 @@ const Profile = () => {
             </div>
           </form>
 
-          <div className={sectionCardClass()}>
-            <div className="mb-5 flex items-center gap-3">
-              <Wifi className="h-5 w-5 text-slate-500" />
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Active Sessions</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Review the devices that are currently signed in.</p>
-              </div>
+          <div className={sectionCardClass("p-6")}>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Active Sessions</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Review and manage devices that are currently signed in.</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {sessions.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                  No active sessions were found.
+                <p className="rounded-lg border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  No active sessions found.
                 </p>
               ) : (
                 sessions.map((session) => (
                   <div
                     key={session.id}
-                    className="flex flex-col gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700 md:flex-row md:items-center md:justify-between"
+                    className="flex flex-col items-start gap-4 rounded-lg border border-slate-200 p-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">
+                    <div className="flex items-center gap-4">
+                      <Wifi className="h-8 w-8 text-slate-400" />
+                      <div>
+                        <p className="font-semibold text-slate-800 dark:text-slate-200">
                           {session.browserLabel} on {session.deviceLabel}
+                          {session.isCurrent && (
+                            <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300">
+                              Current
+                            </span>
+                          )}
                         </p>
-                        {session.isCurrent && (
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                            Current session
-                          </span>
-                        )}
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          IP: {session.ipAddress || "Unknown"} &middot; Last seen: {formatDateTime(session.lastSeenAt || session.createdAt)}
+                        </p>
                       </div>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">IP: {session.ipAddress || "Unknown"}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Last seen: {formatDateTime(session.lastSeenAt || session.createdAt)}
-                      </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusPillClass(session.isCurrent)}`}>
-                        {session.isCurrent ? "Protected" : "Removable"}
-                      </span>
-                      {!session.isCurrent && (
-                        <button
-                          type="button"
-                          onClick={() => handleRevokeSession(session.id)}
-                          disabled={revokeLoadingId === session.id}
-                          className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10"
-                        >
-                          {revokeLoadingId === session.id ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-                          Revoke
-                        </button>
-                      )}
-                    </div>
+                    {!session.isCurrent && (
+                      <button
+                        type="button"
+                        onClick={() => handleRevokeSession(session.id)}
+                        disabled={revokeLoadingId === session.id}
+                        className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-red-500/50 bg-transparent px-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20 dark:focus:ring-red-400 dark:focus:ring-offset-slate-900"
+                      >
+                        {revokeLoadingId === session.id ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                        Revoke
+                      </button>
+                    )}
                   </div>
                 ))
               )}
@@ -445,41 +437,36 @@ const Profile = () => {
 
     if (activeTab === "tickets") {
       return (
-        <div className={sectionCardClass()}>
-          <div className="mb-5 flex items-center gap-3">
-            <Ticket className="h-5 w-5 text-slate-500" />
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Support Tickets</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Read-only history of the messages submitted with your email address.</p>
-            </div>
+        <div className={sectionCardClass("p-6")}>
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Support Tickets</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">A read-only history of your submitted support tickets.</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {tickets.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              <p className="rounded-lg border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
                 No support tickets found.
               </p>
             ) : (
               tickets.map((ticket) => (
-                <div key={ticket.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {ticket.subjekti || "No subject"}
-                        </h3>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                <div key={ticket.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                  <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex-grow">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">{ticket.subjekti || "No subject"}</h3>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {ticket.kategoria}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Submitted: {formatDateTime(ticket.created_at)}</p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Submitted: {formatDateTime(ticket.created_at)}</p>
                     </div>
 
                     <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                      className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium sm:mt-0 ${
                         ticket.lexuar
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                          : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300"
                       }`}
                     >
                       {ticket.lexuar ? "Resolved" : "Pending"}
@@ -495,59 +482,56 @@ const Profile = () => {
 
     if (activeTab === "organizer" && user?.is_organizer) {
       return (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className="grid gap-4 md:grid-cols-3">
-            <div className={sectionCardClass()}>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Total Tournaments</p>
-              <p className="mt-3 text-3xl font-bold text-slate-900 dark:text-white">{organizerData.stats?.totalTournaments ?? 0}</p>
+            <div className={sectionCardClass("p-4")}>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Tournaments</p>
+              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{organizerData.stats?.totalTournaments ?? 0}</p>
             </div>
-            <div className={sectionCardClass()}>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Active Tournaments</p>
-              <p className="mt-3 text-3xl font-bold text-emerald-600">{organizerData.stats?.activeTournaments ?? 0}</p>
+            <div className={sectionCardClass("p-4")}>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Tournaments</p>
+              <p className="mt-1 text-3xl font-bold text-emerald-600 dark:text-emerald-500">{organizerData.stats?.activeTournaments ?? 0}</p>
             </div>
-            <div className={sectionCardClass()}>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Completed Tournaments</p>
-              <p className="mt-3 text-3xl font-bold text-slate-900 dark:text-white">{organizerData.stats?.completedTournaments ?? 0}</p>
+            <div className={sectionCardClass("p-4")}>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Completed</p>
+              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{organizerData.stats?.completedTournaments ?? 0}</p>
             </div>
           </div>
 
-          <div className={sectionCardClass()}>
-            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <Trophy className="h-5 w-5 text-slate-500" />
-                <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your Tournaments</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Manage the competition list you currently own.</p>
-                </div>
+          <div className={sectionCardClass("p-6")}>
+            <div className="mb-6 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your Tournaments</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Manage the competitions you currently own.</p>
               </div>
               <button
                 type="button"
                 onClick={() => navigate("/organizer/tournaments")}
-                className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-900"
               >
-                Draft New Tournament
+                Go to Organizer Dashboard
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {organizerData.tournaments.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                <p className="rounded-lg border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
                   No tournaments are assigned to this organizer yet.
                 </p>
               ) : (
                 organizerData.tournaments.map((tournament) => (
                   <div
                     key={tournament.id}
-                    className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700 md:flex md:items-center md:justify-between"
+                    className="rounded-lg border border-slate-200 p-4 dark:border-slate-800 md:flex md:items-center md:justify-between"
                   >
                     <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">{tournament.emertimi}</h3>
+                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">{tournament.emertimi}</h3>
                       <p className="text-sm text-slate-500 dark:text-slate-400">
                         {formatDate(tournament.data_fillimit)} - {formatDate(tournament.data_perfundimit)}
                       </p>
                       <p className="text-sm text-slate-500 dark:text-slate-400">Location: {tournament.lokacioni || "Not specified"}</p>
                     </div>
-                    <span className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200 md:mt-0">
+                    <span className="mt-3 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300 md:mt-0">
                       {tournament.statusi}
                     </span>
                   </div>
@@ -563,64 +547,58 @@ const Profile = () => {
       const referee = refereeData.referee;
 
       return (
-        <div className="space-y-6">
-          <div className={sectionCardClass()}>
-            <div className="mb-5 flex items-center gap-3">
-              <Fingerprint className="h-5 w-5 text-slate-500" />
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Referee Details</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Your official referee record linked to this account.</p>
-              </div>
+        <div className="space-y-8">
+          <div className={sectionCardClass("p-6")}>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Referee Details</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Your official referee record linked to this account.</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/70">
-                <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">License Number</p>
-                <p className="mt-2 font-semibold text-slate-900 dark:text-slate-100">{referee?.nr_licences || "Not available"}</p>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">License</p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{referee?.nr_licences || "N/A"}</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/70">
-                <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Category</p>
-                <p className="mt-2 font-semibold text-slate-900 dark:text-slate-100">{referee?.kategoria || "Not available"}</p>
+              <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Category</p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{referee?.kategoria || "N/A"}</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/70">
-                <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Years of Experience</p>
-                <p className="mt-2 font-semibold text-slate-900 dark:text-slate-100">{referee?.pervoja_vitesh ?? "Not available"}</p>
+              <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Experience</p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{referee?.pervoja_vitesh ?? "N/A"} years</p>
               </div>
-              <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/70">
-                <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Contact</p>
-                <p className="mt-2 font-semibold text-slate-900 dark:text-slate-100">{referee?.telefoni || "Not available"}</p>
+              <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Contact</p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{referee?.telefoni || "N/A"}</p>
               </div>
             </div>
           </div>
 
-          <div className={sectionCardClass()}>
-            <div className="mb-5 flex items-center gap-3">
-              <CalendarDays className="h-5 w-5 text-slate-500" />
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Upcoming Assigned Matches</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Matches scheduled from today forward.</p>
-              </div>
+          <div className={sectionCardClass("p-6")}>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Upcoming Matches</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Matches you are scheduled to officiate.</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {refereeData.upcomingMatches.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                  No upcoming assignments.
+                <p className="rounded-lg border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  No upcoming assignments found.
                 </p>
               ) : (
                 refereeData.upcomingMatches.map((match) => (
-                  <div key={match.matchId} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div key={match.matchId} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">
                           {match.homeTeam || "Home"} vs {match.awayTeam || "Away"}
                         </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Tournament: {match.tournamentName || "Unknown"}</p>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {formatDate(match.matchDate)} {match.matchTime ? `at ${formatTime(match.matchTime)}` : ""}
+                          {match.tournamentName || "Tournament"} &middot; {formatDate(match.matchDate)}{" "}
+                          {match.matchTime ? `at ${formatTime(match.matchTime)}` : ""}
                         </p>
                       </div>
-                      <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                      <span className="mt-2 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300 sm:mt-0">
                         {match.role}
                       </span>
                     </div>
@@ -630,32 +608,30 @@ const Profile = () => {
             </div>
           </div>
 
-          <div className={sectionCardClass()}>
-            <div className="mb-5 flex items-center gap-3">
-              <Clock3 className="h-5 w-5 text-slate-500" />
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Pending Match Reports</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Past officiated matches without recorded scores.</p>
-              </div>
+          <div className={sectionCardClass("p-6")}>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Pending Match Reports</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Past matches that require a score report from you.</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {refereeData.pendingReports.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                <p className="rounded-lg border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
                   No pending reports found.
                 </p>
               ) : (
                 refereeData.pendingReports.map((match) => (
-                  <div key={match.matchId} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div key={match.matchId} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">
                           {match.homeTeam || "Home"} vs {match.awayTeam || "Away"}
                         </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Tournament: {match.tournamentName || "Unknown"}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Date: {formatDate(match.matchDate)}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          {match.tournamentName || "Tournament"} &middot; Date: {formatDate(match.matchDate)}
+                        </p>
                       </div>
-                      <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                      <span className="mt-2 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-300 sm:mt-0">
                         Missing score report
                       </span>
                     </div>
@@ -672,57 +648,39 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-100">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-900 text-white shadow-2xl dark:border-slate-700">
-          <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[auto,1fr] lg:items-center lg:p-10">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white text-3xl font-black text-slate-900 shadow-lg ring-8 ring-white/10">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 {initials}
               </div>
               <div>
-                <span className={`mb-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${roleMeta[roleKey]?.badge || "bg-white text-slate-900"}`}>
-                  {roleLabel}
-                </span>
-                <h1 className="text-3xl font-black tracking-tight sm:text-4xl">{heroName}</h1>
-                <p className="mt-2 text-sm text-white/75">{heroEmail}</p>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{heroName}</h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{heroEmail}</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Member since {formatDate(memberSince)}
+                </p>
               </div>
             </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                <p className="text-xs uppercase tracking-widest text-white/55">Account Status</p>
-                <p className="mt-2 text-lg font-semibold">{profile?.statusi || user?.statusi || "Aktiv"}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                <p className="text-xs uppercase tracking-widest text-white/55">Member Since</p>
-                <p className="mt-2 text-lg font-semibold">{formatDate(memberSince)}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                <p className="text-xs uppercase tracking-widest text-white/55">Profile Mode</p>
-                <p className="mt-2 text-lg font-semibold">{user?.is_admin ? "Personal only" : "Role aware"}</p>
-              </div>
-            </div>
+            <span className={`rounded-full px-3 py-1 text-sm font-medium ${roleMeta[roleKey]?.badge || "bg-slate-100 text-slate-800"}`}>
+              {roleLabel}
+            </span>
           </div>
         </div>
+      </header>
 
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {(message || error) && (
-          <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${error ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200" : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"}`}>
+          <div className={`mb-6 rounded-lg border p-4 text-sm ${error ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300" : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300"}`}>
             {error || message}
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[19rem,1fr]">
-          <aside className={sectionCardClass("self-start lg:sticky lg:top-6") }>
-            <div className="mb-4 flex items-center gap-3">
-              <Users className="h-5 w-5 text-slate-500" />
-              <div>
-                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Profile Tabs</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Dynamic sections for your account.</p>
-              </div>
-            </div>
-
-            <nav className="space-y-2">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+          <aside className="lg:col-span-1">
+            <nav className="space-y-1">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.key;
@@ -732,9 +690,9 @@ const Profile = () => {
                     key={tab.key}
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${isActive ? "bg-slate-900 text-white shadow-lg dark:bg-white dark:text-slate-900" : "bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800"}`}
+                    className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors ${isActive ? "bg-slate-200 text-slate-900 dark:bg-slate-800 dark:text-slate-50" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-50"}`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-5 w-5" />
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -742,9 +700,9 @@ const Profile = () => {
             </nav>
           </aside>
 
-          <section>{renderTabContent()}</section>
+          <div className="lg:col-span-3">{renderTabContent()}</div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

@@ -29,6 +29,8 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         const status = error.response?.status;
+        const requestUrl = originalRequest?.url || "";
+        const isAuthEndpoint = requestUrl.includes("/api/auth/");
 
         // Rate limit error handling
         if (status === 429) {
@@ -38,7 +40,7 @@ api.interceptors.response.use(
         }
 
         // 401 Unauthorized error handling
-        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes("/api/auth/refresh")){
+        if (status === 401 && !originalRequest._retry && !isAuthEndpoint) {
             // If a refresh is already in progress, add the original request to the failed queue
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {

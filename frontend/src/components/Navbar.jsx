@@ -1,6 +1,7 @@
 'use client'
 import { useContext, useState } from 'react'
 import logo from '../assets/logo.png'
+import { User, Trophy, Shield, Lock, LogOut } from 'lucide-react';
 import {
   Dialog,
   DialogPanel,
@@ -13,12 +14,9 @@ import {
   PopoverPanel,
 } from '@headlessui/react'
 import {
-  ArrowPathIcon,
   Bars3Icon,
-  ChartPieIcon,
-  CursorArrowRaysIcon,
-  FingerPrintIcon,
-  SquaresPlusIcon,
+  InformationCircleIcon,
+  EnvelopeIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { Moon, Sun } from "lucide-react";
@@ -28,15 +26,8 @@ import AuthContext from '../context/AuthContext'
 import { ThemeContext } from "../context/ThemeContext"
 
 const products = [
-  { name: 'Analytics', description: 'Get a better understanding of your traffic', href: '#', icon: ChartPieIcon },
-  { name: 'Engagement', description: 'Speak directly to your customers', href: '#', icon: CursorArrowRaysIcon },
-  { name: 'Security', description: 'Your customers’ data will be safe and secure', href: '#', icon: FingerPrintIcon },
-  { name: 'Integrations', description: 'Connect with third-party tools', href: '#', icon: SquaresPlusIcon },
-  { name: 'Automations', description: 'Build strategic funnels that will convert', href: '#', icon: ArrowPathIcon },
-]
-const callsToAction = [
-  { name: 'Watch demo', href: '#', icon: PlayCircleIcon },
-  { name: 'Contact sales', href: '#', icon: PhoneIcon },
+  { name: 'About Us', description: 'About us', Link: '/about-us', icon: InformationCircleIcon },
+  { name: 'Contact Us', description: 'Get in contact with us', Link: '/contact-us', icon: EnvelopeIcon },
 ]
 
 const getInitials = (user) => {
@@ -110,7 +101,7 @@ const Navbar = () => {
         <PopoverGroup className="hidden lg:flex lg:gap-x-12">
           <Popover className="relative">
             <PopoverButton className="flex items-center gap-x-1 text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200 outline-none">
-              Product
+              More
               <ChevronDownIcon aria-hidden="true" className="size-5 flex-none text-gray-400 group-hover:text-white" />
             </PopoverButton>
 
@@ -128,62 +119,28 @@ const Navbar = () => {
                       <item.icon aria-hidden="true" className="size-6 text-gray-400 group-hover:text-white" />
                     </div>
                     <div className="flex-auto">
-                      <a href={item.href} className="block font-semibold text-white">
+                      <Link to={item.Link} className="block font-semibold text-white">
                         {item.name}
                         <span className="absolute inset-0" />
-                      </a>
+                      </Link>
                       <p className="mt-1 text-gray-400">{item.description}</p>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-2 divide-x divide-white/10 bg-gray-700/50">
-                {callsToAction.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className="flex items-center justify-center gap-x-2.5 p-3 text-sm/6 font-semibold text-white hover:bg-gray-700/50"
-                  >
-                    <item.icon aria-hidden="true" className="size-5 flex-none text-gray-500" />
-                    {item.name}
-                  </a>
-                ))}
-              </div>
             </PopoverPanel>
           </Popover>
 
-          <Link to="/about-us" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
-            About Us
-          </Link>
           <Link to="/live-matches" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             Live Matches
           </Link>
           <Link to="/public/standings" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             Standings
           </Link>
-          <Link to="/contact-us" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
-            Contact us
-          </Link>
         </PopoverGroup>
         {/* Desktop auth actions vary by user role. */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
           <div className="flex items-center gap-6">
-            {!user ? (
-              <Link to="/login" className="text-sm/6 font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
-                Log in <span aria-hidden="true">→</span>
-              </Link>
-            ) : (
-              <>
-                {rolePanel && (
-                  <Link to={rolePanel.to} className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors">
-                    {rolePanel.label}
-                  </Link>
-                )}
-                <button onClick={handleLogout} className="text-sm/6 font-semibold text-red-400 hover:text-red-300 transition-colors">
-                  Logout
-                </button>
-              </>
-            )}
             <button
               type="button"
               onClick={toggleTheme}
@@ -192,14 +149,79 @@ const Navbar = () => {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <Link
-                  to="/profile"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-white/20"
-                  aria-label="Open profile"
-                  title="Profile"
-                >
+
+            {!user ? (
+              <Link to="/login" className="text-sm/6 font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+                Log in <span aria-hidden="true">→</span>
+              </Link>
+            ) : (
+              <Popover className="relative">
+                <PopoverButton className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-white/20 outline-none cursor-pointer">
                   {profileInitials}
-                </Link>
+                </PopoverButton>
+
+                <PopoverPanel
+                  transition
+                  className="absolute right-0 z-10 mt-3 w-56 origin-top-right overflow-hidden rounded-xl bg-slate-900 border border-slate-700/50 shadow-lg ring-1 ring-black ring-opacity-5 transition data-closed:scale-95 data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
+                >
+                  <div className="py-1">
+                    {/* Standard User Option */}
+                    <Link
+                      to="/profile"
+                      className="group flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800/60 hover:text-white"
+                    >
+                      <User className="h-4 w-4 text-slate-400 transition-colors group-hover:text-blue-400" />
+                      Profile
+                    </Link>
+
+                    {/* Organizer Option */}
+                    {user?.is_organizer && (
+                      <Link
+                        to="/organizer/tournaments"
+                        className="group flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800/60 hover:text-white"
+                      >
+                        <Trophy className="h-4 w-4 text-slate-400 transition-colors group-hover:text-amber-400" />
+                        My Tournaments
+                      </Link>
+                    )}
+
+                    {/* Referee Option */}
+                    {user?.is_referee && (
+                      <Link
+                        to="/referee/dashboard"
+                        className="group flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800/60 hover:text-white"
+                      >
+                        <Shield className="h-4 w-4 text-slate-400 transition-colors group-hover:text-purple-400" />
+                        Referee Dashboard
+                      </Link>
+                    )}
+
+                    {/* Admin Option */}
+                    {user?.is_admin && (
+                      <Link
+                        to="/dashboard"
+                        className="group flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800/60 hover:text-white"
+                      >
+                        <Lock className="h-4 w-4 text-slate-400 transition-colors group-hover:text-emerald-400" />
+                        Dashboard
+                      </Link>
+                    )}
+
+                    {/* Divider */}
+                    <div className="my-1 h-px w-full bg-slate-700/50" />
+
+                    {/* Logout Action (Destructive) */}
+                    <button
+                      onClick={handleLogout}
+                      className="group flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
+                    >
+                      <LogOut className="h-4 w-4 text-red-500/70 transition-colors group-hover:text-red-400" />
+                      Logout
+                    </button>
+                  </div>
+                </PopoverPanel>
+              </Popover>
+            )}
           </div>
         </div>
       </nav>
@@ -233,18 +255,6 @@ const Navbar = () => {
                     Product
                     <ChevronDownIcon aria-hidden="true" className="size-5 flex-none group-data-open:rotate-180" />
                   </DisclosureButton>
-                  <DisclosurePanel className="mt-2 space-y-2">
-                    {[...products, ...callsToAction].map((item) => (
-                      <DisclosureButton
-                        key={item.name}
-                        as="a"
-                        href={item.href}
-                        className="block rounded-lg py-2 pr-3 pl-6 text-sm/7 font-semibold text-white hover:bg-white/5"
-                      >
-                        {item.name}
-                      </DisclosureButton>
-                    ))}
-                  </DisclosurePanel>
                 </Disclosure>
                 <Link
                   to="/live-matches"
@@ -300,15 +310,15 @@ const Navbar = () => {
                   {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
                 <Link
-                      to="/profile"
-                      className="-mx-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
-                        {profileInitials}
-                      </span>
-                      <span>Profile</span>
-                    </Link>
+                  to="/profile"
+                  className="-mx-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-base/7 font-semibold text-white hover:bg-white/5"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/10 text-xs font-bold uppercase tracking-wider text-white shadow-sm">
+                    {profileInitials}
+                  </span>
+                  <span>Profile</span>
+                </Link>
               </div>
             </div>
           </div>
