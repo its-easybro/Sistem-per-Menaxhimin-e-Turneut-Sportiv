@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Monitor, Smartphone, Trash2, Laptop, Globe } from "lucide-react";
+import { Monitor, Smartphone, Trash2, Laptop, Search, SlidersHorizontal } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 function formatDate(iso) {
@@ -49,6 +49,8 @@ export default function Sessions() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filters, setFilters] = useState({ browser: "", device: "", search: "" });
   const [alert, setAlert] = useState(null);
 
   useEffect(() => {
@@ -104,12 +106,43 @@ export default function Sessions() {
     setSelectedSession(null);
   };
 
+  // Implements debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setFilters((prev) =>
+        prev.search === searchQuery ? prev : { ...prev, search: searchQuery }
+      );
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Handles filter changes
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Clear filters handler
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setFilters({ browser: "", device: "", search: "" });
+  };
+
+  const hasActiveFilters = filters.browser !== "" || filters.device !== "" || filters.search !== "";
+
+  // Get unique browsers and devices from sessions
+  const uniqueBrowsers = [...new Set(sessions.map((s) => getBrowserLabel(s.userAgent)))].sort();
+  const uniqueDevices = [...new Set(sessions.map((s) => getDeviceLabel(s.userAgent)))].sort();
+
   const filtered = sessions.filter((s) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     const browserLabel = getBrowserLabel(s.userAgent);
     const deviceLabel = getDeviceLabel(s.userAgent);
-    return (
+
+    const matchesSearch =
+      !q ||
       String(s.id).toLowerCase().includes(q) ||
       String(s.userId).toLowerCase().includes(q) ||
       (s.user?.email || "").toLowerCase().includes(q) ||
@@ -120,8 +153,12 @@ export default function Sessions() {
       deviceLabel.toLowerCase().includes(q) ||
       (s.lastSeenAt || "").toLowerCase().includes(q) ||
       (s.createdAt || "").toLowerCase().includes(q) ||
-      (s.expiresAt || "").toLowerCase().includes(q)
-    );
+      (s.expiresAt || "").toLowerCase().includes(q);
+
+    const matchesBrowser = !filters.browser || browserLabel === filters.browser;
+    const matchesDevice = !filters.device || deviceLabel === filters.device;
+
+    return matchesSearch && matchesBrowser && matchesDevice;
   });
 
   if (!user?.is_admin && !loading) return <Navigate to="/" replace />;
@@ -135,7 +172,7 @@ export default function Sessions() {
   }
 
   return (
-    <div className="p-4 bg-gray-50 dark:bg-transparent min-h-screen">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
         <Alert
           type={alert.type}
@@ -144,35 +181,110 @@ export default function Sessions() {
         />
       )}
 
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full mx-auto">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6"></div>
-          <h2 className="text-2xl font-bold dark:text-slate-200">
-            Active sessions
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">
+            Active Sessions
           </h2>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search by id or userId"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 px-4 py-3 placeholder:text-transparent outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:placeholder:text-gray-400 dark:placeholder:text-slate-500"
-            />
-            <svg
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+
+          <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 md:relative">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-3xl">
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search
+                    size={18}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by user, email, device..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all placeholder-gray-400"
+                />
+              </div>
+
+              <div className="relative min-w-[160px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="browser"
+                  value={filters.browser}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All Browsers</option>
+                  {uniqueBrowsers.map((browser) => (
+                    <option key={browser} value={browser}>
+                      {browser}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="relative min-w-[160px]">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="device"
+                  value={filters.device}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All Devices</option>
+                  {uniqueDevices.map((device) => (
+                    <option key={device} value={device}>
+                      {device}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer md:absolute md:left-[calc(100%-13rem)] md:top-1/2 md:-translate-y-1/2 md:ml-0"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </div>
+
         {loading ? (
           <div className="delay-skeleton">
             <TableSkeleton />
@@ -182,9 +294,9 @@ export default function Sessions() {
             <p className="text-lg text-red-600">Error: {error}</p>
           </div>
         ) : (
-          <div className="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-x-auto">
+          <div className="flex-1 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-lg shadow-md overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[500px]">
-              <thead className="bg-gray-800 dark:bg-slate-700 text-white">
+              <thead className="bg-gray-800 dark:bg-slate-800 text-white">
                 <tr>
                   <th className="px-6 py-4 text-left font-semibold">User</th>
                   <th className="px-6 py-4 text-left font-semibold">Browser</th>
@@ -203,11 +315,11 @@ export default function Sessions() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                 {filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={7}
                       className="px-4 py-6 text-center text-gray-500 dark:text-slate-400"
                     >
                       No sessions found.
@@ -217,18 +329,18 @@ export default function Sessions() {
                   filtered.map((s) => (
                     <tr
                       key={s.id}
-                      className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150"
+                      className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150"
                     >
                       <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-medium">
                         {s.user?.email
                           ? `${s.user.emri} ${s.user.mbiemri} — ${s.user.email}`
                           : s.userId}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-slate-200">
+                      <td className="px-6 py-4 text-gray-600 dark:text-slate-300">
                         {getBrowserLabel(s.userAgent)}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
-                        <span className="inline-flex items-center gap-2 dark:text-slate-200">
+                        <span className="inline-flex items-center gap-2 dark:text-slate-300">
                           {(() => {
                             const DeviceIcon = getDeviceIcon(
                               getDeviceLabel(s.userAgent),
@@ -240,13 +352,13 @@ export default function Sessions() {
                           {getDeviceLabel(s.userAgent)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-slate-200">
+                      <td className="px-6 py-4 text-gray-600 dark:text-slate-300">
                         {formatDate(s.createdAt)}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-slate-200">
+                      <td className="px-6 py-4 text-gray-600 dark:text-slate-300">
                         {formatDate(s.lastSeenAt)}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-slate-200">
+                      <td className="px-6 py-4 text-gray-600 dark:text-slate-300">
                         {formatDate(s.expiresAt)}
                       </td>
                       <td className="px-6 py-4 text-center">

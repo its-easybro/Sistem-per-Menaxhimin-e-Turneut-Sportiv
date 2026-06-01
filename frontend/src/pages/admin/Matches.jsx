@@ -276,7 +276,7 @@ export default function Matches() {
   }, [user, loadMatches, page, filters]);
 
   const handleClearFilters = () => {
-    const resetFilters = { search: "", statusi: "" };
+    const resetFilters = { search: "", statusi: "", turneu_id: "", team_id: "" };
     setFilters(resetFilters);
     setSearchQuery("");
     setDebouncedSearch("");
@@ -394,6 +394,15 @@ export default function Matches() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Sync debounced search to filter state
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      search: debouncedSearch,
+    }));
+    setPage(1);
+  }, [debouncedSearch]);
 
   const handleCreate = () => {
     setFormData({
@@ -1032,18 +1041,6 @@ export default function Matches() {
     );
   }
 
-  // Filter matches based on search
-  const filteredMatches = matches.filter((match) => {
-    const query = debouncedSearch.toLowerCase();
-    if (!query) return true;
-
-    return (
-      getTournamentName(match.turneu_id).toLowerCase().includes(query) ||
-      getTeamName(match.ekipi_shtepiak_id).toLowerCase().includes(query) ||
-      getTeamName(match.ekipi_mysafir_id).toLowerCase().includes(query)
-    );
-  });
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 dark:bg-slate-900">
       {alert && (
@@ -1118,6 +1115,84 @@ export default function Matches() {
               </div>
             </div>
 
+            <div className="relative flex-1 min-w-[160px] sm:flex-none">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
+                Tournament
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="turneu_id"
+                  value={filters.turneu_id}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All tournaments</option>
+                  {tournaments.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.emertimi}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative flex-1 min-w-[160px] sm:flex-none">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
+                Team
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <SlidersHorizontal size={14} />
+                </div>
+                <select
+                  name="team_id"
+                  value={filters.team_id}
+                  onChange={handleFilterChange}
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
+                >
+                  <option value="">All teams</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.emertimi}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
             <button
               onClick={handleCreate}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98]"
@@ -1158,8 +1233,8 @@ export default function Matches() {
           </thead>
           {/* Table Body */}
           <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-            {filteredMatches.length > 0 ? (
-              filteredMatches.map((m) => (
+            {matches.length > 0 ? (
+              matches.map((m) => (
                 <tr
                   key={m.id}
                   className="transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-slate-800"
@@ -1256,8 +1331,8 @@ export default function Matches() {
                   colSpan="10"
                   className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                 >
-                  {debouncedSearch
-                    ? `No matches match "${debouncedSearch}". Try a different search.`
+                  {hasActiveFilters
+                    ? 'No matches match your filters. Try adjusting the filters.'
                     : 'No matches found. Click "Add New Match" to add a new one.'}
                 </td>
               </tr>

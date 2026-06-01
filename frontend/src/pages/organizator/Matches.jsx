@@ -6,7 +6,7 @@ import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, X } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton"
 
 const initialFormData = {
@@ -85,6 +85,8 @@ export default function OrganizerMatches() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFromFilter, setDateFromFilter] = useState("");
+  const [dateToFilter, setDateToFilter] = useState("");
   const [formData, setFormData] = useState(initialFormData);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [alert, setAlert] = useState(null);
@@ -188,14 +190,29 @@ export default function OrganizerMatches() {
   const getVenueName = (id) =>
     venues.find((item) => item.id === id)?.emertimi || "N/A";
 
+  const hasActiveFilters = dateFromFilter !== "" || dateToFilter !== "";
+
+  const handleClearDateFilters = () => {
+    setDateFromFilter("");
+    setDateToFilter("");
+  };
+
   const filteredMatches = matches.filter((item) => {
     const query = searchQuery.toLowerCase();
+    const matchDate = new Date(item.data_ndeshjes);
+    const fromDate = dateFromFilter ? new Date(dateFromFilter) : null;
+    const toDate = dateToFilter ? new Date(dateToFilter) : null;
 
-    return (
+    const matchesSearch =
       getTournamentName(item.turneu_id).toLowerCase().includes(query) ||
       getTeamName(item.ekipi_shtepiak_id).toLowerCase().includes(query) ||
-      getTeamName(item.ekipi_mysafir_id).toLowerCase().includes(query)
-    );
+      getTeamName(item.ekipi_mysafir_id).toLowerCase().includes(query);
+
+    const matchesDateRange =
+      (!fromDate || matchDate >= fromDate) &&
+      (!toDate || matchDate <= toDate);
+
+    return matchesSearch && matchesDateRange;
   });
 
   const resetForm = () => setFormData(initialFormData);
@@ -615,8 +632,40 @@ export default function OrganizerMatches() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by tournament or team"
-          className="mb-4 w-full rounded-lg border border-gray-300 bg-white bg-white px-4 py-3 text-gray-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 text-gray-900 transition focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-400"
+          className="mb-4 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 transition focus:outline-none focus:ring-2 focus:ring-green-500 dark:placeholder:text-slate-400"
         />
+
+        <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 p-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">From:</label>
+            <input
+              type="date"
+              value={dateFromFilter}
+              onChange={(e) => setDateFromFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">To:</label>
+            <input
+              type="date"
+              value={dateToFilter}
+              onChange={(e) => setDateToFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-gray-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={handleClearDateFilters}
+              className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all cursor-pointer"
+            >
+              <X size={14} />
+              Clear
+            </button>
+          )}
+        </div>
 
         <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-slate-800">
           <table className="w-full border-collapse text-left">

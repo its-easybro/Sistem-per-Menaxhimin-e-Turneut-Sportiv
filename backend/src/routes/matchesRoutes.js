@@ -541,12 +541,32 @@ router.get("/", protect, async (req, res) => {
   const page = req.query.page ? parsePositiveInt(req.query.page) : null;
   const limit = req.query.limit ? Math.max(1, parsePositiveInt(req.query.limit)) : null;
   const skip = page && limit ? (page - 1) * limit : undefined;
-  const { statusi, search } = req.query;
+  const { statusi, search, turneu_id, team_id } = req.query;
 
   const where = {};
 
   if (statusi) {
     where.statusi = statusi;
+  }
+
+  // Filter by tournament ID
+  if (turneu_id) {
+    const tournamentId = parsePositiveInt(turneu_id);
+    if (tournamentId) {
+      where.turneu_id = tournamentId;
+    }
+  }
+
+  // Filter by team ID (either home or away team)
+  if (team_id) {
+    const teamId = parsePositiveInt(team_id);
+    if (teamId) {
+      where.OR = [
+        ...(where.OR || []),
+        { ekipi_shtepiak_id: teamId },
+        { ekipi_mysafir_id: teamId },
+      ];
+    }
   }
 
   if (search) {
