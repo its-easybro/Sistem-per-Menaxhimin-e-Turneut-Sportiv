@@ -5,11 +5,11 @@ import {
   CalendarDays,
   CircleDot,
   Clock3,
-  Flag,
   Radio,
   Shield,
   Trophy,
 } from "lucide-react";
+import { FaFutbol } from "react-icons/fa";
 import api from "../../config/axiosInstance";
 import socket from "../../socket";
 import CardSkeleton from "../../components/Skeletons/CardSkeleton";
@@ -71,6 +71,23 @@ function isGoalEvent(type) {
   return type === "Goal" || type === "Gol";
 }
 
+function isYellowCardEvent(type) {
+  return type === "YellowCard" || type === "E verdhe";
+}
+
+function isRedCardEvent(type) {
+  return type === "RedCard" || type === "E kuqe";
+}
+
+function isFinished(match) {
+  const status = String(match?.statusi || "").toLowerCase();
+  return (
+    status.includes("rfunduar") ||
+    status.includes("finished") ||
+    status.includes("final")
+  );
+}
+
 function getEventLabel(type) {
   const labels = {
     Goal: "Goal",
@@ -100,10 +117,170 @@ function getTimelineEvents(match) {
   });
 }
 
+function getTimelineEventsAscending(match) {
+  return [...(match?.cards || []), ...(match?.events || [])].sort((a, b) => {
+    const minuteA = Number(getEventMinute(a));
+    const minuteB = Number(getEventMinute(b));
+    const safeMinuteA = Number.isFinite(minuteA)
+      ? minuteA
+      : Number.MAX_SAFE_INTEGER;
+    const safeMinuteB = Number.isFinite(minuteB)
+      ? minuteB
+      : Number.MAX_SAFE_INTEGER;
+
+    if (safeMinuteA !== safeMinuteB) return safeMinuteA - safeMinuteB;
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function getEventTeamSide(event, match) {
+  const eventTeamId = Number(
+    event.teamId ?? event.team_id ?? event.ekipi_id ?? event.ekipiId,
+  );
+  const homeTeamId = Number(match?.ekipi_shtepiak_id);
+  const awayTeamId = Number(match?.ekipi_mysafir_id);
+
+  if (Number.isFinite(eventTeamId)) {
+    if (eventTeamId === homeTeamId) return "home";
+    if (eventTeamId === awayTeamId) return "away";
+  }
+
+  const teamName = normalizeText(event.teamName || event.team_name);
+  if (teamName) {
+    if (teamName === normalizeText(match?.ekipi_shtepiak)) return "home";
+    if (teamName === normalizeText(match?.ekipi_mysafir)) return "away";
+  }
+
+  return "home";
+}
+
+function getOrdinal(value) {
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${value}TH`;
+
+  const mod10 = value % 10;
+  if (mod10 === 1) return `${value}ST`;
+  if (mod10 === 2) return `${value}ND`;
+  if (mod10 === 3) return `${value}RD`;
+
+  return `${value}TH`;
+}
+
+function getPeriodConfig(match) {
+  const timing = match?.sport_timing || {};
+  const duration = Number(match?.kohezgjatja ?? timing.kohezgjatja_default);
+  const periods = Number(timing.numri_periodave);
+
+  return {
+    duration:
+      Number.isFinite(duration) && duration > 0
+        ? duration
+        : DEFAULT_MATCH_DURATION_MINUTES,
+    periods: Number.isInteger(periods) && periods > 0 ? periods : 2,
+    label: timing.emri_periodave || "Half",
+  };
+}
+
+function getMatchReportSections(match) {
+  const { duration, periods, label } = getPeriodConfig(match);
+  const periodLength = Math.max(1, duration / periods);
+  let homeScore = 0;
+  let awayScore = 0;
+  const sections = Array.from({ length: periods }, (_, index) => ({
+    key: `period-${index + 1}`,
+    label: `${getOrdinal(index + 1)} ${label}`.toUpperCase(),
+    score: "0 - 0",
+    events: [],
+  }));
+
+  getTimelineEventsAscending(match).forEach((event) => {
+    const type = getEventType(event);
+    const side = getEventTeamSide(event, match);
+
+    if (isGoalEvent(type)) {
+      if (side === "away") {
+        awayScore += 1;
+      } else {
+        homeScore += 1;
+      }
+    }
+
+    const reportEvent = {
+      event,
+      type,
+      side,
+      scoreLabel: isGoalEvent(type) ? `${homeScore} - ${awayScore}` : "",
+    };
+    const minute = Number(getEventMinute(event));
+    const periodIndex =
+      Number.isFinite(minute) && minute > 0
+        ? Math.min(periods - 1, Math.floor((minute - 1) / periodLength))
+        : 0;
+    const section = sections[periodIndex];
+
+    section.events.push(reportEvent);
+    sections.forEach((item, index) => {
+      if (index >= periodIndex) {
+        item.score = `${homeScore} - ${awayScore}`;
+      }
+    });
+  });
+
+  return sections;
+}
+
 function formatMinute(minute) {
   const parsed = Number(minute);
   if (!Number.isFinite(parsed) || parsed < 0) return "--";
   return `${parsed}'`;
+}
+
+function EventIcon({ type, size = 18 }) {
+  if (isGoalEvent(type)) {
+    return <FaFutbol size={size} aria-hidden="true" />;
+  }
+
+  if (isYellowCardEvent(type)) {
+    return (
+      <span
+        className="block h-5 w-3.5 rounded-sm border border-amber-500 bg-amber-300 shadow-sm"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  if (isRedCardEvent(type)) {
+    return (
+      <span
+        className="block h-5 w-3.5 rounded-sm border border-red-600 bg-red-500 shadow-sm"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return <CircleDot size={size} aria-hidden="true" />;
+}
+
+function EmptyEventsState() {
+  return (
+    <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-500 dark:border-slate-700 dark:text-slate-400">
+      <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl border border-gray-200 bg-gray-50 text-gray-400 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-500">
+        <FaFutbol size={20} aria-hidden="true" />
+      </div>
+      <p className={`font-bold ${strongText}`}>
+        Waiting for the first match event
+      </p>
+      <p className={`mt-1 text-sm ${mutedText}`}>
+        Goals, cards, and live updates will appear here as the match changes.
+      </p>
+    </div>
+  );
 }
 
 function TeamBadge({ name, tone }) {
@@ -121,6 +298,10 @@ function ClockBadge({ match }) {
 
   if (match?.statusi === "HalfTime") {
     return <span className="text-emerald-600 dark:text-emerald-300">HT</span>;
+  }
+
+  if (isFinished(match)) {
+    return <span className="text-emerald-600 dark:text-emerald-300">FT</span>;
   }
 
   if (match?.statusi !== "Live") {
@@ -157,6 +338,15 @@ function StatusBadge({ match }) {
     );
   }
 
+  if (isFinished(match)) {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+        <Trophy size={14} />
+        FINAL
+      </span>
+    );
+  }
+
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-700 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-300">
       <CircleDot size={14} />
@@ -170,11 +360,11 @@ function eventTone(type) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300";
   }
 
-  if (type === "RedCard" || type === "E kuqe") {
+  if (isRedCardEvent(type)) {
     return "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300";
   }
 
-  if (type === "YellowCard" || type === "E verdhe") {
+  if (isYellowCardEvent(type)) {
     return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300";
   }
 
@@ -190,6 +380,10 @@ function PublicLiveMatch() {
   const matchId = Number(id);
   const score = getScore(match);
   const events = useMemo(() => getTimelineEvents(match), [match]);
+  const matchReportSections = useMemo(
+    () => getMatchReportSections(match),
+    [match],
+  );
   const liveSummary = useMemo(() => {
     return events.reduce(
       (summary, event) => {
@@ -382,6 +576,11 @@ function PublicLiveMatch() {
               <div className="mt-2 text-2xl font-black">
                 <ClockBadge match={match} />
               </div>
+              {isFinished(match) && (
+                <p className="mt-1 text-xs font-bold uppercase text-emerald-600 dark:text-emerald-300">
+                  Final score
+                </p>
+              )}
             </div>
 
             <div className="flex min-w-0 items-center gap-4 md:flex-row-reverse md:justify-end">
@@ -430,46 +629,84 @@ function PublicLiveMatch() {
             </div>
 
             {events.length > 0 ? (
-              <div className="space-y-3">
-                {events.map((event) => {
-                  const type = getEventType(event);
-                  return (
-                    <div
-                      key={`${event.id}-${getEventMinute(event)}-${type}`}
-                      className={`flex items-center gap-4 rounded-xl border px-4 py-3 ${eventTone(type)}`}
-                    >
-                      <div className="w-12 text-lg font-black">
-                        {formatMinute(getEventMinute(event))}
-                      </div>
-                      <div className="grid h-10 w-10 place-items-center rounded-lg bg-white/80 dark:bg-slate-800/80">
-                        {isGoalEvent(type) ? (
-                          <CircleDot size={18} />
-                        ) : (
-                          <Flag size={18} />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className={`font-bold ${strongText}`}>
-                          {getEventLabel(type)}
-                          {event.teamName ? ` - ${event.teamName}` : ""}
-                        </p>
-                        <p className={`truncate text-sm ${mutedText}`}>
-                          {getEventPerson(event) || "Match official update"}
-                        </p>
-                        {event.description && (
-                          <p className={`truncate text-xs ${mutedText}`}>
-                            {event.description}
-                          </p>
-                        )}
-                      </div>
+              <div className="space-y-5">
+                {matchReportSections.map((section) => (
+                  <section key={section.key} className="space-y-3">
+                    <div className="flex items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-xs font-black uppercase tracking-wide text-gray-700 dark:bg-slate-900/70 dark:text-slate-300">
+                      <span>{section.label}</span>
+                      <span>{section.score}</span>
                     </div>
-                  );
-                })}
+
+                    {section.events.length > 0 ? (
+                      <div className="space-y-2">
+                        {section.events.map((reportEvent) => {
+                          const { event, type, side, scoreLabel } = reportEvent;
+                          const isAway = side === "away";
+                          const primary =
+                            getEventPerson(event) || getEventLabel(type);
+                          const secondary =
+                            event.description ||
+                            event.teamName ||
+                            (getEventPerson(event)
+                              ? getEventLabel(type)
+                              : "Match official update");
+
+                          return (
+                            <div
+                              key={`${event.id}-${getEventMinute(event)}-${type}`}
+                              className={`flex w-full items-center gap-3 rounded-xl p-2 ${
+                                isAway
+                                  ? "sm:ml-auto sm:w-[52%] sm:justify-end sm:text-right"
+                                  : "sm:w-[52%]"
+                              }`}
+                            >
+                              <span
+                                className={`order-1 w-10 shrink-0 text-base font-black ${strongText} ${
+                                  isAway ? "sm:order-4 sm:text-right" : ""
+                                }`}
+                              >
+                                {formatMinute(getEventMinute(event))}
+                              </span>
+                              <span
+                                className={`order-2 grid h-10 w-10 shrink-0 place-items-center rounded-xl border bg-white shadow-sm dark:bg-slate-800 ${eventTone(type)}`}
+                              >
+                                <EventIcon type={type} />
+                              </span>
+                              <div
+                                className={`order-3 min-w-0 flex-1 ${
+                                  isAway ? "sm:order-1" : ""
+                                }`}
+                              >
+                                <p
+                                  className={`flex min-w-0 flex-wrap items-center gap-2 text-sm font-black ${strongText} ${
+                                    isAway ? "sm:justify-end" : ""
+                                  }`}
+                                >
+                                  {scoreLabel && (
+                                    <span className="inline-flex shrink-0 rounded-lg border border-gray-200 bg-white px-2 py-0.5 text-xs font-black text-gray-900 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                                      {scoreLabel}
+                                    </span>
+                                  )}
+                                  <span className="truncate">{primary}</span>
+                                </p>
+                                <p className={`truncate text-sm ${mutedText}`}>
+                                  {secondary}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className={`px-2 py-3 text-sm ${mutedText}`}>
+                        No events in this half.
+                      </p>
+                    )}
+                  </section>
+                ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-500 dark:border-slate-700 dark:text-slate-400">
-                No match events yet.
-              </div>
+              <EmptyEventsState />
             )}
           </section>
 
@@ -480,19 +717,28 @@ function PublicLiveMatch() {
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className={mutedText}>Goals</span>
+                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                    <EventIcon type="Goal" size={14} />
+                    Goals
+                  </span>
                   <span className={`font-black ${strongText}`}>
                     {liveSummary.goals}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className={mutedText}>Yellow Cards</span>
+                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                    <EventIcon type="YellowCard" />
+                    Yellow Cards
+                  </span>
                   <span className={`font-black ${strongText}`}>
                     {liveSummary.yellowCards}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className={mutedText}>Red Cards</span>
+                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                    <EventIcon type="RedCard" />
+                    Red Cards
+                  </span>
                   <span className={`font-black ${strongText}`}>
                     {liveSummary.redCards}
                   </span>
