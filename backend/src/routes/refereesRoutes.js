@@ -169,6 +169,53 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
+// Route for getting users that can be promoted to referees.
+router.get("/promotable-users", protect, requireRole("is_admin"), async (req, res) => {
+  try {
+    const existingReferees = await prisma.referees.findMany({
+      where: {
+        user_id: { not: null },
+      },
+      select: { user_id: true },
+    });
+    const existingUserIds = existingReferees
+      .map((referee) => referee.user_id)
+      .filter(Boolean);
+
+    const users = await prisma.user.findMany({
+      where: {
+        roli: "user",
+        ...(existingUserIds.length > 0
+          ? { id: { notIn: existingUserIds } }
+          : {}),
+      },
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        emri: true,
+        mbiemri: true,
+        email: true,
+        roli: true,
+      },
+    });
+
+    res.json(
+      users.map((user) => ({
+        id: user.id,
+        email: user.email,
+        username: user.emri,
+        full_name: [user.emri, user.mbiemri].filter(Boolean).join(" ") || null,
+        roli: user.roli,
+        is_admin: user.roli === "admin",
+        is_organizer: user.roli === "organizator",
+        is_referee: user.roli === "gjyqtar",
+      })),
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Route for promoting a user to referee. Must be BEFORE /:id
 router.post("/promote", protect, requireRole("is_admin"), async (req, res) => {
   try {

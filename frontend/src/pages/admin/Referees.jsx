@@ -39,6 +39,22 @@ const refereeUpdateSchema = yup.object().shape({
   pervoja_vitesh: yup.number().nullable(),
 });
 
+function normalizeUserOption(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    username: user.username ?? user.emri ?? "",
+    full_name:
+      user.full_name ??
+      ([user.emri, user.mbiemri].filter(Boolean).join(" ") || ""),
+    roli: user.roli ?? "user",
+  };
+}
+
+function getUserOptionLabel(user) {
+  return user.full_name || user.username || user.email || `User #${user.id}`;
+}
+
 export default function Referees() {
   const { user } = useContext(AuthContext);
 
@@ -269,30 +285,18 @@ export default function Referees() {
   };
 
   const handleOpenPromote = async () => {
-  try {
-    const res = await api.get("/users");
-    const allUsers = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+    try {
+      const res = await api.get("/referees/promotable-users");
+      const allUsers = (
+        Array.isArray(res.data) ? res.data : res.data?.data ?? []
+      ).map(normalizeUserOption);
 
-    // Merre referee ekzistues per te hequr ata qe jane promovuar tashme
-    const refRes = await api.get("/referees");
-    const existingUserIds = new Set(
-      (Array.isArray(refRes.data) ? refRes.data : [])
-        .map(r => r.user_id)
-        .filter(Boolean)
-    );
-
-    // Shfaq te gjithe userat qe nuk jane promovuar ende
-    const available = allUsers.filter(
-  (u) => u.roli === "user" && !existingUserIds.has(u.id)
-);
-
-
-    setUsers(available);
-    setShowPromoteModal(true);
-  } catch (err) {
-    setAlert({ type: "error", message: "Failed to load users" });
-  }
-};
+      setUsers(allUsers);
+      setShowPromoteModal(true);
+    } catch (err) {
+      setAlert({ type: "error", message: "Failed to load users" });
+    }
+  };
   const handlePromoteSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -597,12 +601,12 @@ export default function Referees() {
                     <option value="">-- Select a user --</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>
-                        {u.emri} {u.mbiemri} ({u.email})
+                        {getUserOptionLabel(u)} ({u.email})
                       </option>
                     ))}
                   </select>
                   {users.length === 0 && (
-                    <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">No users with role "gjyqtar" found.</p>
+                    <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">No users available for promotion.</p>
                   )}
                 </div>
                 <div>
