@@ -48,6 +48,7 @@ const ForgotPassword = lazy(() => import("./pages/Users/ForgotPassword"))
 const ResetPassword = lazy(() => import("./pages/Users/ResetPassword"))
 const LiveMatches = lazy(() => import("./pages/Users/LiveMatches"))
 const PublicLiveMatch = lazy(() => import("./pages/Users/PublicLiveMatch"))
+const PublicStandings = lazy(() => import("./pages/Users/PublicStandings"))
 const Profile = lazy(() => import("./pages/Users/Profile"))
 
 function App() {
@@ -76,6 +77,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/live-matches" element={<LiveMatches />} />
         <Route path="/live-matches/:id" element={<PublicLiveMatch />} />
+        <Route path="/public/standings" element={<PublicStandings />} />
 
         {/* Authenticated profile route available to every signed-in user. */}
         <Route element={<ProtectedRoute />}>

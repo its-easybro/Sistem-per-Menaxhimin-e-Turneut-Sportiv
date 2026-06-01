@@ -9,6 +9,7 @@ import {
   Swords,
   ShieldPlus,
   Radio,
+  ListOrdered,
 } from "lucide-react";
 
 const OrganizerLayout = () => {
@@ -68,6 +69,13 @@ return (
             >
               <Radio size={20} />
               Live Matches
+            </Link>
+            <Link
+              to="/organizer/standings"
+              className="flex items-center gap-3 px-4 py-2.5 text-gray-600 dark:text-slate-300 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-slate-800 dark:hover:text-slate-100 rounded-lg font-medium transition-colors"
+            >
+              <ListOrdered size={20} />
+              Standings
             </Link>
             {/* New organizer section for adding/removing teams inside the assigned tournament. */}
             {/* Management */}

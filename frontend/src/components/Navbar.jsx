@@ -161,6 +161,9 @@ const Navbar = () => {
           <Link to="/live-matches" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             Live Matches
           </Link>
+          <Link to="/public/standings" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
+            Standings
+          </Link>
         </PopoverGroup>
         {/* Desktop auth actions vary by user role. */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
@@ -249,6 +252,13 @@ const Navbar = () => {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Live Matches
+                </Link>
+                <Link
+                  to="/public/standings"
+                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-white hover:bg-white/5"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Standings
                 </Link>
               </div>
               <div className="py-6">

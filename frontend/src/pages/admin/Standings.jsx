@@ -1,11 +1,267 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
+import {
+  Activity,
+  BarChart3,
+  ListOrdered,
+  RefreshCcw,
+  RotateCcw,
+  Search,
+  Shield,
+  Trophy,
+  Users,
+  X,
+} from "lucide-react";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
-export default function Standings() {
+const panel =
+  "rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800";
+const strongText = "text-gray-900 dark:text-slate-100";
+const mutedText = "text-gray-500 dark:text-slate-400";
+
+function getArrayPayload(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
+function getTeamName(standing) {
+  return standing.team_name || standing.teams?.emertimi || "Unknown team";
+}
+
+function getTournamentName(group) {
+  return group.tournamentName || `Tournament #${group.tournamentId}`;
+}
+
+function getSportName(standing, tournament) {
+  return (
+    standing?.sport_name ||
+    standing?.tournaments?.sports?.emertimi ||
+    tournament?.sports?.emertimi ||
+    null
+  );
+}
+
+function getGoalDifference(standing) {
+  if (standing.goal_difference !== undefined && standing.goal_difference !== null) {
+    return Number(standing.goal_difference);
+  }
+
+  return Number(standing.golat_shenuar || 0) - Number(standing.golat_pranuar || 0);
+}
+
+function formatGoalDifference(value) {
+  const parsed = Number(value || 0);
+  return parsed > 0 ? `+${parsed}` : String(parsed);
+}
+
+function getRankClasses(rank) {
+  if (rank === 1) {
+    return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300";
+  }
+  if (rank === 2) {
+    return "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-500/40 dark:bg-slate-500/10 dark:text-slate-200";
+  }
+  if (rank === 3) {
+    return "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300";
+  }
+
+  return "border-gray-200 bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300";
+}
+
+function getGdClasses(value) {
+  const parsed = Number(value || 0);
+  if (parsed > 0) return "text-emerald-600 dark:text-emerald-300";
+  if (parsed < 0) return "text-red-600 dark:text-red-300";
+  return "text-gray-500 dark:text-slate-400";
+}
+
+function getFormClasses(result) {
+  if (result === "W") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
+  if (result === "L") return "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300";
+  return "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-200";
+}
+
+function FormDots({ form }) {
+  const results = Array.isArray(form) ? form : [];
+
+  if (results.length === 0) {
+    return <span className={`text-xs ${mutedText}`}>No form</span>;
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      {results.map((result, index) => (
+        <span
+          key={`${result}-${index}`}
+          className={`grid h-6 w-6 place-items-center rounded-full text-[11px] font-black ${getFormClasses(result)}`}
+        >
+          {result}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function RankBadge({ rank }) {
+  return (
+    <span
+      className={`inline-flex h-8 min-w-8 items-center justify-center rounded-full border px-2 text-sm font-black ${getRankClasses(rank)}`}
+    >
+      {rank}
+    </span>
+  );
+}
+
+function StatCard({ icon, label, value }) {
+  return (
+    <div className={`${panel} p-4`}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className={`text-xs font-bold uppercase ${mutedText}`}>{label}</p>
+          <p className={`mt-1 text-2xl font-black ${strongText}`}>{value}</p>
+        </div>
+        <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ title, description, icon }) {
+  return (
+    <div className={`${panel} p-8 text-center`}>
+      <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-gray-50 text-gray-400 dark:bg-slate-900 dark:text-slate-500">
+        {icon}
+      </div>
+      <p className={`font-bold ${strongText}`}>{title}</p>
+      <p className={`mx-auto mt-1 max-w-xl text-sm ${mutedText}`}>{description}</p>
+    </div>
+  );
+}
+
+function StandingMobileCard({ standing }) {
+  const rank = Number(standing.rank || 0);
+  const gd = getGoalDifference(standing);
+
+  return (
+    <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <RankBadge rank={rank} />
+          <div className="min-w-0">
+            <p className={`truncate font-black ${strongText}`}>{getTeamName(standing)}</p>
+            <p className={`mt-0.5 text-xs ${mutedText}`}>
+              {standing.ndeshjet_luajtura} MP · {standing.fitoret}-{standing.barazimet}-{standing.humbjet}
+            </p>
+          </div>
+        </div>
+        <div className="rounded-xl bg-blue-50 px-3 py-2 text-center dark:bg-blue-500/10">
+          <p className="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-300">
+            Pts
+          </p>
+          <p className="text-xl font-black text-blue-700 dark:text-blue-200">
+            {standing.piket}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+        <div className="rounded-lg bg-gray-50 p-2 dark:bg-slate-900">
+          <p className={`text-xs ${mutedText}`}>GF</p>
+          <p className={`font-bold ${strongText}`}>{standing.golat_shenuar}</p>
+        </div>
+        <div className="rounded-lg bg-gray-50 p-2 dark:bg-slate-900">
+          <p className={`text-xs ${mutedText}`}>GA</p>
+          <p className={`font-bold ${strongText}`}>{standing.golat_pranuar}</p>
+        </div>
+        <div className="rounded-lg bg-gray-50 p-2 dark:bg-slate-900">
+          <p className={`text-xs ${mutedText}`}>GD</p>
+          <p className={`font-bold ${getGdClasses(gd)}`}>{formatGoalDifference(gd)}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className={`text-xs font-bold uppercase ${mutedText}`}>Form</span>
+        <FormDots form={standing.form} />
+      </div>
+    </article>
+  );
+}
+
+function StandingsTable({ rows }) {
+  return (
+    <>
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[840px] text-left">
+          <thead>
+            <tr className="border-b border-gray-200 bg-gray-50 text-xs font-black uppercase text-gray-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400">
+              <th className="px-4 py-3 text-center">Rank</th>
+              <th className="px-4 py-3">Team</th>
+              <th className="px-3 py-3 text-center">MP</th>
+              <th className="px-3 py-3 text-center">W</th>
+              <th className="px-3 py-3 text-center">D</th>
+              <th className="px-3 py-3 text-center">L</th>
+              <th className="px-3 py-3 text-center">GF</th>
+              <th className="px-3 py-3 text-center">GA</th>
+              <th className="px-3 py-3 text-center">GD</th>
+              <th className="px-3 py-3 text-center">Form</th>
+              <th className="px-4 py-3 text-center">Pts</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+            {rows.map((standing) => {
+              const gd = getGoalDifference(standing);
+
+              return (
+                <tr
+                  key={standing.id}
+                  className="transition hover:bg-blue-50/60 dark:hover:bg-slate-700/50"
+                >
+                  <td className="px-4 py-3 text-center">
+                    <RankBadge rank={standing.rank} />
+                  </td>
+                  <td className={`max-w-[280px] px-4 py-3 font-black ${strongText}`}>
+                    <span className="block truncate">{getTeamName(standing)}</span>
+                  </td>
+                  <td className={`px-3 py-3 text-center ${strongText}`}>{standing.ndeshjet_luajtura}</td>
+                  <td className="px-3 py-3 text-center text-emerald-600 dark:text-emerald-300">{standing.fitoret}</td>
+                  <td className={`px-3 py-3 text-center ${mutedText}`}>{standing.barazimet}</td>
+                  <td className="px-3 py-3 text-center text-red-600 dark:text-red-300">{standing.humbjet}</td>
+                  <td className={`px-3 py-3 text-center ${strongText}`}>{standing.golat_shenuar}</td>
+                  <td className={`px-3 py-3 text-center ${strongText}`}>{standing.golat_pranuar}</td>
+                  <td className={`px-3 py-3 text-center font-bold ${getGdClasses(gd)}`}>
+                    {formatGoalDifference(gd)}
+                  </td>
+                  <td className="px-3 py-3 text-center">
+                    <FormDots form={standing.form} />
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="inline-flex min-w-12 justify-center rounded-xl bg-blue-600 px-3 py-1.5 text-base font-black text-white shadow-sm">
+                      {standing.piket}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="grid gap-3 md:hidden">
+        {rows.map((standing) => (
+          <StandingMobileCard key={standing.id} standing={standing} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+export default function Standings({ publicView = false }) {
   const { user, loading: authLoading } = useContext(AuthContext);
   const [standings, setStandings] = useState([]);
   const [tournaments, setTournaments] = useState([]);
@@ -15,97 +271,194 @@ export default function Standings() {
   const [filterTournament, setFilterTournament] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [recalculatingTournamentId, setRecalculatingTournamentId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const canManage = !publicView && (user?.is_admin || user?.is_organizer);
+
+  const fetchData = useCallback(async ({ quiet = false } = {}) => {
     try {
-      setLoading(true);
+      if (quiet) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError("");
-      const [standingsResponse, tournamentsResponse] = await Promise.all([
-        api.get("/standings"),
-        api.get("/tournaments"),
-      ]);
 
-      setStandings(standingsResponse.data || []);
-      setTournaments(tournamentsResponse.data || []);
+      const standingsRequest = publicView
+        ? api.get("/standings/public")
+        : api.get("/standings");
+      const requests = [standingsRequest];
+
+      if (!publicView) {
+        requests.push(api.get("/tournaments"));
+      }
+
+      const [standingsResponse, tournamentsResponse] = await Promise.all(requests);
+      setStandings(getArrayPayload(standingsResponse.data));
+      setTournaments(
+        publicView ? [] : getArrayPayload(tournamentsResponse?.data),
+      );
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Failed to load standings");
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          "Failed to load standings.",
+      );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, []);
+  }, [publicView]);
 
   useEffect(() => {
-    if (!user?.is_admin) {
+    if (!publicView && authLoading) return;
+
+    if (!publicView && !canManage) {
       setLoading(false);
       return;
     }
 
     fetchData();
-  }, [user, fetchData]);
+  }, [authLoading, canManage, fetchData, publicView]);
+
+  const tournamentOptions = useMemo(() => {
+    const options = new Map();
+
+    tournaments.forEach((tournament) => {
+      options.set(String(tournament.id), {
+        id: String(tournament.id),
+        name: tournament.emertimi || `Tournament #${tournament.id}`,
+        sportName: getSportName(null, tournament),
+      });
+    });
+
+    standings.forEach((standing) => {
+      const id = String(standing.turneu_id);
+      if (!options.has(id)) {
+        options.set(id, {
+          id,
+          name:
+            standing.tournament_name ||
+            standing.tournaments?.emertimi ||
+            `Tournament #${id}`,
+          sportName: getSportName(standing, null),
+        });
+      }
+    });
+
+    return Array.from(options.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  }, [standings, tournaments]);
 
   const groupedStandings = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    const grouped = new Map();
+    const groups = new Map();
 
-    for (const item of standings) {
-      const tournamentId = String(item.turneu_id);
-      const teamName = (item.teams?.emertimi || "").toLowerCase();
+    if (!publicView && !query) {
+      tournamentOptions.forEach((tournament) => {
+        if (filterTournament && tournament.id !== filterTournament) return;
 
-      if (filterTournament && tournamentId !== filterTournament) {
-        continue;
-      }
-      if (query && !teamName.includes(query)) {
-        continue;
-      }
-
-      if (!grouped.has(tournamentId)) {
-        grouped.set(tournamentId, []);
-      }
-      grouped.get(tournamentId).push(item);
+        groups.set(tournament.id, {
+          tournamentId: tournament.id,
+          tournamentName: tournament.name,
+          sportName: tournament.sportName,
+          rows: [],
+        });
+      });
     }
 
-    return Array.from(grouped.entries()).map(([tournamentId, rows]) => {
-      const tournamentName =
-        rows[0]?.tournaments?.emertimi ||
-        tournaments.find((item) => String(item.id) === tournamentId)?.emertimi ||
-        `Tournament #${tournamentId}`;
+    standings.forEach((standing) => {
+      const tournamentId = String(standing.turneu_id);
+      const teamName = getTeamName(standing).toLowerCase();
+      const tournamentName = (
+        standing.tournament_name ||
+        standing.tournaments?.emertimi ||
+        ""
+      ).toLowerCase();
+      const sportName = (getSportName(standing, null) || "").toLowerCase();
 
-      const sportName = rows[0]?.tournaments?.sports?.emertimi || null;
+      if (filterTournament && tournamentId !== filterTournament) return;
+      if (
+        query &&
+        !teamName.includes(query) &&
+        !tournamentName.includes(query) &&
+        !sportName.includes(query)
+      ) {
+        return;
+      }
 
-      return {
+      const existing = groups.get(tournamentId);
+      const group = existing || {
         tournamentId,
-        tournamentName,
-        sportName,
-        rows,
+        tournamentName:
+          standing.tournament_name ||
+          standing.tournaments?.emertimi ||
+          `Tournament #${tournamentId}`,
+        sportName: getSportName(standing, null),
+        rows: [],
       };
+
+      group.rows.push(standing);
+      if (!group.sportName) group.sportName = getSportName(standing, null);
+      groups.set(tournamentId, group);
     });
-  }, [standings, tournaments, filterTournament, searchQuery]);
+
+    return Array.from(groups.values())
+      .filter((group) => !query || group.rows.length > 0)
+      .sort((a, b) => getTournamentName(a).localeCompare(getTournamentName(b)));
+  }, [filterTournament, publicView, searchQuery, standings, tournamentOptions]);
+
+  const totals = useMemo(() => {
+    const teams = standings.length;
+    const tournamentsCount = new Set(standings.map((item) => item.turneu_id)).size;
+    const played = standings.reduce(
+      (sum, item) => sum + Number(item.ndeshjet_luajtura || 0),
+      0,
+    );
+
+    return {
+      teams,
+      tournaments: Math.max(tournamentsCount, tournamentOptions.length),
+      matches: Math.floor(played / 2),
+    };
+  }, [standings, tournamentOptions.length]);
+
+  const hasActiveFilters = Boolean(filterTournament || searchQuery.trim());
+
+  const resetFilters = () => {
+    setFilterTournament("");
+    setSearchQuery("");
+  };
 
   const handleRecalculate = async (turneuId) => {
     try {
       setRecalculatingTournamentId(turneuId);
       await api.post(`/standings/recalculate/${turneuId}`);
-      await fetchData();
+      await fetchData({ quiet: true });
       setAlert({ type: "success", message: "Standings recalculated successfully." });
     } catch (err) {
       setAlert({
         type: "error",
-        message: err.response?.data?.error || err.message || "Failed to recalculate standings.",
+        message:
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to recalculate standings.",
       });
     } finally {
       setRecalculatingTournamentId(null);
     }
   };
 
-  if (authLoading) {
+  if (!publicView && authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-lg text-gray-600">Checking access...</p>
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-lg text-gray-600 dark:text-slate-300">Checking access...</p>
       </div>
     );
   }
 
-  if (!user || !user.is_admin) {
+  if (!publicView && !canManage) {
     return <Navigate to="/login" replace />;
   }
 
@@ -117,119 +470,172 @@ export default function Standings() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-lg text-red-600">Error: {error}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
+    <div className="min-h-screen bg-gray-50 p-4 dark:bg-transparent sm:p-6">
       {alert && (
         <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
       )}
 
-      <div className="mx-auto w-full">
-        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-slate-200">Standings</h2>
+      <div className="mx-auto w-full max-w-7xl space-y-6">
+        <section className={`${panel} overflow-hidden`}>
+          <div className="border-b border-gray-200 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-5 text-white dark:border-slate-700 sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold uppercase text-blue-100">
+                  <ListOrdered size={14} />
+                  {publicView ? "Public rankings" : "League management"}
+                </div>
+                <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+                  Standings
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm text-blue-100">
+                  {publicView
+                    ? "Follow tournament tables, recent form, and points as results are confirmed."
+                    : "Review tournament tables, refresh rankings, and recalculate approved teams after result changes."}
+                </p>
+              </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <select
-              value={filterTournament}
-              onChange={(e) => setFilterTournament(e.target.value)}
-              className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500"
-            >
-              <option value="">All tournaments</option>
-              {tournaments.map((item) => (
-                <option key={item.id} value={String(item.id)}>
-                  {item.emertimi}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search team..."
-              className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500 placeholder:text-transparent sm:placeholder:text-gray-400 dark:placeholder:text-slate-500"
-            />
+              <button
+                type="button"
+                onClick={() => fetchData({ quiet: true })}
+                disabled={refreshing}
+                className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCcw size={16} className={refreshing ? "animate-spin" : ""} />
+                Refresh
+              </button>
+            </div>
           </div>
-        </div>
 
-        {groupedStandings.length === 0 ? (
-          <div className="rounded-lg bg-white dark:bg-slate-800 p-6 text-center text-gray-600 dark:text-slate-400 shadow-sm">
-            No standings found for the selected filters.
+          <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
+            <StatCard icon={<Trophy size={20} />} label="Tournaments" value={totals.tournaments} />
+            <StatCard icon={<Users size={20} />} label="Ranked Teams" value={totals.teams} />
+            <StatCard icon={<Activity size={20} />} label="Counted Matches" value={totals.matches} />
           </div>
+        </section>
+
+        <section className={`${panel} p-4 sm:p-5`}>
+          <div className="grid gap-3 lg:grid-cols-[220px_1fr_auto]">
+            <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
+              Tournament
+              <select
+                value={filterTournament}
+                onChange={(event) => setFilterTournament(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
+              >
+                <option value="">All tournaments</option>
+                {tournamentOptions.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
+              Search
+              <div className="relative mt-1">
+                <Search
+                  size={17}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search team, tournament, or sport..."
+                  className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
+                />
+              </div>
+            </label>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-lg border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                <X size={16} />
+                Reset
+              </button>
+            )}
+          </div>
+        </section>
+
+        {error ? (
+          <EmptyState
+            icon={<BarChart3 size={22} />}
+            title="Could not load standings"
+            description={error}
+          />
+        ) : groupedStandings.length === 0 ? (
+          <EmptyState
+            icon={<Shield size={22} />}
+            title={hasActiveFilters ? "No standings match your filters" : "No standings yet"}
+            description={
+              hasActiveFilters
+                ? "Try a different team, sport, or tournament search."
+                : publicView
+                  ? "Standings will appear here after tournament results are published."
+                  : "Use Recalculate after approving teams or adding match results."
+            }
+          />
         ) : (
           <div className="space-y-6">
-            {groupedStandings.map((group) => (
-              <section key={group.tournamentId} className="rounded-lg bg-white dark:bg-slate-800 shadow-sm">
-                <div className="flex flex-col gap-3 border-b border-gray-200 dark:border-slate-700 p-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-slate-200">{group.tournamentName}</h3>
-                    {group.sportName ? (
-                      <p className="text-sm text-gray-500 dark:text-slate-400">Sport: {group.sportName}</p>
-                    ) : null}
+            {groupedStandings.map((group) => {
+              const isRecalculating =
+                String(recalculatingTournamentId) === String(group.tournamentId);
+
+              return (
+                <section key={group.tournamentId} className={`${panel} overflow-hidden`}>
+                  <div className="flex flex-col gap-3 border-b border-gray-200 p-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className={`truncate text-xl font-black ${strongText}`}>
+                          {getTournamentName(group)}
+                        </h2>
+                        {group.sportName && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                            <Trophy size={13} />
+                            {group.sportName}
+                          </span>
+                        )}
+                      </div>
+                      <p className={`mt-1 text-sm ${mutedText}`}>
+                        {group.rows.length} ranked team{group.rows.length === 1 ? "" : "s"}
+                      </p>
+                    </div>
+
+                    {canManage && (
+                      <button
+                        type="button"
+                        onClick={() => handleRecalculate(group.tournamentId)}
+                        disabled={isRecalculating || refreshing}
+                        className="inline-flex w-fit items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                      >
+                        <RotateCcw
+                          size={16}
+                          className={isRecalculating ? "animate-spin" : ""}
+                        />
+                        {isRecalculating ? "Recalculating..." : "Recalculate"}
+                      </button>
+                    )}
                   </div>
-                  <button
-                    onClick={() => handleRecalculate(group.tournamentId)}
-                    disabled={String(recalculatingTournamentId) === String(group.tournamentId)}
-                    className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-                  >
-                    {String(recalculatingTournamentId) === String(group.tournamentId)
-                      ? "Recalculating..."
-                      : "Recalculate"}
-                  </button>
-                </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left">
-                    <thead className="bg-gray-800 dark:bg-slate-700 text-white">
-                      <tr>
-                        <th className="px-4 py-3 text-center">#</th>
-                        <th className="px-4 py-3">Team</th>
-                        <th className="px-4 py-3 text-center">MP</th>
-                        <th className="px-4 py-3 text-center">W</th>
-                        <th className="px-4 py-3 text-center">D</th>
-                        <th className="px-4 py-3 text-center">L</th>
-                        <th className="px-4 py-3 text-center">GF</th>
-                        <th className="px-4 py-3 text-center">GA</th>
-                        <th className="px-4 py-3 text-center">GD</th>
-                        <th className="px-4 py-3 text-center">Pts</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                      {group.rows.map((standing, index) => {
-                        const gd = Number(standing.golat_shenuar) - Number(standing.golat_pranuar);
-                        const gdDisplay = gd > 0 ? `+${gd}` : String(gd);
-
-                        return (
-                          <tr key={standing.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors duration-150">
-                            <td className="px-4 py-3 text-center font-medium text-gray-700 dark:text-slate-400">
-                              {index + 1}
-                            </td>
-                            <td className="px-4 py-3 font-semibold text-gray-800 dark:text-slate-200">
-                              {standing.teams?.emertimi || "Unknown team"}
-                            </td>
-                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.ndeshjet_luajtura}</td>
-                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.fitoret}</td>
-                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.barazimet}</td>
-                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.humbjet}</td>
-                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.golat_shenuar}</td>
-                            <td className="px-4 py-3 text-center dark:text-slate-300">{standing.golat_pranuar}</td>
-                            <td className="px-4 py-3 text-center dark:text-slate-300">{gdDisplay}</td>
-                            <td className="px-4 py-3 text-center font-bold dark:text-slate-200">{standing.piket}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            ))}
+                  {group.rows.length > 0 ? (
+                    <StandingsTable rows={group.rows} />
+                  ) : (
+                    <div className="p-5">
+                      <EmptyState
+                        icon={<Shield size={22} />}
+                        title="No standings rows yet"
+                        description="Approved teams will appear here after recalculation, even before they play."
+                      />
+                    </div>
+                  )}
+                </section>
+              );
+            })}
           </div>
         )}
       </div>
