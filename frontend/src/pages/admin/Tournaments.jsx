@@ -149,8 +149,12 @@ function getOrganizerName(users, organizerId) {
   return organizer?.full_name || organizer?.username || "N/A";
 }
 
-function isEligibleOrganizerUser(user) {
+function isOrganizerUser(user) {
   return user?.is_organizer || user?.roli === "organizator";
+}
+
+function isAssignableOrganizerUser(user) {
+  return isOrganizerUser(user) || user?.roli === "user";
 }
 
 function TournamentFormFields({ formData, sports, users, onChange, canAssignOrganizer, formErrors = {} }) {
@@ -300,13 +304,11 @@ function TournamentFormFields({ formData, sports, users, onChange, canAssignOrga
             className="rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 outline-none focus:border-blue-500 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-700"
           >
             <option value="">No organizer</option>
-            {users
-              .filter(isEligibleOrganizerUser)
-              .map((organizer) => (
+            {users.map((organizer) => (
               <option key={organizer.id} value={organizer.id}>
                 {organizer.full_name || organizer.username} ({organizer.email})
               </option>
-              ))}
+            ))}
           </select>
         </label>
       )}
@@ -376,7 +378,8 @@ export default function Tournaments() {
     sporti_id: "",
     organizatori_id: "",
   });
-  const assignableUsers = users.filter(isEligibleOrganizerUser);
+  const organizerUsers = users.filter(isOrganizerUser);
+  const assignableUsers = users.filter(isAssignableOrganizerUser);
 
   const loadTournaments = useCallback(async (pageNum, filtersObj) => {
     if (!canManageTournaments) {
@@ -400,7 +403,7 @@ export default function Tournaments() {
 
       const requests = [api.get(`/tournaments?${params}`), api.get(`/sports`)];
       if (isAdmin) {
-        requests.push(api.get(`/users`));
+        requests.push(api.get(`/users?limit=all`));
       }
 
       const [tournamentsRes, sportsRes, usersRes] = await Promise.all(requests);
@@ -819,13 +822,11 @@ export default function Tournaments() {
                   className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
                 >
                   <option value="">All organizers</option>
-                  {users
-                    .filter(isEligibleOrganizerUser)
-                    .map((userItem) => (
-                      <option key={userItem.id} value={userItem.id}>
-                        {userItem.full_name || userItem.username || userItem.email}
-                      </option>
-                    ))}
+                  {organizerUsers.map((userItem) => (
+                    <option key={userItem.id} value={userItem.id}>
+                      {userItem.full_name || userItem.username || userItem.email}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}

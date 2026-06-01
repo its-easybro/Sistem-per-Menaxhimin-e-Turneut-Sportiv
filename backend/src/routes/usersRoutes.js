@@ -114,9 +114,10 @@ async function ensureRefereeRecord(user) {
 
 // Route for getting all users. This route is protected and only admins can use it.
 router.get("/", protect, requireRole("is_admin"), async (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.max(1, parseInt(req.query.limit) || 10)
-  const skip = (page - 1) * limit;
+  const returnAll = req.query.limit === "all";
+  const page = returnAll ? 1 : Math.max(1, parseInt(req.query.page) || 1);
+  const limit = returnAll ? null : Math.max(1, parseInt(req.query.limit) || 10);
+  const skip = returnAll ? undefined : (page - 1) * limit;
   const { roli, search } = req.query;
 
   const where = {};
@@ -135,8 +136,7 @@ router.get("/", protect, requireRole("is_admin"), async (req, res) => {
       prisma.user.count({ where }),
       prisma.user.findMany({
         where,
-        skip,
-        take: limit,
+        ...(returnAll ? {} : { skip, take: limit }),
         orderBy: { id: "asc" },
         select: {
           id: true,
@@ -150,15 +150,17 @@ router.get("/", protect, requireRole("is_admin"), async (req, res) => {
       })
     ])
     res.json({
-      data: users,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNext: page < Math.ceil(total / limit),
-        hasPrev: page > 1,
-      }
+      data: users.map(formatUserResponse),
+      pagination: returnAll
+        ? null
+        : {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            hasNext: page < Math.ceil(total / limit),
+            hasPrev: page > 1,
+          }
     })
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -229,9 +231,10 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const { emri, mbiemri } = splitName(full_name, username);
     const validRoles = ["admin", "organizator", "gjyqtar", "user"];
-    const userRole = validRoles.includes(roli) ? roli : "user";
+    const userRole = validRoles.includes(roli) ? roli : undefined;
+    const shouldUpdateName = full_name !== undefined || username !== undefined;
+    const nameParts = shouldUpdateName ? splitName(full_name, username) : null;
 
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -244,10 +247,9 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        email,
-        emri,
-        mbiemri,
-        roli: userRole,
+        ...(email !== undefined && { email }),
+        ...(nameParts && { emri: nameParts.emri, mbiemri: nameParts.mbiemri }),
+        ...(userRole !== undefined && { roli: userRole }),
         ...(password ? { password: await bcrypt.hash(password, 10) } : {}),
       },
     });
