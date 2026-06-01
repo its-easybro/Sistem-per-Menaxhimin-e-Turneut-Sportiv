@@ -155,14 +155,14 @@ const Navbar = () => {
           <Link to="/about-us" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             About Us
           </Link>
-          <Link to="/contact-us" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
-            Contact us
-          </Link>
           <Link to="/live-matches" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             Live Matches
           </Link>
           <Link to="/public/standings" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             Standings
+          </Link>
+          <Link to="/contact-us" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
+            Contact us
           </Link>
         </PopoverGroup>
         {/* Desktop auth actions vary by user role. */}

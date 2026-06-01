@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   Activity,
   BarChart3,
@@ -21,6 +22,34 @@ const panel =
   "rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800";
 const strongText = "text-gray-900 dark:text-slate-100";
 const mutedText = "text-gray-500 dark:text-slate-400";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4 },
+  },
+};
+
+const headerVariants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6 },
+  },
+};
 
 function getArrayPayload(payload) {
   if (Array.isArray(payload)) return payload;
@@ -471,13 +500,18 @@ export default function Standings({ publicView = false }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 dark:bg-transparent sm:p-6">
+    <div className="min-h-screen bg-gray-50 p-4 dark:bg-slate-950 sm:p-6">
       {alert && (
         <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
       )}
 
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <section className={`${panel} overflow-hidden`}>
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={headerVariants}
+          className={`${panel} overflow-hidden`}
+        >
           <div className="border-b border-gray-200 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-5 text-white dark:border-slate-700 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -512,9 +546,15 @@ export default function Standings({ publicView = false }) {
             <StatCard icon={<Users size={20} />} label="Ranked Teams" value={totals.teams} />
             <StatCard icon={<Activity size={20} />} label="Counted Matches" value={totals.matches} />
           </div>
-        </section>
+        </motion.section>
 
-        <section className={`${panel} p-4 sm:p-5`}>
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={headerVariants}
+          transition={{ delay: 0.1 }}
+          className={`${panel} p-4 sm:p-5`}
+        >
           <div className="grid gap-3 lg:grid-cols-[220px_1fr_auto]">
             <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
               Tournament
@@ -560,7 +600,7 @@ export default function Standings({ publicView = false }) {
               </button>
             )}
           </div>
-        </section>
+        </motion.section>
 
         {error ? (
           <EmptyState
@@ -581,13 +621,22 @@ export default function Standings({ publicView = false }) {
             }
           />
         ) : (
-          <div className="space-y-6">
+          <motion.div
+            className="space-y-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {groupedStandings.map((group) => {
               const isRecalculating =
                 String(recalculatingTournamentId) === String(group.tournamentId);
 
               return (
-                <section key={group.tournamentId} className={`${panel} overflow-hidden`}>
+                <motion.section
+                  key={group.tournamentId}
+                  variants={itemVariants}
+                  className={`${panel} overflow-hidden`}
+                >
                   <div className="flex flex-col gap-3 border-b border-gray-200 p-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -633,10 +682,10 @@ export default function Standings({ publicView = false }) {
                       />
                     </div>
                   )}
-                </section>
+                </motion.section>
               );
             })}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
