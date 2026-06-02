@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   Activity,
   ArrowRight,
@@ -24,11 +25,11 @@ import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
 
 const dashboardShell =
-  "min-h-screen overflow-hidden bg-slate-950 text-slate-100 transition-colors duration-300";
+  "min-h-screen overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300";
 const panel =
-  "rounded-3xl border border-white/10 bg-white/5 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl transition-all duration-300 dark:border-slate-700/70 dark:bg-slate-800/80";
+  "rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5 dark:shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl transition-colors duration-300";
 const subtlePanel =
-  "rounded-2xl border border-white/8 bg-white/5 backdrop-blur-md transition-all duration-300 dark:border-slate-700 dark:bg-slate-800/70";
+  "rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-md dark:border-slate-700 dark:bg-slate-800/70 transition-colors duration-300";
 
 const sportIconMap = [
   { match: /football|futboll|soccer/i, icon: Target },
@@ -39,6 +40,29 @@ const sportIconMap = [
   { match: /combat|fight|martial/i, icon: Shield },
   { match: /run|athletic|track/i, icon: Zap },
 ];
+
+const fadeUp = {
+  hidden: {
+    opacity: 0,
+    y: 30,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+    },
+  },
+};
+
+const staggerContainer = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
 
 function getInitials(name) {
   return (
@@ -174,7 +198,9 @@ function Home() {
 
     const timer = window.setTimeout(async () => {
       try {
-        const response = await api.get("/dashboard/search", { params: { q: term } });
+        const response = await api.get("/dashboard/search", {
+          params: { q: term },
+        });
 
         if (!active) return;
 
@@ -204,7 +230,8 @@ function Home() {
       ? dashboard?.recentResults || []
       : dashboard?.upcomingMatches || [];
   const spotlight = dashboard?.spotlight || { recentMvp: [], topScorers: [] };
-  const searchVisible = Boolean(query.trim()) && (searchResults || searchLoading);
+  const searchVisible =
+    Boolean(query.trim()) && (searchResults || searchLoading);
 
   return (
     <div className={dashboardShell}>
@@ -214,50 +241,105 @@ function Home() {
         <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-amber-400/10 blur-3xl" />
       </div>
 
-      <main className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-        <section className="relative rounded-[2rem] border border-white/10 bg-slate-900/90 px-6 py-8 shadow-2xl shadow-black/30 sm:px-8 lg:px-10">
-        <div className="absolute inset-0 overflow-hidden rounded-[2rem]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_24%),linear-gradient(135deg,rgba(2,6,23,0.98),rgba(15,23,42,0.92))]" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:36px_36px] opacity-20" />
-        </div>
+      <motion.main
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8"
+      >
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className=" relative rounded-[2rem] border
+        border-slate-200 dark:border-white/10
+        bg-white dark:bg-slate-900/90
+        px-6 py-8 shadow-xl dark:shadow-black/40
+        sm:px-8 lg:px-10"
+        >
+          <div className="absolute inset-0 overflow-hidden rounded-[2rem]">
+            <div
+              className=" absolute inset-0
+          bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.14),transparent_28%)]
+          dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_24%)]
+       "
+            />
+            <div
+              className="absolute inset-0
+          bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)]
+          dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)]
+          bg-[size:36px_36px] opacity-40 dark:opacity-20
+        "
+            />
+          </div>
           <div className="relative grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
             <div className="space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-200">
+              <div
+                className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em]
+            border-emerald-200 bg-emerald-50 text-emerald-700
+            dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200"
+              >
                 <Flame className="h-3.5 w-3.5" />
                 Tournament Control Center
               </div>
 
               <div className="max-w-3xl space-y-4">
-                <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  Manage tournaments, track live matches, and surface the numbers that matter.
+                <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white sm:text-5xl lg:text-6xl">
+                  Manage tournaments, track live matches, and surface the
+                  numbers that matter.
                 </h1>
-                <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                  Monitor live fixtures, review standings, and search tournaments,
-                  teams, and players from one dashboard.
+                <p className="text-sm leading-7 text-slate-600 dark:text-slate-400 sm:text-base">
+                  Monitor live fixtures, review standings, and search
+                  tournaments, teams, and players from one dashboard.
                 </p>
               </div>
 
+              {/* SEARCH */}
               <div className="relative max-w-3xl">
-                <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 shadow-lg shadow-black/20 backdrop-blur-md">
-                  <Search className="h-5 w-5 text-slate-400" />
+                <div
+                  className="flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-md transition
+              border-slate-200 bg-white/80
+              dark:border-white/10 dark:bg-slate-950/60"
+                >
+                  <Search className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Search tournaments, teams, players..."
-                    className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none sm:text-base"
+                    className=" w-full bg-transparent text-sm outline-none
+                  text-slate-900 placeholder:text-slate-400
+                  dark:text-white dark:placeholder:text-slate-500
+                  sm:text-base"
                   />
                 </div>
 
+                {/* DROPDOWN */}
                 {searchVisible && (
-                  <div className="absolute z-20 mt-3 w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950/95 shadow-2xl shadow-black/40 backdrop-blur-xl">
-                    <div className="border-b border-white/10 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-20 mt-3 w-full overflow-hidden rounded-2xl border backdrop-blur-xl shadow-2xl
+                  border-slate-200 bg-white/95
+                  dark:border-white/10 dark:bg-slate-950/95"
+                  >
+                    <div
+                      className="border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em]
+                  border-slate-200 text-slate-500
+                  dark:border-white/10 dark:text-slate-400"
+                    >
                       Search results
                     </div>
 
                     {searchLoading ? (
-                      <div className="px-4 py-6 text-sm text-slate-400">Searching...</div>
+                      <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">
+                        Searching...
+                      </div>
                     ) : searchResults?.error ? (
-                      <div className="px-4 py-6 text-sm text-rose-300">{searchResults.error}</div>
+                      <div className="px-4 py-6 text-sm text-red-500">
+                        {searchResults.error}
+                      </div>
                     ) : (
                       <div className="grid gap-4 p-4 md:grid-cols-3">
                         {[
@@ -266,34 +348,54 @@ function Home() {
                             items: searchResults?.tournaments || [],
                             icon: Trophy,
                           },
-                          { title: "Teams", items: searchResults?.teams || [], icon: Users },
-                          { title: "Players", items: searchResults?.players || [], icon: Medal },
+                          {
+                            title: "Teams",
+                            items: searchResults?.teams || [],
+                            icon: Users,
+                          },
+                          {
+                            title: "Players",
+                            items: searchResults?.players || [],
+                            icon: Medal,
+                          },
                         ].map((group) => (
                           <div key={group.title} className={subtlePanel}>
-                            <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
-                              <span className="flex items-center gap-2 text-sm font-semibold text-white">
-                                <group.icon className="h-4 w-4 text-emerald-300" />
+                            <div
+                              className="flex items-center justify-between border-b px-4 py-3
+                          border-slate-200 dark:border-white/10"
+                            >
+                              <span className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                                <group.icon className="h-4 w-4 text-emerald-400" />
                                 {group.title}
                               </span>
-                              <span className="text-xs text-slate-400">{group.items.length}</span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
+                                {group.items.length}
+                              </span>
                             </div>
 
                             <div className="space-y-2 p-3">
                               {group.items.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-white/10 px-3 py-4 text-sm text-slate-500">
+                                <div className="rounded-xl border border-dashed px-3 py-4 text-sm text-slate-500 dark:border-white/10">
                                   No matches found.
                                 </div>
                               ) : (
                                 group.items.map((item) => (
                                   <div
                                     key={item.id}
-                                    className="rounded-xl border border-white/8 bg-white/5 px-3 py-3 transition hover:border-emerald-400/25 hover:bg-white/8"
+                                    className="rounded-xl border px-3 py-3 transition
+                                  border-slate-200 bg-white hover:bg-slate-50
+                                  dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
                                   >
-                                    <div className="text-sm font-semibold text-white">
+                                    <div className="text-sm font-semibold text-slate-900 dark:text-white">
                                       {item.label || item.emertimi || item.name}
                                     </div>
-                                    <div className="mt-1 text-xs text-slate-400">
-                                      {item.subtitle || item.sport || item.qyteti || item.position || item.dateRange || ""}
+                                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                      {item.subtitle ||
+                                        item.sport ||
+                                        item.qyteti ||
+                                        item.position ||
+                                        item.dateRange ||
+                                        ""}
                                     </div>
                                   </div>
                                 ))
@@ -303,22 +405,22 @@ function Home() {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 )}
               </div>
             </div>
 
-            <div className="flex h-full flex-col justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-md">
+            <div className="flex h-full flex-col justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-5 backdrop-blur-md transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
               <div>
-                <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
+                <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
                   Hello
                 </div>
-                <div className="mt-2 text-2xl font-bold text-white">
+                <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                   {user?.emri || user?.full_name || "Guest"}
                 </div>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Your dashboard adapts to your role and keeps the most important
-                  actions within reach.
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  Your dashboard adapts to your role and keeps the most
+                  important actions within reach.
                 </p>
               </div>
 
@@ -333,23 +435,25 @@ function Home() {
 
                 <Link
                   to="/public/standings"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60 dark:text-white dark:hover:bg-slate-800"
                 >
                   Public standings
                 </Link>
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {error && (
-          <section className={`${panel} border-rose-400/20 bg-rose-500/10 px-5 py-4 text-rose-100`}>
+          <section
+            className={`${panel} border-rose-400/20 bg-rose-500/10 px-5 py-4 text-rose-100`}
+          >
             {error}
           </section>
         )}
 
-        <section className={`${panel} p-5`}>
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+        <section className={`${panel} p-5 transition-colors duration-300`}>
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
             <Activity className="h-4 w-4 text-red-400" />
             Live Matches
           </div>
@@ -357,50 +461,62 @@ function Home() {
           {loading ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="h-36 animate-pulse rounded-2xl bg-white/5" />
+                <div
+                  key={index}
+                  className="h-36 animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5"
+                />
               ))}
             </div>
           ) : dashboard?.liveMatches?.length ? (
             <div className="flex gap-4 overflow-x-auto pb-2">
               {dashboard.liveMatches.map((match) => (
-                <article
+                <motion.article
                   key={match.id}
-                  className="min-w-[280px] flex-1 rounded-2xl border border-red-400/20 bg-gradient-to-br from-red-500/10 to-slate-900/80 p-4 shadow-[0_14px_50px_rgba(239,68,68,0.08)]"
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-w-[280px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-colors dark:border-white/10 dark:bg-white/5"
                 >
-                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    <span className="inline-flex items-center gap-2 text-red-300">
+                  {/* header */}
+                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    <span className="inline-flex items-center gap-2 text-red-500">
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
                         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
                       </span>
                       Live
                     </span>
-                    <span className="rounded-full border border-red-400/20 bg-red-500/10 px-2 py-1 text-[11px] text-red-100">
+                    <span className="rounded-full border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-600 dark:border-red-400/20 dark:bg-red-500/10 dark:text-red-200">
                       {getElapsedLabel(match)}
                     </span>
                   </div>
 
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1 text-left">
-                      <div className="truncate text-sm font-semibold text-white">
+                      <div className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                         {match.homeTeam?.emertimi}
                       </div>
-                      <div className="truncate text-xs text-slate-400">Home</div>
+                      <div className="truncate text-xs text-slate-500 dark:text-slate-400">
+                        Home
+                      </div>
                     </div>
 
-                    <div className="rounded-2xl bg-white/10 px-4 py-2 text-xl font-black text-white">
+                    <div className="rounded-2xl bg-slate-100 px-4 py-2 text-xl font-black text-slate-900 dark:bg-white/10 dark:text-white">
                       {formatScore(match.score)}
                     </div>
 
                     <div className="min-w-0 flex-1 text-right">
-                      <div className="truncate text-sm font-semibold text-white">
+                      <div className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                         {match.awayTeam?.emertimi}
                       </div>
-                      <div className="truncate text-xs text-slate-400">Away</div>
+                      <div className="truncate text-xs text-slate-500 dark:text-slate-400">
+                        Away
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+                  <div className="mt-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                     <span>{match.tournamentName}</span>
                     <span>
                       {match.ora_fillimit
@@ -408,17 +524,23 @@ function Home() {
                         : "TBD"}
                     </span>
                   </div>
-                </article>
+                </motion.article>
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-white/10 px-5 py-8 text-sm text-slate-400">
+            <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-8 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
               No live matches at the moment.
             </div>
           )}
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <motion.section
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        >
           {[
             {
               label: "Tournaments",
@@ -445,36 +567,65 @@ function Home() {
               accent: "from-fuchsia-400 to-pink-400",
             },
           ].map((item) => (
-            <div key={item.label} className={`${panel} flex items-center gap-4 p-5`}>
-              <div className={`rounded-2xl bg-gradient-to-br ${item.accent} p-3 text-slate-950`}>
+            <motion.div
+              key={item.label}
+              variants={fadeUp}
+              whileHover={{
+                y: -5,
+                scale: 1.02,
+              }}
+              className={`${panel} flex items-center gap-4 p-5 transition-colors duration-300`}
+            >
+              {/* ICON WRAPPER */}
+              <div
+                className={`rounded-2xl bg-gradient-to-br ${item.accent} p-3 text-slate-950 shadow-sm`}
+              >
                 <item.icon className="h-6 w-6" />
               </div>
-              <div>
-                <div className="text-sm text-slate-400">{item.label}</div>
-                <div className="text-3xl font-black text-white">{item.value}</div>
+
+              {/* TEXT */}
+              <div className="min-w-0">
+                <div className="text-sm text-slate-500 dark:text-slate-400">
+                  {item.label}
+                </div>
+
+                <div className="text-3xl font-black text-slate-900 dark:text-white">
+                  {item.value}
+                </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </section>
+        </motion.section>
 
         <section id="active-tournaments" className="space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+              <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                 Active tournaments
               </div>
-              <h2 className="mt-2 text-2xl font-bold text-white">
+
+              <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                 Live competition across the current season
               </h2>
             </div>
           </div>
 
+          {/* LOADING */}
           {loading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+            >
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="h-44 animate-pulse rounded-3xl bg-white/5" />
+                <div
+                  key={index}
+                  className="h-44 animate-pulse rounded-3xl bg-slate-100 dark:bg-white/5"
+                />
               ))}
-            </div>
+            </motion.div>
           ) : dashboard?.activeTournaments?.length ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {dashboard.activeTournaments.map((tournament) => {
@@ -483,56 +634,97 @@ function Home() {
                 );
 
                 return (
-                  <article key={tournament.id} className={`${panel} p-5 hover:-translate-y-1`}>
+                  <motion.article
+                    key={tournament.id}
+                    variants={fadeUp}
+                    whileHover={{
+                      y: -8,
+                      scale: 1.02,
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                    }}
+                    className={`${panel} p-5 transition-colors duration-300`}
+                  >
+                    {/* HEADER */}
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-300">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300">
                         <SportIcon className="h-6 w-6" />
                       </div>
-                      <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200">
                         {tournament.statusi}
                       </span>
                     </div>
 
-                    <h3 className="mt-4 text-xl font-bold text-white">{tournament.emertimi}</h3>
-                    <p className="mt-2 text-sm text-slate-400">
+                    {/* TITLE */}
+                    <h3 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">
+                      {tournament.emertimi}
+                    </h3>
+
+                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
                       {tournament.sport?.emertimi || "Sport"}
                     </p>
 
-                    <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
+                    {/* FOOTER */}
+                    <div className="mt-4 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
                       <span>
                         {tournament.data_fillimit && tournament.data_perfundimit
-                          ? `${formatDate(tournament.data_fillimit)} - ${formatDate(tournament.data_perfundimit)}`
+                          ? `${formatDate(tournament.data_fillimit)} - ${formatDate(
+                              tournament.data_perfundimit,
+                            )}`
                           : "Season ongoing"}
                       </span>
-                      <span className="inline-flex items-center gap-2 text-slate-400">
+
+                      <span className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400">
                         <CalendarDays className="h-4 w-4" />
                         {tournament.matchesCount || 0} matches
                       </span>
                     </div>
-                  </article>
+                  </motion.article>
                 );
               })}
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-white/10 px-5 py-10 text-sm text-slate-400">
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-5 py-10 text-sm text-slate-500 dark:border-white/10 dark:bg-transparent dark:text-slate-400">
               No active tournaments yet.
             </div>
           )}
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
-          <div className={`${panel} p-5`}>
+        <motion.section
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid gap-6 xl:grid-cols-[1.5fr_1fr]"
+        >
+          <motion.div
+            variants={fadeUp}
+            whileHover={{
+              y: -8,
+              scale: 1.02,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+            }}
+            className={`${panel} p-5 transition-colors duration-300`}
+          >
+            {/* HEADER */}
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                   Match feed
                 </div>
-                <h2 className="mt-2 text-2xl font-bold text-white">
+                <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                   Recent results and upcoming fixtures
                 </h2>
               </div>
 
-              <div className="inline-flex rounded-2xl border border-white/10 bg-white/5 p-1">
+              {/* TOGGLE */}
+              <div className="inline-flex rounded-2xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-800/70">
                 {[
                   { key: "results", label: "Recent Results" },
                   { key: "upcoming", label: "Upcoming Matches" },
@@ -543,8 +735,8 @@ function Home() {
                     onClick={() => setViewMode(item.key)}
                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                       viewMode === item.key
-                        ? "bg-white text-slate-950 shadow-lg"
-                        : "text-slate-300 hover:bg-white/5"
+                        ? "bg-slate-900 text-white shadow-lg dark:bg-white dark:text-slate-900"
+                        : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
                     }`}
                   >
                     {item.label}
@@ -553,84 +745,124 @@ function Home() {
               </div>
             </div>
 
+            {/* LIST */}
             <div className="mt-5 space-y-3">
               {loading ? (
                 <div className="grid gap-3">
                   {Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="h-20 animate-pulse rounded-2xl bg-white/5" />
+                    <div
+                      key={index}
+                      className="h-20 animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5"
+                    />
                   ))}
                 </div>
               ) : resultsList.length ? (
                 resultsList.map((match) => (
-                  <article
+                  <motion.article
                     key={match.id}
-                    className={`${subtlePanel} flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between`}
+                    variants={fadeUp}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    whileHover={{
+                      scale: 1.02,
+                      y: -4,
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                    }}
+                    className={`${subtlePanel} flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between transition-colors duration-300`}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                         <Clock3 className="h-3.5 w-3.5" />
                         {formatDate(match.data_ndeshjes)}
                       </div>
 
-                      <div className="mt-2 flex items-center gap-3 text-sm font-semibold text-white">
-                        <span className="truncate">{match.homeTeam?.emertimi || "Home"}</span>
-                        <span className="text-slate-500">vs</span>
-                        <span className="truncate">{match.awayTeam?.emertimi || "Away"}</span>
+                      <div className="mt-2 flex items-center gap-3 text-sm font-semibold text-slate-900 dark:text-white">
+                        <span className="truncate">
+                          {match.homeTeam?.emertimi || "Home"}
+                        </span>
+                        <span className="text-slate-400 dark:text-slate-500">
+                          vs
+                        </span>
+                        <span className="truncate">
+                          {match.awayTeam?.emertimi || "Away"}
+                        </span>
                       </div>
 
-                      <div className="mt-1 text-xs text-slate-400">
+                      <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         {match.tournamentName || "Tournament"}
                       </div>
                     </div>
 
-                    <div className="rounded-2xl bg-white/8 px-4 py-3 text-right">
+                    {/* RIGHT */}
+                    <div className="rounded-2xl bg-slate-100 px-4 py-3 text-right dark:bg-white/10">
                       {viewMode === "results" ? (
-                        <div className="text-lg font-black text-white">
+                        <div className="text-lg font-black text-slate-900 dark:text-white">
                           {formatScore(match.score)}
                         </div>
                       ) : (
-                        <div className="text-lg font-black text-white">
+                        <div className="text-lg font-black text-slate-900 dark:text-white">
                           {formatTime(match.ora_fillimit)}
                         </div>
                       )}
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         {viewMode === "results" ? "Final score" : "Kickoff"}
                       </div>
                     </div>
-                  </article>
+                  </motion.article>
                 ))
               ) : (
-                <div className="rounded-2xl border border-dashed border-white/10 px-5 py-8 text-sm text-slate-400">
-                  No {viewMode === "results" ? "results" : "upcoming matches"} available.
+                <div className="rounded-2xl border border-dashed border-slate-300 px-5 py-8 text-sm text-slate-500 dark:border-white/10 dark:text-slate-400">
+                  No {viewMode === "results" ? "results" : "upcoming matches"}{" "}
+                  available.
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
 
           <div className="space-y-6">
-            <div className={`${panel} p-5`}>
+            <motion.div
+              variants={fadeUp}
+              whileHover={{
+                y: -8,
+                scale: 1.02,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+              }}
+              className={`${panel} p-5 transition-colors`}
+            >
+              {/* HEADER */}
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                     Standings
                   </div>
-                  <h3 className="mt-2 text-xl font-bold text-white">
+                  <h3 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
                     Top teams by active tournament
                   </h3>
                 </div>
-                <BadgeCheck className="h-5 w-5 text-emerald-300" />
+                <BadgeCheck className="h-5 w-5 text-emerald-400 dark:text-emerald-300" />
               </div>
 
+              {/* TOURNAMENT SELECT */}
               <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
                 {activeStandings.map((tournament) => (
                   <button
                     key={tournament.tournamentId}
                     type="button"
-                    onClick={() => setSelectedStandingId(tournament.tournamentId)}
-                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      selectedStandings?.tournamentId === tournament.tournamentId
-                        ? "bg-emerald-400 text-slate-950"
-                        : "bg-white/5 text-slate-300 hover:bg-white/10"
+                    onClick={() =>
+                      setSelectedStandingId(tournament.tournamentId)
+                    }
+                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                      selectedStandings?.tournamentId ===
+                      tournament.tournamentId
+                        ? "whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
                     }`}
                   >
                     {tournament.tournamentName || "Tournament"}
@@ -641,59 +873,76 @@ function Home() {
               <div className="mt-5 space-y-3">
                 {selectedStandings?.rows?.length ? (
                   selectedStandings.rows.map((row) => (
-                    <div
+                    <motion.div
                       key={row.id}
-                      className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/5 px-4 py-3"
+                      variants={fadeUp}
+                      whileHover={{
+                        x: 4,
+                        scale: 1.01,
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                      }}
+                      className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors dark:border-white/10 dark:bg-slate-900/60"
                     >
-                      <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-sm font-black text-white">
+                      {/* RANK */}
+                      <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-sm font-black text-slate-900 dark:bg-white/10 dark:text-white">
                         {row.rank}
                       </div>
 
-                      <div className="h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-slate-900/70 text-sm font-bold text-white">
+                      {/* TEAM LOGO */}
+                      <div className="h-10 w-10 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white">
                         <MiniAvatar name={row.teamName} logo={row.teamLogo} />
                       </div>
 
+                      {/* TEAM INFO */}
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-semibold text-white">
+                        <div className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                           {row.teamName}
                         </div>
-                        <div className="text-xs text-slate-400">{row.played} played</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {row.played} played
+                        </div>
                       </div>
 
+                      {/* STATS */}
                       <div className="text-right">
-                        <div className="text-sm font-black text-emerald-300">
+                        <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                           {row.points} pts
                         </div>
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
                           GD {row.goalsFor - row.goalsAgainst}
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-white/10 px-5 py-8 text-sm text-slate-400">
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-8 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-400">
                     Standings are not available for this tournament yet.
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
 
-            <div className={`${panel} p-5`}>
+            <div className={`${panel} p-5 transition-colors`}>
+              {/* HEADER */}
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <div className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                     Spotlight
                   </div>
-                  <h3 className="mt-2 text-xl font-bold text-white">
+                  <h3 className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
                     MVPs and goal leaders
                   </h3>
                 </div>
-                <Star className="h-5 w-5 text-amber-300" />
+                <Star className="h-5 w-5 text-amber-400 dark:text-amber-300" />
               </div>
 
-              <div className="mt-4 space-y-4">
+              <div className="mt-4 space-y-5">
+                {/* MVP SECTION */}
                 <div>
-                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                     Recent MVPs
                   </div>
 
@@ -702,27 +951,34 @@ function Home() {
                       spotlight.recentMvp.slice(0, 3).map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/5 px-4 py-3"
+                          className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors dark:border-white/10 dark:bg-slate-900/60"
                         >
-                          <div className="h-11 w-11 overflow-hidden rounded-full border border-white/10 bg-slate-900 text-xs font-bold text-white">
-                            <MiniAvatar name={item.player?.name} logo={item.player?.foto} />
+                          {/* AVATAR */}
+                          <div className="h-11 w-11 overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-xs font-bold text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white">
+                            <MiniAvatar
+                              name={item.player?.name}
+                              logo={item.player?.foto}
+                            />
                           </div>
+                          {/* INFO */}
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold text-white">
+                            <div className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                               {item.player?.name}
                             </div>
-                            <div className="truncate text-xs text-slate-400">
+                            <div className="truncate text-xs text-slate-500 dark:text-slate-400">
                               {item.tournamentName}
                             </div>
                           </div>
-                          <div className="text-right text-xs text-slate-400">
-                            <div>{formatScore(item.score)}</div>
+                          <div className="text-right text-xs text-slate-500 dark:text-slate-400">
+                            <div className="font-semibold text-slate-700 dark:text-slate-300">
+                              {formatScore(item.score)}
+                            </div>
                             <div>{formatDate(item.data_ndeshjes)}</div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-white/10 px-4 py-5 text-sm text-slate-400">
+                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-400">
                         No MVP data yet.
                       </div>
                     )}
@@ -730,7 +986,7 @@ function Home() {
                 </div>
 
                 <div>
-                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                     Top scorers
                   </div>
 
@@ -739,24 +995,29 @@ function Home() {
                       spotlight.topScorers.slice(0, 3).map((item, index) => (
                         <div
                           key={`${item.playerId || item.playerName}-${index}`}
-                          className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/5 px-4 py-3"
+                          className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-all hover:scale-[1.01] dark:border-white/10 dark:bg-slate-900/60"
                         >
-                          <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-amber-300 to-orange-400 text-sm font-black text-slate-950">
+                          {/* GOALS BADGE */}
+                          <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-amber-300 to-orange-400 text-sm font-black text-slate-950 shadow-md">
                             {item.goals}
                           </div>
+                          {/* PLAYER INFO */}
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold text-white">
+                            <div className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                               {item.playerName}
                             </div>
-                            <div className="truncate text-xs text-slate-400">
+                            <div className="truncate text-xs text-slate-500 dark:text-slate-400">
                               {item.teamName || "Independent"}
                             </div>
                           </div>
-                          <Medal className="h-4 w-4 text-amber-300" />
+                          {/* MEDAL */}
+                          <div className="flex items-center gap-1 text-amber-400 dark:text-amber-300">
+                            <Medal className="h-4 w-4" />
+                          </div>
                         </div>
                       ))
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-white/10 px-4 py-5 text-sm text-slate-400">
+                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-400">
                         No top scorer data yet.
                       </div>
                     )}
@@ -765,14 +1026,27 @@ function Home() {
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        <section className={`${panel} p-5`}>
-          <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-            <Sparkles className="h-4 w-4 text-cyan-300" />
+        <motion.div
+          variants={fadeUp}
+          whileHover={{
+            y: -6,
+            scale: 1.01,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+          }}
+          className={`${panel} p-5 transition-colors`}
+        >
+          {/* HEADER */}
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            <Sparkles className="h-4 w-4 text-cyan-500 dark:text-cyan-300" />
             Supported sports
           </div>
 
+          {/* CONTENT */}
           <div className="flex flex-wrap gap-3">
             {dashboard?.sports?.length ? (
               dashboard.sports.map((sport) => {
@@ -781,19 +1055,21 @@ function Home() {
                 return (
                   <div
                     key={sport.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    <SportIcon className="h-4 w-4 text-emerald-300" />
-                    <span>{sport.emertimi}</span>
+                    <SportIcon className="h-4 w-4 text-emerald-500 dark:text-emerald-300" />
+                    <span className="font-medium">{sport.emertimi}</span>
                   </div>
                 );
               })
             ) : (
-              <div className="text-sm text-slate-400">No sports available.</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400">
+                No sports available.
+              </div>
             )}
           </div>
-        </section>
-      </main>
+        </motion.div>
+      </motion.main>
     </div>
   );
 }

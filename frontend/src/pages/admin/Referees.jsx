@@ -1,11 +1,11 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from "lucide-react";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const initialFormData = {
   emri: "",
@@ -79,38 +79,47 @@ export default function Referees() {
     kategoria: "",
     pervoja_vitesh: "",
   });
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     search: "",
     kategoria: "",
-  })
+  });
+
+  const loadReferees = useCallback(async (pageNum, filtersObj) => {
+    if (!user?.is_admin) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const params = {
+        page: pageNum,
+        limit: 10,
+        ...(filtersObj.search ? { search: filtersObj.search } : {}),
+        ...(filtersObj.kategoria ? { kategoria: filtersObj.kategoria } : {}),
+      };
+      const response = await api.get(`/referees`, { params });
+      const refereePayload = response.data;
+      const refereesData = Array.isArray(refereePayload)
+        ? refereePayload
+        : refereePayload?.data ?? [];
+      const paginationData = Array.isArray(refereePayload)
+        ? null
+        : refereePayload?.pagination ?? null;
+
+      setReferees(Array.isArray(refereesData) ? refereesData : []);
+      setPagination(paginationData);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.is_admin]);
 
   useEffect(() => {
-    const loadReferees = async () => {
-      if (!user?.is_admin) {
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-      const params = new URLSearchParams({
-        ...(filters.search ? { search: filters.search } : {}),
-        ...(filters.kategoria ? { kategoria: filters.kategoria } : {}),
-      });
-        const response = await api.get(`/referees?${params.toString()}`);
-        const normalizedReferees = Array.isArray(response.data)
-          ? response.data
-          : Array.isArray(response.data?.data)
-            ? response.data.data
-            : [];
-        setReferees(normalizedReferees);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadReferees();
-  }, [user, filters]);
+    loadReferees(page, filters);
+  }, [page, filters, loadReferees]);
 
 
   useEffect(() => {
@@ -137,6 +146,7 @@ export default function Referees() {
       ...prev,
       [name]: value,
     }));
+    setPage(1);
   };
 
   const handleClearFilters = () => {
@@ -233,9 +243,10 @@ export default function Referees() {
     e.preventDefault();
     try {
       await refereeCreateSchema.validate(formData, { abortEarly: false });
-      const response = await api.post(`/referees`, buildPayload());
-      setReferees((prev) => [...prev, response.data]);
+      await api.post(`/referees`, buildPayload());
       handleCloseModal();
+      setPage(1);
+      await loadReferees(1, filters);
       setAlert({ type: "success", message: "Referee created successfully" });
     } catch (err) {
       if (err.inner) {
@@ -255,9 +266,9 @@ export default function Referees() {
     if (!selectedReferee) return;
     try {
       await refereeUpdateSchema.validate(formData, { abortEarly: false });
-      const response = await api.put(`/referees/${selectedReferee.id}`, buildPayload());
-      setReferees((prev) => prev.map((item) => (item.id === response.data.id ? response.data : item)));
+      await api.put(`/referees/${selectedReferee.id}`, buildPayload());
       handleCloseEditModal();
+      await loadReferees(page, filters);
       setAlert({ type: "success", message: "Referee updated successfully" });
     } catch (err) {
       if (err.inner) {
@@ -276,8 +287,9 @@ export default function Referees() {
     if (!selectedReferee) return;
     try {
       await api.delete(`/referees/${selectedReferee.id}`);
-      setReferees((prev) => prev.filter((item) => item.id !== selectedReferee.id));
       handleCloseDeleteModal();
+      await loadReferees(page > 1 ? page - 1 : 1, filters);
+      if (page > 1) setPage(page - 1);
       setAlert({ type: "success", message: "Referee deleted successfully" });
     } catch (err) {
       setAlert({ type: "error", message: "Failed to delete referee: " + err.message });
@@ -300,14 +312,15 @@ export default function Referees() {
   const handlePromoteSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/referees/promote", {
+      await api.post("/referees/promote", {
         ...promoteData,
         user_id: Number(promoteData.user_id),
         pervoja_vitesh: promoteData.pervoja_vitesh === "" ? null : Number(promoteData.pervoja_vitesh),
       });
-      setReferees((prev) => [...prev, response.data]);
       setShowPromoteModal(false);
       setPromoteData({ user_id: "", telefoni: "", nr_licences: "", kategoria: "", pervoja_vitesh: "" });
+      setPage(1);
+      await loadReferees(1, filters);
       setAlert({ type: "success", message: "User promoted to referee successfully" });
     } catch (err) {
       setAlert({ type: "error", message: err.response?.data?.error || "Failed to promote user" });
@@ -515,6 +528,82 @@ export default function Referees() {
             </tbody>
           </table>
         </div>
+
+        {pagination && (
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  {pagination.total && (
+                    <>
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> referees)
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Add New Referee Modal */}
         {showModal && (

@@ -1,11 +1,11 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from "lucide-react";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const initialFormData = {
   emertimi: "",
@@ -92,47 +92,45 @@ export default function Venues() {
     qyteti: "",
     statusi: "",
   });
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
 
-  // Loads venues when admin access is confirmed.
+  const loadVenues = useCallback(async (pageNum, filtersObj) => {
+    if (!user?.is_admin) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const params = {
+        page: pageNum,
+        limit: 10,
+        ...(filtersObj.search && { search: filtersObj.search }),
+        ...(filtersObj.qyteti && { qyteti: filtersObj.qyteti }),
+        ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
+      };
+      const response = await api.get(`/venues`, { params });
+      const venuePayload = response.data;
+      const venuesData = Array.isArray(venuePayload)
+        ? venuePayload
+        : venuePayload?.data ?? [];
+      const paginationData = Array.isArray(venuePayload)
+        ? null
+        : venuePayload?.pagination ?? null;
+
+      setVenues(Array.isArray(venuesData) ? venuesData : []);
+      setPagination(paginationData);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.is_admin]);
+
   useEffect(() => {
-    const loadVenues = async () => {
-      if (!user?.is_admin) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          ...(filters.search && { search: filters.search }),
-          ...(filters.qyteti && { qyteti: filters.qyteti }),
-          ...(filters.statusi && { statusi: filters.statusi }),
-        });
-        const response = await api.get(`/venues?${params}`)
-
-        const data = response.data;
-        setVenues(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadVenues();
-  }, [user, filters]);
-
-  // Debounced search effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }))
-      if (searchQuery !== filters.search) {
-        // Already handled by the dependency on filters in loadVenues
-      }
-    }, 400);
-    
-    return () => clearTimeout(timer);
-  }, [searchQuery, filters.search])
+    loadVenues(page, filters);
+  }, [page, filters, loadVenues]);
 
   const resetForm = () => {
     setFormData(initialFormData);
@@ -144,6 +142,7 @@ export default function Venues() {
       ...prev,
       [name]: value,
     }));
+    setPage(1);
   };
 
   const handleClearFilters = () => {
@@ -240,12 +239,11 @@ export default function Venues() {
 
     try {
       await venueCreateSchema.validate(formData, { abortEarly: false });
-      const response = await api.post(`/venues`, buildPayload())
+      await api.post(`/venues`, buildPayload())
 
-      const data = response.data;
-
-      setVenues((prev) => [...prev, data]);
       handleCloseModal();
+      setPage(1);
+      await loadVenues(1, filters);
       setAlert({ type: "success", message: "Venue created successfully!" });
     } catch (err) {
       if (err.inner) {
@@ -268,12 +266,10 @@ export default function Venues() {
 
     try {
       await venueUpdateSchema.validate(formData, { abortEarly: false });
-      const response = await api.put(`/venues/${selectedVenue.id}`, buildPayload())
+      await api.put(`/venues/${selectedVenue.id}`, buildPayload())
 
-      const data = response.data;
-
-      setVenues((prev) => prev.map((item) => (item.id === data.id ? data : item)));
       handleCloseEditModal();
+      await loadVenues(page, filters);
       setAlert({ type: "success", message: "Venue updated successfully!" });
     } catch (err) {
       if (err.inner) {
@@ -294,8 +290,9 @@ export default function Venues() {
     try {
       await api.delete(`/venues/${selectedVenue.id}`)
 
-      setVenues((prev) => prev.filter((item) => item.id !== selectedVenue.id));
       handleCloseDeleteModal();
+      await loadVenues(page > 1 ? page - 1 : 1, filters);
+      if (page > 1) setPage(page - 1);
       setAlert({ type: "success", message: "Venue deleted successfully!" });
     } catch (err) {
       setAlert({ type: "error", message: "Error deleting venue: " + err.message });
@@ -490,6 +487,82 @@ export default function Venues() {
             </tbody>
           </table>
         </div>
+
+        {pagination && (
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  {pagination.total && (
+                    <>
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> venues)
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showModal && (
           <div

@@ -4,8 +4,8 @@ import * as yup from 'yup';
 import AuthContext from '../../context/AuthContext';
 import api from '../../config/axiosInstance';
 import { Alert } from '../../components/Alert';
-import { Trash2, Edit, Eye, Plus, Search, SlidersHorizontal } from "lucide-react";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import { Trash2, Edit, Eye, Plus, Search, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const initialFormData = {
   emertimi: '',
@@ -114,8 +114,10 @@ export default function SportsManagment() {
     search: "",
     lloji: "",
   });
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
 
-  const loadSports = useCallback(async (filtersObj) => {
+  const loadSports = useCallback(async (pageNum, filtersObj) => {
     if (!isAdmin) {
       setLoading(false);
       setHasLoaded(true);
@@ -126,14 +128,23 @@ export default function SportsManagment() {
       setLoading(true);
       setError('');
 
-      const params = {};
+      const params = { page: pageNum, limit: 10 };
       const search = filtersObj.search.trim();
 
       if (search) params.search = search;
       if (filtersObj.lloji) params.lloji = filtersObj.lloji;
 
       const response = await api.get(`/sports`, { params });
-      setSports(Array.isArray(response.data) ? response.data : []);
+      const sportsPayload = response.data;
+      const sportsData = Array.isArray(sportsPayload)
+        ? sportsPayload
+        : (sportsPayload?.data ?? []);
+      const paginationData = Array.isArray(sportsPayload)
+        ? null
+        : (sportsPayload?.pagination ?? null);
+
+      setSports(Array.isArray(sportsData) ? sportsData : []);
+      setPagination(paginationData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -144,12 +155,13 @@ export default function SportsManagment() {
 
   useEffect(() => {
     if (!authLoading) {
-      loadSports(filters);
+      loadSports(page, filters);
     }
-  }, [authLoading, filters, loadSports]);
+  }, [authLoading, page, filters, loadSports]);
 
   const handleClearFilters = () => {
     setFilters({ search: "", lloji: "" });
+    setPage(1);
   };
 
   const hasActiveFilters = filters.search.trim() !== "" || filters.lloji !== "";
@@ -197,7 +209,8 @@ export default function SportsManagment() {
 
       setFormData(initialFormData);
       setShowModal(false);
-      await loadSports(filters);
+      setPage(1);
+      await loadSports(1, filters);
       setAlert({ type: 'success', message: 'Sport created successfully!' });
     } catch (err) {
       if (err.inner) {
@@ -283,7 +296,7 @@ export default function SportsManagment() {
       setFormData(initialFormData);
       setSelectedSport(null);
       setShowEditModal(false);
-      await loadSports(filters);
+      await loadSports(page, filters);
       setAlert({ type: 'success', message: 'Sport updated successfully!' });
     } catch (err) {
       if (err.inner) {
@@ -304,6 +317,7 @@ export default function SportsManagment() {
       ...prev,
       [name]: value,
     }));
+    setPage(1);
   };
 
   const handleDeleteConfirm = async () => {
@@ -312,9 +326,10 @@ export default function SportsManagment() {
     try {
       await api.delete(`/sports/${selectedSport.id}`)
 
-      setSports((prev) => prev.filter((s) => s.id !== selectedSport.id));
       setSelectedSport(null);
       setShowDeleteModal(false);
+      await loadSports(page > 1 ? page - 1 : 1, filters);
+      if (page > 1) setPage(page - 1);
       setAlert({ type: 'success', message: 'Sport deleted successfully!' });
     } catch (err) {
       setAlert({ type: 'error', message: 'Error deleting sport: ' + err.message });
@@ -504,6 +519,81 @@ export default function SportsManagment() {
           </table>
         </div>
 
+        {pagination && (
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  {pagination.total && (
+                    <>
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> sports)
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Create sport modal */}
         {showModal && (

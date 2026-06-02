@@ -5,8 +5,18 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import {
+  Edit,
+  Trash2,
+  Eye,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -42,8 +52,14 @@ const resolvePlayerFoto = (playerFoto) => {
 };
 
 const playerCreateSchema = yup.object().shape({
-  emri: yup.string().min(2, "First name must be at least 2 characters").required("First name is required"),
-  mbiemri: yup.string().min(2, "Last name must be at least 2 characters").required("Last name is required"),
+  emri: yup
+    .string()
+    .min(2, "First name must be at least 2 characters")
+    .required("First name is required"),
+  mbiemri: yup
+    .string()
+    .min(2, "Last name must be at least 2 characters")
+    .required("Last name is required"),
   data_lindjes: yup.string().required("Date of birth is required"),
   ekipi_id: yup.string().nullable(),
   pozicioni: yup.string().required("Position is required"),
@@ -97,7 +113,7 @@ export default function Players() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [alert, setAlert] = useState(null);
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState(false);
   const [selectedSportId, setSelectedSportId] = useState("");
   const [filters, setFilters] = useState({
     search: "",
@@ -118,8 +134,12 @@ export default function Players() {
     foto: "",
   });
   const [formErrors, setFormErrors] = useState({});
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
 
-  const currentFotoPreview = formData.foto ? resolvePlayerFoto(formData.foto) : "";
+  const currentFotoPreview = formData.foto
+    ? resolvePlayerFoto(formData.foto)
+    : "";
 
   const handleFotoUpload = async (e) => {
     const file = e.target.files[0];
@@ -131,93 +151,105 @@ export default function Players() {
     try {
       const response = await api.post(`/players/upload-player-foto`, data, {
         headers: {
-          "Content-Type": "multipart/form-data"
-        }
+          "Content-Type": "multipart/form-data",
+        },
       });
       setFormData((prev) => ({ ...prev, foto: response.data.url }));
     } catch (err) {
       const errorMessage = err?.response?.data?.error || err.message;
-      setAlert({ type: 'error', message: 'Error uploading photo: ' + errorMessage });
+      setAlert({
+        type: "error",
+        message: "Error uploading photo: " + errorMessage,
+      });
     } finally {
       setUploading(false);
     }
   };
 
   // Fetch players data from backend via API
-  const loadPlayers = useCallback(async (filtersObj) => {
-    if (!user?.is_admin) {
-      setLoading(false);
-      setHasLoaded(true);
-      return;
-    }
-    try {
-      setLoading(true);
-      setError("");
+  const loadPlayers = useCallback(
+    async (pageNum, filtersObj) => {
+      if (!user?.is_admin) {
+        setLoading(false);
+        setHasLoaded(true);
+        return;
+      }
+      try {
+        setLoading(true);
+        setError("");
 
-      const params = {};
-      const search = filtersObj.search.trim();
+        const params = { page: pageNum, limit: 10 };
+        const search = filtersObj.search.trim();
 
-      if (search) params.search = search;
-      if (filtersObj.ekipi_id) params.ekipi_id = filtersObj.ekipi_id;
-      if (filtersObj.pozicioni) params.pozicioni = filtersObj.pozicioni;
-      if (filtersObj.kombesia) params.kombesia = filtersObj.kombesia;
+        if (search) params.search = search;
+        if (filtersObj.ekipi_id) params.ekipi_id = filtersObj.ekipi_id;
+        if (filtersObj.pozicioni) params.pozicioni = filtersObj.pozicioni;
+        if (filtersObj.kombesia) params.kombesia = filtersObj.kombesia;
 
-      const [playersResponse, teamsResponse, sportsResponse] = await Promise.all([
-        api.get(`/players`, { params }),
-        api.get(`/teams`),
-        api.get(`/sports`),
-      ]);
+        const [playersResponse, teamsResponse, sportsResponse] =
+          await Promise.all([
+            api.get(`/players`, { params }),
+            api.get(`/teams`),
+            api.get(`/sports`),
+          ]);
 
-      const playersData = Array.isArray(playersResponse.data) ? playersResponse.data : [];
-      const teamsData = teamsResponse.data;
-      const sportsData = sportsResponse.data;
+        const playerPayload = playersResponse.data;
+        const playersData = Array.isArray(playerPayload)
+          ? playerPayload
+          : (playerPayload?.data ?? []);
+        const paginationData = Array.isArray(playerPayload)
+          ? null
+          : (playerPayload?.pagination ?? null);
+        const teamsData = teamsResponse.data;
+        const sportsData = sportsResponse.data;
 
-      setPlayers(playersData);
-      setTeams(teamsData);
-      setSports(Array.isArray(sportsData) ? sportsData : []);
+        setPlayers(Array.isArray(playersData) ? playersData : []);
+        setPagination(paginationData);
+        setTeams(teamsData);
+        setSports(Array.isArray(sportsData) ? sportsData : []);
 
-      // Extract unique teams
-      const uniqueTeams = Array.from(
-        new Map(
-          teamsData.map((team) => [team.id, team.emertimi])
-        ).entries()
-      ).map(([id, emertimi]) => ({ id, emertimi }));
-      setTeamOptions(uniqueTeams);
+        // Extract unique teams
+        const uniqueTeams = Array.from(
+          new Map(teamsData.map((team) => [team.id, team.emertimi])).entries(),
+        ).map(([id, emertimi]) => ({ id, emertimi }));
+        setTeamOptions(uniqueTeams);
 
-      // Extract unique positions
-      const uniquePositions = Array.from(
-        new Set(
-          playersData
-            .map((p) => p.pozicioni)
-            .filter(Boolean)
-            .map((p) => p.trim())
-            .filter(Boolean)
-        )
-      ).sort((a, b) => a.localeCompare(b));
-      setPositionOptions(uniquePositions);
+        // Extract unique positions
+        const uniquePositions = Array.from(
+          new Set(
+            playersData
+              .map((p) => p.pozicioni)
+              .filter(Boolean)
+              .map((p) => p.trim())
+              .filter(Boolean),
+          ),
+        ).sort((a, b) => a.localeCompare(b));
+        setPositionOptions(uniquePositions);
 
-      // Extract unique nationalities
-      const uniqueNationalities = Array.from(
-        new Set(
-          playersData
-            .map((p) => p.kombesia)
-            .filter(Boolean)
-            .map((p) => p.trim())
-            .filter(Boolean)
-        )
-      ).sort((a, b) => a.localeCompare(b));
-      setNationalityOptions(uniqueNationalities);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      setHasLoaded(true);
-    }
-  }, [user]);
+        // Extract unique nationalities
+        const uniqueNationalities = Array.from(
+          new Set(
+            playersData
+              .map((p) => p.kombesia)
+              .filter(Boolean)
+              .map((p) => p.trim())
+              .filter(Boolean),
+          ),
+        ).sort((a, b) => a.localeCompare(b));
+        setNationalityOptions(uniqueNationalities);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        setHasLoaded(true);
+      }
+    },
+    [user],
+  );
 
   useEffect(() => {
-    loadPlayers(filters);
-  }, [filters, loadPlayers]);
+    loadPlayers(page, filters);
+  }, [page, filters, loadPlayers]);
 
   // Create players handlers
 
@@ -228,9 +260,14 @@ export default function Players() {
 
   const handleClearFilters = () => {
     setFilters({ search: "", ekipi_id: "", pozicioni: "", kombesia: "" });
+    setPage(1);
   };
 
-  const hasActiveFilters = filters.search.trim() !== "" || filters.ekipi_id !== "" || filters.pozicioni !== "" || filters.kombesia !== "";
+  const hasActiveFilters =
+    filters.search.trim() !== "" ||
+    filters.ekipi_id !== "" ||
+    filters.pozicioni !== "" ||
+    filters.kombesia !== "";
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -253,6 +290,7 @@ export default function Players() {
       ...prev,
       [name]: value,
     }));
+    setPage(1);
   };
 
   const getTeamSelectValue = (teamValue) => {
@@ -260,7 +298,8 @@ export default function Players() {
     if (!teamValue) return "";
 
     const matchedTeam = teams.find(
-      (team) => String(team.id) === String(teamValue) || team.emertimi === teamValue,
+      (team) =>
+        String(team.id) === String(teamValue) || team.emertimi === teamValue,
     );
 
     return matchedTeam ? String(matchedTeam.id) : "";
@@ -298,9 +337,10 @@ export default function Players() {
       setFormErrors({});
       setSelectedSportId("");
       setShowModal(false);
-      
-      await loadPlayers(filters);
-      setAlert({ type: 'success', message: 'Player created successfully!' });
+
+      setPage(1);
+      await loadPlayers(1, filters);
+      setAlert({ type: "success", message: "Player created successfully!" });
     } catch (err) {
       if (err.inner) {
         const validationErrors = {};
@@ -310,7 +350,10 @@ export default function Players() {
         setFormErrors(validationErrors);
       } else {
         const errorMessage = err?.response?.data?.error || err.message;
-        setAlert({ type: 'error', message: 'Error creating player: ' + errorMessage });
+        setAlert({
+          type: "error",
+          message: "Error creating player: " + errorMessage,
+        });
       }
     }
   };
@@ -379,7 +422,9 @@ export default function Players() {
     setFormData({
       emri: player.emri,
       mbiemri: player.mbiemri,
-      data_lindjes: player.data_lindjes ? player.data_lindjes.split("T")[0] : "",
+      data_lindjes: player.data_lindjes
+        ? player.data_lindjes.split("T")[0]
+        : "",
       ekipi_id: getTeamSelectValue(player.ekipi_id),
       pozicioni: player.pozicioni,
       numri: player.numri,
@@ -388,8 +433,12 @@ export default function Players() {
       kombesia: player.kombesia,
       foto: player.foto || "",
     });
-    const matchedTeam = teams.find((team) => String(team.id) === String(getTeamSelectValue(player.ekipi_id)));
-    setSelectedSportId(matchedTeam?.sporti_id ? String(matchedTeam.sporti_id) : "");
+    const matchedTeam = teams.find(
+      (team) => String(team.id) === String(getTeamSelectValue(player.ekipi_id)),
+    );
+    setSelectedSportId(
+      matchedTeam?.sporti_id ? String(matchedTeam.sporti_id) : "",
+    );
     setShowEditModal(true);
   };
 
@@ -427,9 +476,9 @@ export default function Players() {
 
       setSelectedPlayer(null);
       setShowEditModal(false);
-      
-      await loadPlayers(filters);
-      setAlert({ type: 'success', message: 'Player updated successfully!' });
+
+      await loadPlayers(page, filters);
+      setAlert({ type: "success", message: "Player updated successfully!" });
     } catch (err) {
       if (err.inner) {
         const validationErrors = {};
@@ -439,7 +488,10 @@ export default function Players() {
         setFormErrors(validationErrors);
       } else {
         const errorMessage = err?.response?.data?.error || err.message;
-        setAlert({ type: 'error', message: 'Error updating player: ' + errorMessage });
+        setAlert({
+          type: "error",
+          message: "Error updating player: " + errorMessage,
+        });
       }
     }
   };
@@ -453,11 +505,15 @@ export default function Players() {
 
       setSelectedPlayer(null);
       setShowDeleteModal(false);
-      
-      await loadPlayers(filters);
-      setAlert({ type: 'success', message: 'Player deleted successfully!' });
+
+      await loadPlayers(page > 1 ? page - 1 : 1, filters);
+      if (page > 1) setPage(page - 1);
+      setAlert({ type: "success", message: "Player deleted successfully!" });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error deleting player: ' + err.message });
+      setAlert({
+        type: "error",
+        message: "Error deleting player: " + err.message,
+      });
     }
   };
 
@@ -468,12 +524,12 @@ export default function Players() {
     return <Navigate to="/login" replace />;
   }
 
-  if (loading){ 
+  if (loading) {
     return (
       <div className="delay-skeleton">
         <TableSkeleton />
       </div>
-    )
+    );
   }
 
   if (error)
@@ -490,21 +546,26 @@ export default function Players() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
-        <Alert 
-          type={alert.type} 
+        <Alert
+          type={alert.type}
           message={alert.message}
           onClose={() => setAlert(null)}
         />
       )}
       <div className="w-full mx-auto space-y-6">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">Player Management</h2>
-          
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">
+            Player Management
+          </h2>
+
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="relative flex-1 max-w-2xl">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                  <Search
+                    size={18}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
                 </div>
                 <input
                   type="text"
@@ -584,13 +645,13 @@ export default function Players() {
               </div>
 
               {hasActiveFilters && (
-              <button
-                onClick={handleClearFilters}
-                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto"
-              >
-                <X size={16} />
-                Clear Filters
-              </button>
+                <button
+                  onClick={handleClearFilters}
+                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto"
+                >
+                  <X size={16} />
+                  Clear Filters
+                </button>
               )}
             </div>
           </div>
@@ -603,7 +664,9 @@ export default function Players() {
                 <th className="px-6 py-4 text-center font-semibold">ID</th>
                 <th className="px-6 py-4 text-left font-semibold">Name</th>
                 <th className="px-6 py-4 text-left font-semibold">Last Name</th>
-                <th className="px-6 py-4 text-center font-semibold">Birthday</th>
+                <th className="px-6 py-4 text-center font-semibold">
+                  Birthday
+                </th>
                 <th className="px-6 py-4 text-left font-semibold">Team</th>
                 <th className="px-6 py-4 text-left font-semibold">Position</th>
                 <th className="px-6 py-4 text-left font-semibold">Number</th>
@@ -686,13 +749,105 @@ export default function Players() {
                     colSpan="11"
                     className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                   >
-                    {hasActiveFilters ? 'No players match these filters.' : 'No players found. Click "Add Player" to add a new one.'}
+                    {hasActiveFilters
+                      ? "No players match these filters."
+                      : 'No players found. Click "Add Player" to add a new one.'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {pagination && (
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {page}
+                  </span>{" "}
+                  from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {pagination.totalPages}
+                  </span>
+                  {pagination.total && (
+                    <>
+                      {" "}
+                      (Total{" "}
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {pagination.total}
+                      </span>{" "}
+                      players)
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <nav
+                  className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1"
+                  aria-label="Pagination"
+                >
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ADD NEW PLAYER MODAL */}
         {showModal && (
@@ -706,7 +861,9 @@ export default function Players() {
             >
               <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
                 <div className="border-2 border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-col">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Player Profile Image</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
+                    Player Profile Image
+                  </p>
                   <div className="h-[340px] border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
                     {currentFotoPreview ? (
                       <img
@@ -715,7 +872,9 @@ export default function Players() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">PLAYER IMAGE</p>
+                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">
+                        PLAYER IMAGE
+                      </p>
                     )}
                   </div>
                   <div>
@@ -728,177 +887,207 @@ export default function Players() {
                       onChange={handleFotoUpload}
                       className="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 dark:file:bg-green-500/10 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-500/20"
                     />
-                    {uploading && <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Uploading...</p>}
+                    {uploading && (
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                        Uploading...
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Add New Player</h3>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
+                    Add New Player
+                  </h3>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* First name input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="emri"
-                      value={formData.emri}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.emri ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
-                      placeholder="First Name"
-                      required
-                    />
-                    {formErrors.emri && <p className="text-sm text-red-500 mt-1">{formErrors.emri}</p>}
-                  </div>
-                  {/* Last name input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="mbiemri"
-                      value={formData.mbiemri}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.mbiemri ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
-                      placeholder="Last Name"
-                      required
-                    />
-                    {formErrors.mbiemri && <p className="text-sm text-red-500 mt-1">{formErrors.mbiemri}</p>}
-                  </div>
+                      {/* First name input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="emri"
+                          value={formData.emri}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-2 border ${formErrors.emri ? "border-red-500" : "border-gray-300 dark:border-slate-600"} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
+                          placeholder="First Name"
+                          required
+                        />
+                        {formErrors.emri && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {formErrors.emri}
+                          </p>
+                        )}
+                      </div>
+                      {/* Last name input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Last Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="mbiemri"
+                          value={formData.mbiemri}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-2 border ${formErrors.mbiemri ? "border-red-500" : "border-gray-300 dark:border-slate-600"} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
+                          placeholder="Last Name"
+                          required
+                        />
+                        {formErrors.mbiemri && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {formErrors.mbiemri}
+                          </p>
+                        )}
+                      </div>
 
-                  {/* Date of Birth input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Date of Birth *
-                    </label>
-                    <input
-                      type="date"
-                      name="data_lindjes"
-                      value={formData.data_lindjes}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.data_lindjes ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
-                      placeholder="****-**-**"
-                      required
-                    />
-                    {formErrors.data_lindjes && <p className="text-sm text-red-500 mt-1">{formErrors.data_lindjes}</p>}
-                  </div>
-                  {/* Team input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Sport Filter
-                    </label>
-                    <select
-                      value={selectedSportId}
-                      onChange={(e) => {
-                        setSelectedSportId(e.target.value);
-                        setFormData((prev) => ({ ...prev, ekipi_id: "" }));
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                    >
-                      <option value="">All sports</option>
-                      {sports.map((sport) => (
-                        <option key={sport.id} value={sport.id}>
-                          {sport.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Team
-                    </label>
-                    <select
-                      name="ekipi_id"
-                      value={formData.ekipi_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                    >
-                      <option value="">No Team</option>
-                      {filteredTeams.map((team) => (
-                        <option key={team.id} value={team.id}>
-                          {team.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* Position input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Position
-                    </label>
-                    <input
-                      type="text"
-                      name="pozicioni"
-                      value={formData.pozicioni}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="Pozition"
-                    />
-                  </div>
-                  {/* Number input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Number
-                    </label>
-                    <input
-                      type="text"
-                      name="numri"
-                      value={formData.numri}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="1,2,3..."
-                    />
-                  </div>
-                  {/* Hight input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Hight *
-                    </label>
-                    <input
-                      type="text"
-                      name="gjatesia"
-                      value={formData.gjatesia}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.gjatesia ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
-                      placeholder="150cm..."
-                      required
-                    />
-                    {formErrors.gjatesia && <p className="text-sm text-red-500 mt-1">{formErrors.gjatesia}</p>}
-                  </div>
-                  {/* Weight input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Weight *
-                    </label>
-                    <input
-                      type="text"
-                      name="pesha"
-                      value={formData.pesha}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.pesha ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
-                      placeholder="Weight"
-                      required
-                    />
-                    {formErrors.pesha && <p className="text-sm text-red-500 mt-1">{formErrors.pesha}</p>}
-                  </div>
-                  {/* Nationality input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Nationality *
-                    </label>
-                    <input
-                      type="text"
-                      name="kombesia"
-                      value={formData.kombesia}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border ${formErrors.kombesia ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
-                      placeholder="Shqiptar..."
-                      required
-                    />
-                    {formErrors.kombesia && <p className="text-sm text-red-500 mt-1">{formErrors.kombesia}</p>}
-                  </div>
+                      {/* Date of Birth input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Date of Birth *
+                        </label>
+                        <input
+                          type="date"
+                          name="data_lindjes"
+                          value={formData.data_lindjes}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-2 border ${formErrors.data_lindjes ? "border-red-500" : "border-gray-300 dark:border-slate-600"} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
+                          placeholder="****-**-**"
+                          required
+                        />
+                        {formErrors.data_lindjes && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {formErrors.data_lindjes}
+                          </p>
+                        )}
+                      </div>
+                      {/* Team input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Sport Filter
+                        </label>
+                        <select
+                          value={selectedSportId}
+                          onChange={(e) => {
+                            setSelectedSportId(e.target.value);
+                            setFormData((prev) => ({ ...prev, ekipi_id: "" }));
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                        >
+                          <option value="">All sports</option>
+                          {sports.map((sport) => (
+                            <option key={sport.id} value={sport.id}>
+                              {sport.emertimi}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Team
+                        </label>
+                        <select
+                          name="ekipi_id"
+                          value={formData.ekipi_id}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                        >
+                          <option value="">No Team</option>
+                          {filteredTeams.map((team) => (
+                            <option key={team.id} value={team.id}>
+                              {team.emertimi}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Position input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Position
+                        </label>
+                        <input
+                          type="text"
+                          name="pozicioni"
+                          value={formData.pozicioni}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="Pozition"
+                        />
+                      </div>
+                      {/* Number input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Number
+                        </label>
+                        <input
+                          type="text"
+                          name="numri"
+                          value={formData.numri}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="1,2,3..."
+                        />
+                      </div>
+                      {/* Hight input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Hight *
+                        </label>
+                        <input
+                          type="text"
+                          name="gjatesia"
+                          value={formData.gjatesia}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-2 border ${formErrors.gjatesia ? "border-red-500" : "border-gray-300 dark:border-slate-600"} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
+                          placeholder="150cm..."
+                          required
+                        />
+                        {formErrors.gjatesia && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {formErrors.gjatesia}
+                          </p>
+                        )}
+                      </div>
+                      {/* Weight input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Weight *
+                        </label>
+                        <input
+                          type="text"
+                          name="pesha"
+                          value={formData.pesha}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-2 border ${formErrors.pesha ? "border-red-500" : "border-gray-300 dark:border-slate-600"} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
+                          placeholder="Weight"
+                          required
+                        />
+                        {formErrors.pesha && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {formErrors.pesha}
+                          </p>
+                        )}
+                      </div>
+                      {/* Nationality input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Nationality *
+                        </label>
+                        <input
+                          type="text"
+                          name="kombesia"
+                          value={formData.kombesia}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-2 border ${formErrors.kombesia ? "border-red-500" : "border-gray-300 dark:border-slate-600"} rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200`}
+                          placeholder="Shqiptar..."
+                          required
+                        />
+                        {formErrors.kombesia && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {formErrors.kombesia}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     {/* Form buttons */}
                     <div className="flex gap-4 pt-4">
@@ -934,7 +1123,9 @@ export default function Players() {
             >
               <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
                 <div className="border-2 border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-col">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Player Profile Image</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
+                    Player Profile Image
+                  </p>
                   <div className="h-[340px] border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
                     {selectedPlayer.foto ? (
                       <img
@@ -943,85 +1134,89 @@ export default function Players() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">PLAYER IMAGE</p>
+                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">
+                        PLAYER IMAGE
+                      </p>
                     )}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Player Details</h3>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
+                    Player Details
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Player Name
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.emri}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Last Name
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.mbiemri}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Birth Day
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.data_lindjes}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Ekipi
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.ekipi_id}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Position
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.pozicioni}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Number
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.numri}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Hight
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.gjatesia}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Weight
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.pesha}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                    Nationality
-                  </label>
-                  <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
-                    {selectedPlayer.kombesia}
-                  </p>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Player Name
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.emri}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Last Name
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.mbiemri}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Birth Day
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.data_lindjes}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Ekipi
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.ekipi_id}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Position
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.pozicioni}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Number
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.numri}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Hight
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.gjatesia}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Weight
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.pesha}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Nationality
+                      </label>
+                      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                        {selectedPlayer.kombesia}
+                      </p>
+                    </div>
                   </div>
                   <div className="flex gap-4 pt-4">
                     <button
@@ -1050,7 +1245,9 @@ export default function Players() {
             >
               <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-6">
                 <div className="border-2 border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-col">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Player Profile Image</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
+                    Player Profile Image
+                  </p>
                   <div className="h-[340px] border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
                     {currentFotoPreview ? (
                       <img
@@ -1059,7 +1256,9 @@ export default function Players() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">PLAYER PROFILE IMAGE HERE</p>
+                      <p className="text-center text-gray-500 dark:text-slate-400 font-medium px-4">
+                        PLAYER PROFILE IMAGE HERE
+                      </p>
                     )}
                   </div>
                   <div>
@@ -1072,171 +1271,177 @@ export default function Players() {
                       onChange={handleFotoUpload}
                       className="w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-50 dark:file:bg-green-500/10 file:text-green-700 dark:file:text-green-400 hover:file:bg-green-100 dark:hover:file:bg-green-500/20"
                     />
-                    {uploading && <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Uploading...</p>}
+                    {uploading && (
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                        Uploading...
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Edit Player</h3>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
+                    Edit Player
+                  </h3>
                   <form onSubmit={handleEditSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* First name input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="emri"
-                      value={formData.emri}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="First Name"
-                      required
-                    />
-                  </div>
-                  {/* Last name input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="mbiemri"
-                      value={formData.mbiemri}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="Last Name"
-                      required
-                    />
-                  </div>
+                      {/* First name input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="emri"
+                          value={formData.emri}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="First Name"
+                          required
+                        />
+                      </div>
+                      {/* Last name input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Last Name *
+                        </label>
+                        <input
+                          type="text"
+                          name="mbiemri"
+                          value={formData.mbiemri}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="Last Name"
+                          required
+                        />
+                      </div>
 
-                  {/* Date of Birth input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Date of Birth *
-                    </label>
-                    <input
-                      type="date"
-                      name="data_lindjes"
-                      value={formData.data_lindjes}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="****-**-**"
-                      required
-                    />
-                  </div>
-                  {/* Team input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Sport Filter
-                    </label>
-                    <select
-                      value={selectedSportId}
-                      onChange={(e) => {
-                        setSelectedSportId(e.target.value);
-                        setFormData((prev) => ({ ...prev, ekipi_id: "" }));
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                    >
-                      <option value="">All sports</option>
-                      {sports.map((sport) => (
-                        <option key={sport.id} value={sport.id}>
-                          {sport.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Team
-                    </label>
-                    <select
-                      name="ekipi_id"
-                      value={formData.ekipi_id}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                    >
-                      <option value="">No Team</option>
-                      {filteredTeams.map((team) => (
-                        <option key={team.id} value={team.id}>
-                          {team.emertimi}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* Position input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Position
-                    </label>
-                    <input
-                      type="text"
-                      name="pozicioni"
-                      value={formData.pozicioni}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="Pozition"
-                    />
-                  </div>
-                  {/* Number input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Number
-                    </label>
-                    <input
-                      type="text"
-                      name="numri"
-                      value={formData.numri}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="1,2,3..."
-                    />
-                  </div>
-                  {/* Hight input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Hight *
-                    </label>
-                    <input
-                      type="text"
-                      name="gjatesia"
-                      value={formData.gjatesia}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="150cm..."
-                      required
-                    />
-                  </div>
-                  {/* Weight input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Weight *
-                    </label>
-                    <input
-                      type="text"
-                      name="pesha"
-                      value={formData.pesha}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="Weight"
-                      required
-                    />
-                  </div>
-                  {/* Nationality input field */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                      Nationality *
-                    </label>
-                    <input
-                      type="text"
-                      name="kombesia"
-                      value={formData.kombesia}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
-                      placeholder="Shqiptar..."
-                      required
-                    />
-                  </div>
+                      {/* Date of Birth input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Date of Birth *
+                        </label>
+                        <input
+                          type="date"
+                          name="data_lindjes"
+                          value={formData.data_lindjes}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="****-**-**"
+                          required
+                        />
+                      </div>
+                      {/* Team input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Sport Filter
+                        </label>
+                        <select
+                          value={selectedSportId}
+                          onChange={(e) => {
+                            setSelectedSportId(e.target.value);
+                            setFormData((prev) => ({ ...prev, ekipi_id: "" }));
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                        >
+                          <option value="">All sports</option>
+                          {sports.map((sport) => (
+                            <option key={sport.id} value={sport.id}>
+                              {sport.emertimi}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Team
+                        </label>
+                        <select
+                          name="ekipi_id"
+                          value={formData.ekipi_id}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                        >
+                          <option value="">No Team</option>
+                          {filteredTeams.map((team) => (
+                            <option key={team.id} value={team.id}>
+                              {team.emertimi}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Position input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Position
+                        </label>
+                        <input
+                          type="text"
+                          name="pozicioni"
+                          value={formData.pozicioni}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="Pozition"
+                        />
+                      </div>
+                      {/* Number input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Number
+                        </label>
+                        <input
+                          type="text"
+                          name="numri"
+                          value={formData.numri}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="1,2,3..."
+                        />
+                      </div>
+                      {/* Hight input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Hight *
+                        </label>
+                        <input
+                          type="text"
+                          name="gjatesia"
+                          value={formData.gjatesia}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="150cm..."
+                          required
+                        />
+                      </div>
+                      {/* Weight input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Weight *
+                        </label>
+                        <input
+                          type="text"
+                          name="pesha"
+                          value={formData.pesha}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="Weight"
+                          required
+                        />
+                      </div>
+                      {/* Nationality input field */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                          Nationality *
+                        </label>
+                        <input
+                          type="text"
+                          name="kombesia"
+                          value={formData.kombesia}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200"
+                          placeholder="Shqiptar..."
+                          required
+                        />
+                      </div>
                     </div>
                     {/* Edit form buttons - Save Changes */}
                     <div className="flex gap-4 pt-4">
@@ -1272,27 +1477,33 @@ export default function Players() {
               className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-                <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Delete Player?</h3>
+              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
+                Delete Player?
+              </h3>
 
-                <p className="text-gray-700 dark:text-slate-300 mb-6">
-                    Are you sure you want to delete <strong>{selectedPlayer.emri} {selectedPlayer.mbiemri}</strong> This action cannot be undone.
-                </p>
-                {/* Confirm delete button */}
-                <div className="flex gap-4">
-                    <button
-                    onClick={handleDeleteConfirm}
-                    className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
-                    >
-                        Delete
-                    </button>
+              <p className="text-gray-700 dark:text-slate-300 mb-6">
+                Are you sure you want to delete{" "}
+                <strong>
+                  {selectedPlayer.emri} {selectedPlayer.mbiemri}
+                </strong>{" "}
+                This action cannot be undone.
+              </p>
+              {/* Confirm delete button */}
+              <div className="flex gap-4">
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition duration-200"
+                >
+                  Delete
+                </button>
 
-                    <button
+                <button
                   onClick={handleCloseDeleteModal}
                   className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded-lg transition duration-200"
                 >
                   Cancel
                 </button>
-                </div>
+              </div>
             </div>
           </div>
         )}

@@ -117,7 +117,7 @@ export default function MatchResults() {
       setLoading(true);
       const params = new URLSearchParams({
         page: pageNum,
-        limit: 10,
+        limit: 5,
         ...(filtersObj.fromDate && { fromDate: filtersObj.fromDate }),
         ...(filtersObj.toDate && { toDate: filtersObj.toDate }),
         ...(filtersObj.search && { search: filtersObj.search }),

@@ -110,7 +110,7 @@ export default function Users() {
       setLoading(true);
       const params = new URLSearchParams({
         page: pageNum,
-        limit: 10,
+        limit: 5,
         ...(filtersObj.roli && { roli: filtersObj.roli }),
         ...(filtersObj.search && { search: filtersObj.search }),
       });

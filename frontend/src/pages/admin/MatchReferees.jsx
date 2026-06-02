@@ -4,9 +4,9 @@ import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Calendar, Edit, Eye, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Calendar, Edit, Eye, Plus, Search, SlidersHorizontal, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import socket from "../../socket";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const matchRefereeSchema = yup.object().shape({
   ndeshja_id: yup.string().required("Match is required"),
@@ -174,8 +174,10 @@ export default function MatchReferees() {
   });
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
 
-  const loadData = useCallback(async (filtersObj) => {
+  const loadData = useCallback(async (pageNum, filtersObj) => {
     if (!canAccessPage) {
       setLoading(false);
       return;
@@ -185,14 +187,13 @@ export default function MatchReferees() {
       setLoading(true);
       setError("");
 
-      const params = new URLSearchParams({
+      const params = {
+        page: pageNum,
+        limit: 10,
         ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
         ...(filtersObj.date_from && { date_from: filtersObj.date_from }),
         ...(filtersObj.date_to && { date_to: filtersObj.date_to }),
-      });
-      const assignmentsUrl = params.toString()
-        ? `/match-referees?${params}`
-        : "/match-referees";
+      };
 
       const [
         assignmentsResponse,
@@ -201,15 +202,22 @@ export default function MatchReferees() {
         teamsResponse,
       ] =
         await Promise.all([
-          api.get(assignmentsUrl),
+          api.get("/match-referees", { params }),
           api.get("/matches"),
           api.get("/referees"),
           api.get("/teams"),
         ]);
 
-      setAssignments(
-        Array.isArray(assignmentsResponse.data) ? assignmentsResponse.data : [],
-      );
+      const assignmentPayload = assignmentsResponse.data;
+      const assignmentsData = Array.isArray(assignmentPayload)
+        ? assignmentPayload
+        : assignmentPayload?.data ?? [];
+      const paginationData = Array.isArray(assignmentPayload)
+        ? null
+        : assignmentPayload?.pagination ?? null;
+
+      setAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
+      setPagination(paginationData);
       setMatches(Array.isArray(matchesResponse.data) ? matchesResponse.data : []);
       setReferees(
         Array.isArray(refereesResponse.data) ? refereesResponse.data : [],
@@ -224,8 +232,8 @@ export default function MatchReferees() {
   }, [canAccessPage]);
 
   useEffect(() => {
-    loadData(filters);
-  }, [filters, loadData]);
+    loadData(page, filters);
+  }, [page, filters, loadData]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -277,12 +285,14 @@ export default function MatchReferees() {
       ...prev,
       [name]: value,
     }));
+    setPage(1);
   };
 
   const handleClearFilters = () => {
     setFilters({ statusi: "", date_from: "", date_to: "" });
     setSearchQuery("");
     setDebouncedSearch("");
+    setPage(1);
   };
 
   const getMatchById = (matchId) =>

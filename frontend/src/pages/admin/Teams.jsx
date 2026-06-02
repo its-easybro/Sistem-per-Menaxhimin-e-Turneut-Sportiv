@@ -5,7 +5,16 @@ import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { API_BASE_URL } from "../../config/api";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Eye,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const formatDate = (isoDate) => {
@@ -108,6 +117,8 @@ export default function Teams() {
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     search: "",
     qyteti: "",
@@ -146,64 +157,78 @@ export default function Teams() {
   });
 
   // Loads team records and sport options after auth is ready and admin access is confirmed.
-  const loadTeams = useCallback(async (filtersObj) => {
-    if (!isAdmin) {
-      setLoading(false);
-      setHasLoaded(true);
-      return;
-    }
+  const loadTeams = useCallback(
+    async (pageNum, filtersObj) => {
+      if (!isAdmin) {
+        setLoading(false);
+        setHasLoaded(true);
+        return;
+      }
 
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        setLoading(true);
+        setError(null);
 
-      const params = {};
-      const search = filtersObj.search.trim();
+        const params = { page: pageNum, limit: 10 };
+        const search = filtersObj.search.trim();
 
-      if (search) params.search = search;
-      if (filtersObj.qyteti.trim()) params.qyteti = filtersObj.qyteti.trim();
+        if (search) params.search = search;
+        if (filtersObj.qyteti.trim()) params.qyteti = filtersObj.qyteti.trim();
 
-      const [teamsResponse, sportsResponse] = await Promise.all([
-        api.get(`/teams`, { params }),
-        api.get(`/sports`),
-      ]);
+        const [teamsResponse, sportsResponse] = await Promise.all([
+          api.get(`/teams`, { params }),
+          api.get(`/sports`),
+        ]);
 
-      const teamsData = Array.isArray(teamsResponse.data) ? teamsResponse.data : [];
+        const teamPayload = teamsResponse.data;
+        const teamsData = Array.isArray(teamPayload)
+          ? teamPayload
+          : (teamPayload?.data ?? []);
+        const paginationData = Array.isArray(teamPayload)
+          ? null
+          : (teamPayload?.pagination ?? null);
 
-      setTeams(teamsData);
-      setSports(Array.isArray(sportsResponse.data) ? sportsResponse.data : []);
-      
-      // Extract all unique cities from teams and sort them
-      const cities = teamsData
-        .map((team) => team.qyteti)
-        .filter(Boolean)
-        .map((city) => city.trim())
-        .filter(Boolean);
-      
-      const uniqueCities = Array.from(new Set(cities)).sort((a, b) =>
-        a.localeCompare(b),
-      );
-      
-      setCityOptions(uniqueCities);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      setHasLoaded(true);
-    }
-  }, [isAdmin]);
+        setTeams(Array.isArray(teamsData) ? teamsData : []);
+        setPagination(paginationData);
+        setSports(
+          Array.isArray(sportsResponse.data) ? sportsResponse.data : [],
+        );
+
+        // Extract all unique cities from teams and sort them
+        const cities = teamsData
+          .map((team) => team.qyteti)
+          .filter(Boolean)
+          .map((city) => city.trim())
+          .filter(Boolean);
+
+        const uniqueCities = Array.from(new Set(cities)).sort((a, b) =>
+          a.localeCompare(b),
+        );
+
+        setCityOptions(uniqueCities);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        setHasLoaded(true);
+      }
+    },
+    [isAdmin],
+  );
 
   useEffect(() => {
     if (!authLoading) {
-      loadTeams(filters);
+      loadTeams(page, filters);
     }
-  }, [authLoading, filters, loadTeams]);
+  }, [authLoading, page, filters, loadTeams]);
 
   const handleClearFilters = () => {
     setFilters({ search: "", qyteti: "" });
+    setPage(1);
   };
 
-  const hasActiveFilters = filters.search.trim() !== "" || filters.qyteti !== "";
+  const hasActiveFilters =
+    filters.search.trim() !== "" || filters.qyteti !== "";
   const handleCreate = () => {
     setFormData(initialFormData);
     setFormErrors({});
@@ -234,7 +259,8 @@ export default function Teams() {
       await api.post(`/teams`, buildTeamPayload());
 
       handleCloseModal();
-      await loadTeams(filters);
+      await loadTeams(1, filters);
+      setPage(1);
       setAlert({ type: "success", message: "Team created successfully!" });
     } catch (err) {
       if (err.inner) {
@@ -320,7 +346,7 @@ export default function Teams() {
       await api.put(`/teams/${selectedTeam.id}`, buildTeamPayload());
 
       handleCloseEditModal();
-      await loadTeams(filters);
+      await loadTeams(page, filters);
       setAlert({ type: "success", message: "Team updated successfully!" });
     } catch (err) {
       if (err.inner) {
@@ -339,12 +365,13 @@ export default function Teams() {
       }
     }
   };
- const handleFilterChange = (e) => {
+  const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({
       ...prev,
       [name]: value,
     }));
+    setPage(1);
   };
   const handleDeleteConfirm = async () => {
     if (!selectedTeam) return;
@@ -352,7 +379,8 @@ export default function Teams() {
       await api.delete(`/teams/${selectedTeam.id}`);
 
       handleCloseDeleteModal();
-      await loadTeams(filters);
+      await loadTeams(page > 1 ? page - 1 : 1, filters);
+      if (page > 1) setPage(page - 1);
       setAlert({ type: "success", message: "Team deleted successfully!" });
     } catch (err) {
       setAlert({
@@ -366,7 +394,9 @@ export default function Teams() {
   if (authLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <p className="text-lg text-gray-600 dark:text-slate-400">Checking access...</p>
+        <p className="text-lg text-gray-600 dark:text-slate-400">
+          Checking access...
+        </p>
       </div>
     );
   }
@@ -411,7 +441,10 @@ export default function Teams() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 min-w-0 max-w-2xl">
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                  <Search
+                    size={18}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
                 </div>
                 <input
                   type="text"
@@ -562,13 +595,91 @@ export default function Teams() {
                     colSpan="9"
                     className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                   >
-                    {hasActiveFilters ? 'No teams match these filters.' : 'No teams found. Click "Add Team" to add a new one.'}
+                    {hasActiveFilters
+                      ? "No teams match these filters."
+                      : 'No teams found. Click "Add Team" to add a new one.'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {pagination && (
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  {pagination.total && (
+                    <>
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> teams)
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ADD NEW TEAM MODAL */}
         {showModal && (
