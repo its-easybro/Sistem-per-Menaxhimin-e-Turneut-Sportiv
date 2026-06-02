@@ -28,6 +28,7 @@ const Referees = lazy(() => import("./pages/admin/Referees"))
 const Standings = lazy(() => import("./pages/admin/Standings"))
 const ContactUs = lazy(() => import("./pages/admin/ContactUs"))
 const Sessions = lazy(() => import("./pages/admin/Sessions"))
+const Brackets = lazy(() => import("./pages/admin/Brackets"))
 
 // Importing Organizer Pages
 const OrganizerDashboard = lazy(() => import("./pages/organizator/Dashboard"))
@@ -49,6 +50,7 @@ const ResetPassword = lazy(() => import("./pages/Users/ResetPassword"))
 const LiveMatches = lazy(() => import("./pages/Users/LiveMatches"))
 const PublicLiveMatch = lazy(() => import("./pages/Users/PublicLiveMatch"))
 const PublicStandings = lazy(() => import("./pages/Users/PublicStandings"))
+const PublicBrackets = lazy(() => import("./pages/Users/PublicBrackets"))
 const Profile = lazy(() => import("./pages/Users/Profile"))
 
 function App() {
@@ -78,6 +80,7 @@ function App() {
         <Route path="/live-matches" element={<LiveMatches />} />
         <Route path="/live-matches/:id" element={<PublicLiveMatch />} />
         <Route path="/public/standings" element={<PublicStandings />} />
+        <Route path="/public/brackets" element={<PublicBrackets />} />
 
         {/* Authenticated profile route available to every signed-in user. */}
         <Route element={<ProtectedRoute />}>
@@ -99,6 +102,7 @@ function App() {
           <Route path="/tournaments" element={<Suspense fallback={<TableSkeleton />}><Tournaments /></Suspense>}/>
           <Route path="/referees" element={<Suspense fallback={<TableSkeleton />}><Referees /></Suspense>}/>
           <Route path="/standings" element={<Suspense fallback={<TableSkeleton />}><Standings /></Suspense>}/>
+          <Route path="/brackets" element={<Suspense fallback={<TableSkeleton />}><Brackets /></Suspense>}/>
           <Route path="/contactUs" element={<Suspense fallback={<TableSkeleton />}><ContactUs /></Suspense>}/>
           <Route path="/sessions" element={<Suspense fallback={<TableSkeleton />}><Sessions /></Suspense>}/>
         </Route>
@@ -113,6 +117,7 @@ function App() {
           <Route path="/organizer/live-matches" element={<Suspense fallback={<TableSkeleton />}><LiveMatches /></Suspense>}/>
           <Route path="/organizer/teams" element={<Suspense fallback={<TableSkeleton />}><OrganizerTeams /></Suspense>}/>
           <Route path="/organizer/standings" element={<Suspense fallback={<TableSkeleton />}><Standings /></Suspense>}/>
+          <Route path="/organizer/brackets" element={<Suspense fallback={<TableSkeleton />}><Brackets /></Suspense>}/>
         </Route>
 
         {/* REFEREE ROUTES */}
