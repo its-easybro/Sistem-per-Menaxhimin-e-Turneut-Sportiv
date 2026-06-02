@@ -27,6 +27,7 @@ import standingsRoutes from "./routes/standingsRoutes.js";
 import contactUsRoute from "./routes/contactUsRoute.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import bracketsRoutes from "./routes/bracketsRoutes.js";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import sessionRoute from "./routes/sessionRoute.js"
 
@@ -76,6 +77,7 @@ app.use("/match-referees", matchRefereesRoutes);
 app.use("/tournament-registrations", tournamentRegistrationsRoutes);
 app.use("/referees", refereesRoutes);
 app.use("/standings", standingsRoutes);
+app.use("/brackets", bracketsRoutes);
 app.use("/contactUs", contactUsRoute);
 app.use("/sessions", sessionRoute);
 app.use("/profile", profileRoutes);
