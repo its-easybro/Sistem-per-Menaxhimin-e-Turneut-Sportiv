@@ -1,3 +1,4 @@
+-- Stores generated knockout bracket nodes separately from the real scheduled matches.
 CREATE TABLE "bracketmatches" (
   "id" SERIAL NOT NULL,
   "turneu_id" INTEGER NOT NULL,
@@ -20,9 +21,11 @@ CREATE TABLE "bracketmatches" (
   )
 );
 
+-- Keeps one bracket node per tournament round/position so generation cannot duplicate a slot.
 CREATE UNIQUE INDEX "bracketmatches_turneu_id_round_number_position_key"
 ON "bracketmatches"("turneu_id", "round_number", "position");
 
+-- Links a bracket node to at most one real match used by live scoring and results.
 CREATE UNIQUE INDEX "bracketmatches_ndeshja_id_key"
 ON "bracketmatches"("ndeshja_id");
 

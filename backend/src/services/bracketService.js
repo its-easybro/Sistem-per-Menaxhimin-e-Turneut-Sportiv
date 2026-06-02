@@ -78,6 +78,7 @@ export async function ensureLinkedMatchForBracketNode(
   tournament,
   totalRounds,
 ) {
+  // A real match is only created once both bracket slots have teams.
   if (!bracketNode?.ekipi_shtepiak_id || !bracketNode?.ekipi_mysafir_id) {
     return null;
   }
@@ -140,6 +141,7 @@ function getSlotField(nextSlot) {
 }
 
 function determineBracketWinner(match, result) {
+  // Bracket winners must be unambiguous because the next round needs one team.
   if (!match) {
     throw createBracketError(404, "Match not found.");
   }
@@ -220,6 +222,7 @@ async function clearLinkedMatchIfIdle(tx, node) {
 }
 
 export async function advanceBracketWinner(tx, bracketNode, winnerTeamId) {
+  // Save the winner on this node, then copy that team into the configured next slot.
   await tx.bracketmatches.update({
     where: { id: bracketNode.id },
     data: { fitues_id: winnerTeamId },
@@ -288,6 +291,7 @@ async function clearDownstreamSlot(tx, bracketNode) {
 }
 
 export async function applyBracketResultProgression(tx, matchId, result) {
+  // Match results drive bracket movement, so finishing live matches advances the tree.
   const bracketNode = await tx.bracketmatches.findUnique({
     where: { ndeshja_id: matchId },
     include: {

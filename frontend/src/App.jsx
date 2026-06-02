@@ -77,9 +77,11 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        {/* Public live routes show the viewer, while role routes below keep staff controls protected. */}
         <Route path="/live-matches" element={<PublicLiveMatch />} />
         <Route path="/live-matches/:id" element={<PublicLiveMatch />} />
         <Route path="/public/standings" element={<PublicStandings />} />
+        {/* /brackets stays public; admin editing is kept on /admin/brackets. */}
         <Route path="/brackets" element={<PublicBrackets />} />
         <Route path="/public/brackets" element={<PublicBrackets />} />
 

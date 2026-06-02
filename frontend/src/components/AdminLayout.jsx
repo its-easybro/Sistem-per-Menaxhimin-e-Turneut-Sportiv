@@ -97,6 +97,7 @@ const AdminRoute = () => {
               <ListOrdered size={20} />
               Standings
             </Link>
+            {/* Staff bracket management is separate from the public bracket viewer. */}
             <Link
               to="/admin/brackets"
               className="flex items-center gap-3 px-4 py-2.5 text-gray-600 dark:text-slate-300 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-slate-800 rounded-lg font-medium transition-colors"

@@ -169,6 +169,7 @@ function getErrorMessage(err) {
 }
 
 function getBracketResultRouteError(match) {
+  // Bracket-linked results should come from finishing live matches, not manual edits.
   if (!match?.bracketmatches) {
     return null;
   }
@@ -298,6 +299,7 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
         },
       });
 
+      // If this result belongs to a bracket match, move the winner into the next round.
       await applyBracketResultProgression(tx, ndeshja_id, {
         golat_shtepiak: golat_shtepiak ?? 0,
         golat_mysafir: golat_mysafir ?? 0,
@@ -464,6 +466,7 @@ router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (r
     }
 
     await prisma.$transaction(async (tx) => {
+      // Removing a bracket result also clears the downstream slot if nothing advanced yet.
       await revertBracketResultProgression(tx, existing.ndeshja_id);
       await tx.matchresults.delete({
         where: { id: matchResultId },

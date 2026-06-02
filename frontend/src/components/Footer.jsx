@@ -33,6 +33,7 @@ const Footer = () => {
             <div>
               <h3 className="text-sm font-semibold text-white mb-4">Features</h3>
               <ul className="space-y-3">
+                {/* Footer links point to public pages so guests can browse without logging in. */}
                 <li><Link to="/live-matches" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Live Matches</Link></li>
                 <li><Link to="/public/standings" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Standings & Results</Link></li>
                 <li><Link to="/brackets" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Brackets</Link></li>

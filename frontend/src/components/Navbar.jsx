@@ -131,6 +131,7 @@ const Navbar = () => {
             </PopoverPanel>
           </Popover>
 
+          {/* These links intentionally use public viewer routes, even when staff are logged in. */}
           <Link to="/live-matches" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
             Live Matches
           </Link>
@@ -259,6 +260,7 @@ const Navbar = () => {
                     <ChevronDownIcon aria-hidden="true" className="size-5 flex-none group-data-open:rotate-180" />
                   </DisclosureButton>
                 </Disclosure>
+                {/* Mobile public links mirror the desktop viewer routes. */}
                 <Link
                   to="/live-matches"
                   className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold text-white hover:bg-white/5"

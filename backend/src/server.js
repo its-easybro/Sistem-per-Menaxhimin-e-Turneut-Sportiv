@@ -77,6 +77,7 @@ app.use("/match-referees", matchRefereesRoutes);
 app.use("/tournament-registrations", tournamentRegistrationsRoutes);
 app.use("/referees", refereesRoutes);
 app.use("/standings", standingsRoutes);
+// Bracket routes handle generation, public viewing, scheduling, and winner progression.
 app.use("/brackets", bracketsRoutes);
 app.use("/contactUs", contactUsRoute);
 app.use("/sessions", sessionRoute);

@@ -394,6 +394,7 @@ router.get("/public/live", async (req, res) => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
+    // Public live page also keeps yesterday's finals visible for quick result checking.
     const matches = await prisma.matches.findMany({
       where: {
         OR: [

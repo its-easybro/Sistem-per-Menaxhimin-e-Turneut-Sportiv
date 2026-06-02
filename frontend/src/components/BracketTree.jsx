@@ -36,6 +36,7 @@ function toTimeInput(value) {
 }
 
 function getMatchStatus(match) {
+  // Prefer the real match status once a bracket card has been scheduled.
   if (match.linked_match?.statusi) return match.linked_match.statusi;
   if (match.winner && (!match.home_team || !match.away_team)) return "Bye";
   return "Pending";
@@ -62,6 +63,7 @@ function MatchCard({ match, editable, venues, savingScheduleId, onScheduleChange
   const homeWins = match.fitues_id && match.fitues_id === match.ekipi_shtepiak_id;
   const awayWins = match.fitues_id && match.fitues_id === match.ekipi_mysafir_id;
   const score = match.score;
+  // Schedule edits stop once the linked match starts or gets a result.
   const canEditSchedule =
     editable &&
     Boolean(match.ndeshja_id) &&
@@ -211,6 +213,7 @@ export default function BracketTree({
 
   return (
     <div className="space-y-4">
+      {/* Champion appears only after the final bracket node has a winner. */}
       {champion && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
           <p className="text-xs font-bold uppercase text-amber-700 dark:text-amber-300">

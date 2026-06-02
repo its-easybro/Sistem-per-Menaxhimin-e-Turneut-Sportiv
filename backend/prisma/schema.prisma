@@ -49,6 +49,7 @@ model matches {
   bracketmatches                         bracketmatches? @relation("bracketmatches_ndeshja_idTomatches")
 }
 
+/// Stores each knockout bracket node and links winners into the next round.
 model bracketmatches {
   id                                              Int              @id @default(autoincrement())
   turneu_id                                       Int

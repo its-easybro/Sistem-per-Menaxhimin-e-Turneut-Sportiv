@@ -40,6 +40,7 @@ function getRegistrationTeamName(registration) {
 }
 
 function shuffleIds(ids) {
+  // Randomizes only the seed order; backend generation still receives a normal ordered list.
   const next = [...ids];
 
   for (let index = next.length - 1; index > 0; index -= 1) {
@@ -139,6 +140,7 @@ export default function Brackets() {
   );
 
   const approvedRegistrations = useMemo(() => {
+    // Default seeding follows approval time so the first load is predictable.
     return registrations
       .filter(
         (registration) =>
@@ -256,6 +258,7 @@ export default function Brackets() {
 
     try {
       setSaving(true);
+      // Sends the final seed order to the backend, where the actual bracket nodes are created.
       const response = await api.post(
         `/brackets/tournament/${selectedTournamentId}/generate`,
         {
@@ -280,6 +283,7 @@ export default function Brackets() {
   const handleScheduleChange = async (match, schedulePayload) => {
     try {
       setSavingScheduleId(match.id);
+      // Scheduling updates the bracket node and its linked real match together.
       const response = await api.patch(
         `/brackets/match/${match.id}/schedule`,
         {

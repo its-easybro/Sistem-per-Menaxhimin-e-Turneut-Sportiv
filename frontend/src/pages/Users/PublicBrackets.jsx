@@ -45,6 +45,7 @@ export default function PublicBrackets() {
   );
 
   const filteredTournaments = useMemo(() => {
+    // Search checks tournament, sport, and status so users can find brackets quickly.
     const query = searchQuery.trim().toLowerCase();
     if (!query) return tournaments;
 
@@ -70,6 +71,7 @@ export default function PublicBrackets() {
     try {
       setBracketLoading(true);
       setError("");
+      // Public endpoint returns bracket data without requiring a logged-in user.
       const response = await api.get(`/brackets/public/tournament/${turneuId}`);
       setBracket(response.data);
     } catch (err) {
@@ -251,6 +253,7 @@ export default function PublicBrackets() {
               )}
             </div>
 
+            {/* Public view reuses the same tree but leaves scheduling controls disabled. */}
             <BracketTree rounds={bracket.rounds || []} champion={bracket.champion} />
           </section>
         )}

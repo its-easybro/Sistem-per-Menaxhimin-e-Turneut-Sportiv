@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Activity,
   CalendarDays,
@@ -355,6 +355,14 @@ function StatusBadge({ match }) {
   );
 }
 
+function getStatusLabel(match) {
+  if (match?.statusi === "Live") return "LIVE";
+  if (match?.statusi === "HalfTime") return "Half time";
+  if (isFinished(match)) return "Final";
+
+  return match?.statusi || "Scheduled";
+}
+
 function eventTone(type) {
   if (isGoalEvent(type)) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300";
@@ -373,7 +381,9 @@ function eventTone(type) {
 
 function PublicLiveMatch() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [activeMatchId, setActiveMatchId] = useState(null);
+  const [availableMatches, setAvailableMatches] = useState([]);
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -409,11 +419,14 @@ function PublicLiveMatch() {
       try {
         setLoading(true);
         setError("");
+        // Load the selector list first so /live-matches can pick a sensible default.
+        const listResponse = await api.get("/matches/public/live");
+        const matches = Array.isArray(listResponse.data) ? listResponse.data : [];
         let nextMatchId = id;
 
+        setAvailableMatches(matches);
+
         if (!nextMatchId) {
-          const listResponse = await api.get("/matches/public/live");
-          const matches = Array.isArray(listResponse.data) ? listResponse.data : [];
           nextMatchId = matches[0]?.id;
         }
 
@@ -436,7 +449,16 @@ function PublicLiveMatch() {
     loadMatch();
   }, [id]);
 
+  const handleMatchSelect = (event) => {
+    const nextMatchId = event.target.value;
+
+    if (!nextMatchId) return;
+    // Navigating keeps the selected match shareable as a direct public URL.
+    navigate(`/live-matches/${nextMatchId}`);
+  };
+
   useEffect(() => {
+    // Socket updates keep the public view in sync while the referee edits the live match.
     const updateSelectedMatch = (updater) => {
       setMatch((current) => {
         if (!current || current.id !== matchId) return current;
@@ -567,7 +589,28 @@ function PublicLiveMatch() {
               {match.faza || "Match"} live detail
             </p>
           </div>
-          <StatusBadge match={match} />
+          <div className="flex flex-col gap-3 sm:items-end">
+            {availableMatches.length > 1 && (
+              <label className="w-full text-sm font-semibold text-gray-700 dark:text-slate-300 sm:w-80">
+                Match
+                <select
+                  value={String(match?.id || activeMatchId || "")}
+                  onChange={handleMatchSelect}
+                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
+                >
+                  {availableMatches.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.ekipi_shtepiak || "Home Team"} vs{" "}
+                      {item.ekipi_mysafir || "Away Team"} -{" "}
+                      {item.turneu_emri || "Tournament"} -{" "}
+                      {getStatusLabel(item)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <StatusBadge match={match} />
+          </div>
         </div>
 
         <section className={`${panel} overflow-hidden`}>

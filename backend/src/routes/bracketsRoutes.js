@@ -119,12 +119,14 @@ function parsePositiveInteger(value) {
 }
 
 function nextPowerOfTwo(value) {
+  // Knockout brackets need a power-of-two size; missing teams become byes.
   let size = 1;
   while (size < value) size *= 2;
   return size;
 }
 
 function buildSeedOrder(size) {
+  // Places high and low seeds apart so top seeds do not meet in round one.
   if (size === 1) return [1];
 
   const previous = buildSeedOrder(size / 2);
@@ -596,6 +598,7 @@ router.post(
       const scheduleDate = parseMatchDate(access.tournament.data_fillimit);
       const scheduleTime = null;
       const venueId = null;
+      // Seed slots are expanded to the bracket size; empty slots are treated as byes.
       const bracketSize = nextPowerOfTwo(seededTeamIds.length);
       const totalRounds = Math.log2(bracketSize);
       const seedOrder = buildSeedOrder(bracketSize);
@@ -635,6 +638,7 @@ router.post(
           createdByRound.set(roundNumber, roundNodes);
         }
 
+        // Every node points to the next node and the exact slot its winner should fill.
         for (let roundNumber = 1; roundNumber < totalRounds; roundNumber += 1) {
           const currentRound = createdByRound.get(roundNumber);
           const nextRound = createdByRound.get(roundNumber + 1);
@@ -657,6 +661,7 @@ router.post(
         }
 
         const tournament = access.tournament;
+        // First-round byes advance immediately; real pairings get linked matches.
         for (const node of createdByRound.get(1)) {
           const participantIds = [
             node.ekipi_shtepiak_id,
