@@ -51,6 +51,32 @@ const bracketGenerateSchema = Joi.object({
   }),
 });
 
+const bracketMatchParamSchema = Joi.object({
+  id: Joi.number().integer().positive().required().messages({
+    "number.base": "Bracket match ID must be a valid number.",
+    "number.positive": "Bracket match ID must be a positive integer.",
+    "any.required": "Bracket match ID is required.",
+  }),
+});
+
+const bracketMatchScheduleSchema = Joi.object({
+  data_ndeshjes: Joi.alternatives()
+    .try(Joi.date(), Joi.string().allow(""))
+    .optional()
+    .allow(null),
+  ora_fillimit: Joi.string()
+    .pattern(/^\d{2}:\d{2}(:\d{2})?$/)
+    .optional()
+    .allow("", null)
+    .messages({
+      "string.pattern.base": "Start time must be in HH:MM or HH:MM:SS format.",
+    }),
+  fusha_id: Joi.number().integer().positive().optional().allow(null, "").messages({
+    "number.base": "Venue ID must be a valid number.",
+    "number.positive": "Venue ID must be a positive integer.",
+  }),
+});
+
 const bracketInclude = {
   teams_bracketmatches_ekipi_shtepiak_idToteams: {
     select: { id: true, emertimi: true, logoja: true },
@@ -236,6 +262,45 @@ async function ensureCanAccessTournament(turneuId, user) {
   return { ok: false, status: 403, error: "Forbidden" };
 }
 
+async function ensureCanAccessBracketMatch(bracketMatchId, user) {
+  const bracketMatch = await prisma.bracketmatches.findUnique({
+    where: { id: bracketMatchId },
+    include: {
+      tournaments: {
+        include: {
+          sports: {
+            select: { id: true, emertimi: true, kohezgjatja_default: true },
+          },
+        },
+      },
+      matches: {
+        select: {
+          id: true,
+          statusi: true,
+          matchresults: { select: { id: true } },
+        },
+      },
+    },
+  });
+
+  if (!bracketMatch) {
+    return { ok: false, status: 404, error: "Bracket match not found." };
+  }
+
+  if (user?.is_admin) {
+    return { ok: true, bracketMatch };
+  }
+
+  if (
+    user?.is_organizer &&
+    bracketMatch.tournaments?.organizatori_id === user.id
+  ) {
+    return { ok: true, bracketMatch };
+  }
+
+  return { ok: false, status: 403, error: "Forbidden" };
+}
+
 async function fetchBracketPayload(turneuId, { user = null, isPublic = false } = {}) {
   const tournament = await prisma.tournaments.findUnique({
     where: { id: turneuId },
@@ -372,6 +437,98 @@ router.get("/tournament/:turneuId", protect, async (req, res) => {
   }
 });
 
+router.patch(
+  "/match/:id/schedule",
+  protect,
+  requireRole("is_admin", "is_organizer"),
+  async (req, res) => {
+    const { error: paramError, value: paramValue } =
+      bracketMatchParamSchema.validate({
+        id: req.params.id,
+      });
+    if (paramError) {
+      return res.status(400).json({ error: paramError.details[0].message });
+    }
+
+    const { error: bodyError, value: bodyValue } =
+      bracketMatchScheduleSchema.validate(req.body);
+    if (bodyError) {
+      return res.status(400).json({ error: bodyError.details[0].message });
+    }
+
+    try {
+      const access = await ensureCanAccessBracketMatch(paramValue.id, req.user);
+      if (!access.ok) {
+        return res.status(access.status).json({ error: access.error });
+      }
+
+      const { bracketMatch } = access;
+      if (
+        bracketMatch.matches &&
+        (bracketMatch.matches.statusi !== "Planifikuar" ||
+          bracketMatch.matches.matchresults)
+      ) {
+        return res.status(400).json({
+          error:
+            "Scheduled bracket matches cannot be changed after they start or have results.",
+        });
+      }
+
+      const scheduleDate =
+        bodyValue.data_ndeshjes === undefined
+          ? bracketMatch.data_ndeshjes
+          : parseMatchDate(bodyValue.data_ndeshjes);
+      const scheduleTime =
+        bodyValue.ora_fillimit === undefined
+          ? bracketMatch.ora_fillimit
+          : parseMatchTime(bodyValue.ora_fillimit);
+      const venueId =
+        bodyValue.fusha_id === undefined
+          ? bracketMatch.fusha_id
+          : parsePositiveInteger(bodyValue.fusha_id) || null;
+      const totalRounds = await prisma.bracketmatches
+        .aggregate({
+          where: { turneu_id: bracketMatch.turneu_id },
+          _max: { round_number: true },
+        })
+        .then((result) => result._max.round_number || 1);
+
+      await prisma.$transaction(async (tx) => {
+        await tx.bracketmatches.update({
+          where: { id: bracketMatch.id },
+          data: {
+            data_ndeshjes: scheduleDate,
+            ora_fillimit: scheduleTime,
+            fusha_id: venueId,
+          },
+        });
+
+        if (bracketMatch.ndeshja_id) {
+          await tx.matches.update({
+            where: { id: bracketMatch.ndeshja_id },
+            data: {
+              data_ndeshjes:
+                scheduleDate ||
+                parseMatchDate(bracketMatch.tournaments.data_fillimit),
+              ora_fillimit: scheduleTime,
+              fusha_id: venueId,
+              faza: getRoundLabel(bracketMatch.round_number, totalRounds),
+            },
+          });
+        }
+      });
+
+      const result = await fetchBracketPayload(bracketMatch.turneu_id, {
+        user: req.user,
+      });
+
+      res.json(result.payload);
+    } catch (err) {
+      res.status(err.status || 500).json({ error: err.message });
+    }
+  },
+);
+
 router.post(
   "/tournament/:turneuId/generate",
   protect,
@@ -436,14 +593,9 @@ router.post(
         });
       }
 
-      const scheduleDate =
-        parseMatchDate(bodyValue.data_ndeshjes) ||
-        parseMatchDate(bodyValue.start_date) ||
-        parseMatchDate(access.tournament.data_fillimit);
-      const scheduleTime = parseMatchTime(
-        bodyValue.ora_fillimit ?? bodyValue.start_time ?? null,
-      );
-      const venueId = parsePositiveInteger(bodyValue.fusha_id) || null;
+      const scheduleDate = parseMatchDate(access.tournament.data_fillimit);
+      const scheduleTime = null;
+      const venueId = null;
       const bracketSize = nextPowerOfTwo(seededTeamIds.length);
       const totalRounds = Math.log2(bracketSize);
       const seedOrder = buildSeedOrder(bracketSize);

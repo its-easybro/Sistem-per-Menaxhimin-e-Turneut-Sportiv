@@ -29,10 +29,6 @@ function getArrayPayload(payload) {
   return [];
 }
 
-function getTodayInput() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function getRegistrationTime(registration) {
   const value = registration.data_regjistrimit || registration.created_at;
   const time = value ? new Date(value).getTime() : 0;
@@ -130,13 +126,9 @@ export default function Brackets() {
   const [loading, setLoading] = useState(true);
   const [bracketLoading, setBracketLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingScheduleId, setSavingScheduleId] = useState(null);
   const [alert, setAlert] = useState(null);
   const [error, setError] = useState("");
-  const [schedule, setSchedule] = useState({
-    data_ndeshjes: getTodayInput(),
-    ora_fillimit: "",
-    fusha_id: "",
-  });
 
   const selectedTournament = useMemo(
     () =>
@@ -248,15 +240,6 @@ export default function Brackets() {
     loadBracket(selectedTournamentId);
   }, [loadBracket, selectedTournamentId]);
 
-  useEffect(() => {
-    if (selectedTournament?.data_fillimit) {
-      setSchedule((prev) => ({
-        ...prev,
-        data_ndeshjes: String(selectedTournament.data_fillimit).slice(0, 10),
-      }));
-    }
-  }, [selectedTournament]);
-
   const handleMoveSeed = (index, direction) => {
     setSeedIds((prev) => moveItem(prev, index, direction));
   };
@@ -277,9 +260,6 @@ export default function Brackets() {
         `/brackets/tournament/${selectedTournamentId}/generate`,
         {
           team_ids: seedIds,
-          data_ndeshjes: schedule.data_ndeshjes || null,
-          ora_fillimit: schedule.ora_fillimit || null,
-          fusha_id: schedule.fusha_id ? Number(schedule.fusha_id) : null,
         },
       );
       setBracket(response.data);
@@ -294,6 +274,34 @@ export default function Brackets() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleScheduleChange = async (match, schedulePayload) => {
+    try {
+      setSavingScheduleId(match.id);
+      const response = await api.patch(
+        `/brackets/match/${match.id}/schedule`,
+        {
+          data_ndeshjes: schedulePayload.data_ndeshjes || null,
+          ora_fillimit: schedulePayload.ora_fillimit || null,
+          fusha_id: schedulePayload.fusha_id
+            ? Number(schedulePayload.fusha_id)
+            : null,
+        },
+      );
+      setBracket(response.data);
+      setAlert({ type: "success", message: "Match schedule saved." });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to save match schedule.",
+      });
+    } finally {
+      setSavingScheduleId(null);
     }
   };
 
@@ -349,7 +357,7 @@ export default function Brackets() {
                   Brackets
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-slate-300">
-                  Seed approved teams, generate knockout rounds, and track advancement as results are saved.
+                  Seed approved teams, schedule knockout matches, then advance winners when live matches are finished.
                 </p>
               </div>
               <button
@@ -389,7 +397,7 @@ export default function Brackets() {
         ) : (
           <>
             <section className={`${panel} p-4 sm:p-5`}>
-              <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_repeat(3,minmax(150px,190px))]">
+              <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_auto] lg:items-end">
                 <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
                   Tournament
                   <select
@@ -405,57 +413,9 @@ export default function Brackets() {
                     ))}
                   </select>
                 </label>
-
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
-                  Start Date
-                  <input
-                    type="date"
-                    value={schedule.data_ndeshjes}
-                    onChange={(event) =>
-                      setSchedule((prev) => ({
-                        ...prev,
-                        data_ndeshjes: event.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                  />
-                </label>
-
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
-                  Start Time
-                  <input
-                    type="time"
-                    value={schedule.ora_fillimit}
-                    onChange={(event) =>
-                      setSchedule((prev) => ({
-                        ...prev,
-                        ora_fillimit: event.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                  />
-                </label>
-
-                <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
-                  Venue
-                  <select
-                    value={schedule.fusha_id}
-                    onChange={(event) =>
-                      setSchedule((prev) => ({
-                        ...prev,
-                        fusha_id: event.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                  >
-                    <option value="">No venue</option>
-                    {venues.map((venue) => (
-                      <option key={venue.id} value={venue.id}>
-                        {venue.emertimi}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <p className={`text-sm ${mutedText}`}>
+                  Generate pairings first. Schedule each playable match from its card.
+                </p>
               </div>
             </section>
 
@@ -523,7 +483,7 @@ export default function Brackets() {
                   <div>
                     <h2 className={`text-xl font-black ${strongText}`}>Bracket Tree</h2>
                     <p className={`mt-1 text-sm ${mutedText}`}>
-                      Match cards show linked match IDs, scores, winners, and schedule.
+                      Start scheduled matches from live match tools, update the score, then finish the match to move winners forward.
                     </p>
                   </div>
                   {bracket?.champion ? (
@@ -542,7 +502,14 @@ export default function Brackets() {
                 {bracketLoading ? (
                   <TableSkeleton />
                 ) : (
-                  <BracketTree rounds={bracket?.rounds || []} champion={bracket?.champion} />
+                  <BracketTree
+                    rounds={bracket?.rounds || []}
+                    champion={bracket?.champion}
+                    editable
+                    venues={venues}
+                    savingScheduleId={savingScheduleId}
+                    onScheduleChange={handleScheduleChange}
+                  />
                 )}
               </section>
             </div>

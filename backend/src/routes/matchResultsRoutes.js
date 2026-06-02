@@ -136,6 +136,10 @@ async function fetchManageableMatch(matchId, user) {
     select: {
       id: true,
       turneu_id: true,
+      statusi: true,
+      bracketmatches: {
+        select: { id: true },
+      },
       tournaments: {
         select: { organizatori_id: true },
       },
@@ -162,6 +166,18 @@ async function fetchManageableMatch(matchId, user) {
 
 function getErrorMessage(err) {
   return err.response?.data?.error || err.message;
+}
+
+function getBracketResultRouteError(match) {
+  if (!match?.bracketmatches) {
+    return null;
+  }
+
+  if (match.statusi !== "P\u00ebrfunduar") {
+    return "Bracket match results are completed from the live match flow. Start the match, update the score, then finish it to advance the bracket.";
+  }
+
+  return null;
 }
 
 // Route for getting all match results with detailed data. This route is protected.
@@ -265,6 +281,11 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
       return res.status(access.status).json({ error: access.error });
     }
 
+    const bracketRouteError = getBracketResultRouteError(access.match);
+    if (bracketRouteError) {
+      return res.status(400).json({ error: bracketRouteError });
+    }
+
     const created = await prisma.$transaction(async (tx) => {
       await tx.matchresults.create({
         data: {
@@ -358,6 +379,11 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
       return res.status(access.status).json({ error: access.error });
     }
 
+    const bracketRouteError = getBracketResultRouteError(access.match);
+    if (bracketRouteError) {
+      return res.status(400).json({ error: bracketRouteError });
+    }
+
     const nextScores = {
       golat_shtepiak: golat_shtepiak ?? existing.golat_shtepiak,
       golat_mysafir: golat_mysafir ?? existing.golat_mysafir,
@@ -430,6 +456,11 @@ router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (r
     const access = await fetchManageableMatch(existing.ndeshja_id, req.user);
     if (!access.ok) {
       return res.status(access.status).json({ error: access.error });
+    }
+
+    const bracketRouteError = getBracketResultRouteError(access.match);
+    if (bracketRouteError) {
+      return res.status(400).json({ error: bracketRouteError });
     }
 
     await prisma.$transaction(async (tx) => {

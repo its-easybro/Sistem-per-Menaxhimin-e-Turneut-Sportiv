@@ -373,11 +373,12 @@ function eventTone(type) {
 
 function PublicLiveMatch() {
   const { id } = useParams();
+  const [activeMatchId, setActiveMatchId] = useState(null);
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const matchId = Number(id);
+  const matchId = Number(activeMatchId);
   const score = getScore(match);
   const events = useMemo(() => getTimelineEvents(match), [match]);
   const matchReportSections = useMemo(
@@ -408,7 +409,22 @@ function PublicLiveMatch() {
       try {
         setLoading(true);
         setError("");
-        const response = await api.get(`/matches/public/live/${id}`);
+        let nextMatchId = id;
+
+        if (!nextMatchId) {
+          const listResponse = await api.get("/matches/public/live");
+          const matches = Array.isArray(listResponse.data) ? listResponse.data : [];
+          nextMatchId = matches[0]?.id;
+        }
+
+        if (!nextMatchId) {
+          setMatch(null);
+          setActiveMatchId(null);
+          return;
+        }
+
+        setActiveMatchId(nextMatchId);
+        const response = await api.get(`/matches/public/live/${nextMatchId}`);
         setMatch(response.data);
       } catch (err) {
         setError(err.response?.data?.error || err.message);
@@ -517,9 +533,11 @@ function PublicLiveMatch() {
       <main className="w-full bg-gray-100 px-4 py-6 text-gray-900 dark:bg-slate-900 dark:text-slate-100">
         <div className={`mx-auto max-w-6xl p-8 ${panel}`}>
           <h1 className={`text-2xl font-bold ${strongText}`}>
-            Match unavailable
+            {error ? "Match unavailable" : "Live Match Center"}
           </h1>
-          <p className={`mt-2 ${mutedText}`}>{error || "Match not found."}</p>
+          <p className={`mt-2 ${mutedText}`}>
+            {error || "No live or recent matches found."}
+          </p>
           <Link
             to="/live-matches"
             className="mt-5 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"

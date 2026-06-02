@@ -35,7 +35,7 @@ const Footer = () => {
               <ul className="space-y-3">
                 <li><Link to="/live-matches" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Live Matches</Link></li>
                 <li><Link to="/public/standings" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Standings & Results</Link></li>
-                <li><Link to="/public/brackets" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Brackets</Link></li>
+                <li><Link to="/brackets" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Brackets</Link></li>
                 <li><Link to="/dashboard" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Match Scheduling</Link></li>
                 <li><Link to="/organizer/dashboard" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"> Tournament Management</Link></li>
               </ul>
@@ -59,7 +59,7 @@ const Footer = () => {
                 <li><Link to="/about-us" className="text-sm text-gray-400 hover:text-white transition-colors">About Us</Link></li>
                 <li><Link to="/contact-us" className="text-sm text-gray-400 hover:text-white transition-colors">Contact</Link></li>
                 <li><Link to="/live-matches" className="text-sm text-emerald-400 hover:text-emerald-300 font-medium">Live Matches</Link></li>
-                <li><Link to="/public/brackets" className="text-sm text-gray-400 hover:text-white transition-colors">Brackets</Link></li>
+                <li><Link to="/brackets" className="text-sm text-gray-400 hover:text-white transition-colors">Brackets</Link></li>
               </ul>
             </div>
           </div>

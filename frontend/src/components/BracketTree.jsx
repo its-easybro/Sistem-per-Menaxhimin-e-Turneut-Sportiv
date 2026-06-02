@@ -1,4 +1,4 @@
-import { CalendarDays, CircleDot, Hash, Trophy } from "lucide-react";
+import { CalendarDays, CircleDot, Hash, Save, Trophy } from "lucide-react";
 
 const strongText = "text-gray-900 dark:text-slate-100";
 const mutedText = "text-gray-500 dark:text-slate-400";
@@ -25,6 +25,16 @@ function formatTime(value) {
   return text.slice(0, 5);
 }
 
+function toDateInput(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
+
+function toTimeInput(value) {
+  if (!value) return "";
+  return formatTime(value);
+}
+
 function getMatchStatus(match) {
   if (match.linked_match?.statusi) return match.linked_match.statusi;
   if (match.winner && (!match.home_team || !match.away_team)) return "Bye";
@@ -48,10 +58,16 @@ function TeamRow({ team, fallback, winner }) {
   );
 }
 
-function MatchCard({ match }) {
+function MatchCard({ match, editable, venues, savingScheduleId, onScheduleChange }) {
   const homeWins = match.fitues_id && match.fitues_id === match.ekipi_shtepiak_id;
   const awayWins = match.fitues_id && match.fitues_id === match.ekipi_mysafir_id;
   const score = match.score;
+  const canEditSchedule =
+    editable &&
+    Boolean(match.ndeshja_id) &&
+    !score &&
+    match.linked_match?.statusi === "Planifikuar";
+  const isSaving = savingScheduleId === match.id;
 
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -100,11 +116,85 @@ function MatchCard({ match }) {
           </span>
         )}
       </div>
+
+      {editable && (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            onScheduleChange?.(match, {
+              data_ndeshjes: formData.get("data_ndeshjes") || null,
+              ora_fillimit: formData.get("ora_fillimit") || null,
+              fusha_id: formData.get("fusha_id") || null,
+            });
+          }}
+          className="mt-3 space-y-2 border-t border-gray-100 pt-3 dark:border-slate-700"
+        >
+          <div className="grid gap-2 sm:grid-cols-3">
+            <label className={`text-[11px] font-bold uppercase ${mutedText}`}>
+              Date
+              <input
+                type="date"
+                name="data_ndeshjes"
+                defaultValue={toDateInput(match.linked_match?.data_ndeshjes || match.data_ndeshjes)}
+                disabled={!canEditSchedule || isSaving}
+                className="mt-1 w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:disabled:bg-slate-800"
+              />
+            </label>
+            <label className={`text-[11px] font-bold uppercase ${mutedText}`}>
+              Time
+              <input
+                type="time"
+                name="ora_fillimit"
+                defaultValue={toTimeInput(match.linked_match?.ora_fillimit || match.ora_fillimit)}
+                disabled={!canEditSchedule || isSaving}
+                className="mt-1 w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:disabled:bg-slate-800"
+              />
+            </label>
+            <label className={`text-[11px] font-bold uppercase ${mutedText}`}>
+              Venue
+              <select
+                name="fusha_id"
+                defaultValue={String(match.linked_match?.fusha_id || match.fusha_id || "")}
+                disabled={!canEditSchedule || isSaving}
+                className="mt-1 w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:disabled:bg-slate-800"
+              >
+                <option value="">No venue</option>
+                {venues.map((venue) => (
+                  <option key={venue.id} value={venue.id}>
+                    {venue.emertimi}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <button
+            type="submit"
+            disabled={!canEditSchedule || isSaving}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300"
+          >
+            <Save size={14} />
+            {isSaving ? "Saving..." : "Save Schedule"}
+          </button>
+          {!canEditSchedule && match.ndeshja_id && (
+            <p className={`text-xs ${mutedText}`}>
+              Schedule is locked after the match starts or receives a result.
+            </p>
+          )}
+        </form>
+      )}
     </article>
   );
 }
 
-export default function BracketTree({ rounds = [], champion = null }) {
+export default function BracketTree({
+  rounds = [],
+  champion = null,
+  editable = false,
+  venues = [],
+  savingScheduleId = null,
+  onScheduleChange,
+}) {
   if (!rounds.length) {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-800">
@@ -149,7 +239,14 @@ export default function BracketTree({ rounds = [], champion = null }) {
               </div>
               <div className="space-y-3">
                 {round.matches.map((match) => (
-                  <MatchCard key={match.id} match={match} />
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    editable={editable}
+                    venues={venues}
+                    savingScheduleId={savingScheduleId}
+                    onScheduleChange={onScheduleChange}
+                  />
                 ))}
               </div>
             </section>

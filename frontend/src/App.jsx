@@ -77,9 +77,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/live-matches" element={<LiveMatches />} />
+        <Route path="/live-matches" element={<PublicLiveMatch />} />
         <Route path="/live-matches/:id" element={<PublicLiveMatch />} />
         <Route path="/public/standings" element={<PublicStandings />} />
+        <Route path="/brackets" element={<PublicBrackets />} />
         <Route path="/public/brackets" element={<PublicBrackets />} />
 
         {/* Authenticated profile route available to every signed-in user. */}
@@ -102,7 +103,7 @@ function App() {
           <Route path="/tournaments" element={<Suspense fallback={<TableSkeleton />}><Tournaments /></Suspense>}/>
           <Route path="/referees" element={<Suspense fallback={<TableSkeleton />}><Referees /></Suspense>}/>
           <Route path="/standings" element={<Suspense fallback={<TableSkeleton />}><Standings /></Suspense>}/>
-          <Route path="/brackets" element={<Suspense fallback={<TableSkeleton />}><Brackets /></Suspense>}/>
+          <Route path="/admin/brackets" element={<Suspense fallback={<TableSkeleton />}><Brackets /></Suspense>}/>
           <Route path="/contactUs" element={<Suspense fallback={<TableSkeleton />}><ContactUs /></Suspense>}/>
           <Route path="/sessions" element={<Suspense fallback={<TableSkeleton />}><Sessions /></Suspense>}/>
         </Route>
