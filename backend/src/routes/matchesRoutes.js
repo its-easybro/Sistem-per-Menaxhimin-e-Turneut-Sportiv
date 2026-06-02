@@ -2,6 +2,7 @@ import express from "express";
 import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";
 import Joi from "joi";
+import { applyBracketResultProgression } from "../services/bracketService.js";
 
 const router = express.Router();
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
@@ -1001,6 +1002,16 @@ router.post("/:id/finish", protect, requireRole("is_admin", "is_organizer", "is_
         .json({ error: "Only live or half-time matches can be finished." });
     }
 
+    const bracketNode = await prisma.bracketmatches.findUnique({
+      where: { ndeshja_id: matchId },
+      select: { id: true },
+    });
+    if (bracketNode && !match.matchresults) {
+      return res.status(400).json({
+        error: "Bracket matches require a decisive score before finishing.",
+      });
+    }
+
     const currentResult =
       match.matchresults ??
       (await prisma.matchresults.create({
@@ -1025,6 +1036,12 @@ router.post("/:id/finish", protect, requireRole("is_admin", "is_organizer", "is_
         data: {
           statusi: "P\u00ebrfunduar",
         },
+      });
+
+      await applyBracketResultProgression(tx, matchId, {
+        golat_shtepiak: result.golat_shtepiak,
+        golat_mysafir: result.golat_mysafir,
+        fitues_id: winnerTeamId,
       });
 
       return {
@@ -1055,7 +1072,7 @@ router.post("/:id/finish", protect, requireRole("is_admin", "is_organizer", "is_
       winnerTeamId,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 

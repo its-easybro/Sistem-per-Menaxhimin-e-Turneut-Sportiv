@@ -2,6 +2,10 @@ import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";
 import recalculateStandings from "../services/recalculateStandings.js";
+import {
+  applyBracketResultProgression,
+  revertBracketResultProgression,
+} from "../services/bracketService.js";
 import Joi from "joi";
 
 const router = express.Router();
@@ -72,6 +76,7 @@ const matchResultInclude = {
     select: {
       ekipi_shtepiak_id: true,
       ekipi_mysafir_id: true,
+      turneu_id: true,
       data_ndeshjes: true,
       ora_fillimit: true,
       statusi: true,
@@ -114,9 +119,49 @@ function formatMatchResult(result) {
     ora_fillimit: result.matches?.ora_fillimit ?? null,
     statusi: result.matches?.statusi ?? null,
     faza: result.matches?.faza ?? null,
+    turneu_id: result.matches?.turneu_id ?? null,
     turneu_emri: result.matches?.tournaments?.emertimi ?? null,
     sport_emri: result.matches?.tournaments?.sports?.emertimi ?? null,
   };
+}
+
+async function fetchManageableMatch(matchId, user) {
+  const parsedMatchId = parsePositiveInteger(matchId);
+  if (!parsedMatchId) {
+    return { ok: false, status: 400, error: "Match ID is invalid." };
+  }
+
+  const match = await prisma.matches.findUnique({
+    where: { id: parsedMatchId },
+    select: {
+      id: true,
+      turneu_id: true,
+      tournaments: {
+        select: { organizatori_id: true },
+      },
+    },
+  });
+
+  if (!match) {
+    return { ok: false, status: 404, error: "Match not found." };
+  }
+
+  if (user?.is_admin) {
+    return { ok: true, match };
+  }
+
+  if (
+    user?.is_organizer &&
+    match.tournaments?.organizatori_id === user.id
+  ) {
+    return { ok: true, match };
+  }
+
+  return { ok: false, status: 403, error: "Forbidden" };
+}
+
+function getErrorMessage(err) {
+  return err.response?.data?.error || err.message;
 }
 
 // Route for getting all match results with detailed data. This route is protected.
@@ -191,8 +236,8 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// Route for creating a new match result. This route is protected and only admins can use it.
-router.post("/", protect, requireRole("is_admin"), async (req, res) => {
+// Route for creating a new match result. Admins and owning organizers can use it.
+router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const {
     ndeshja_id,
     golat_shtepiak,
@@ -215,41 +260,50 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   }
 
   try {
-    const created = await prisma.matchresults.create({
-      data: {
-        ndeshja_id,
+    const access = await fetchManageableMatch(ndeshja_id, req.user);
+    if (!access.ok) {
+      return res.status(access.status).json({ error: access.error });
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      await tx.matchresults.create({
+        data: {
+          ndeshja_id,
+          golat_shtepiak: golat_shtepiak ?? 0,
+          golat_mysafir: golat_mysafir ?? 0,
+          fitues_id: fitues_id ?? null,
+          shenime: shenime ?? null,
+          mvp_id: mvp_id ?? null,
+        },
+      });
+
+      await applyBracketResultProgression(tx, ndeshja_id, {
         golat_shtepiak: golat_shtepiak ?? 0,
         golat_mysafir: golat_mysafir ?? 0,
         fitues_id: fitues_id ?? null,
-        shenime: shenime ?? null,
-        mvp_id: mvp_id ?? null,
-      },
-      include: matchResultInclude,
+      });
+
+      return tx.matchresults.findUnique({
+        where: { ndeshja_id },
+        include: matchResultInclude,
+      });
     });
 
     // Recalculate standings for the tournament this match belongs to
     try {
-      const match = await prisma.matches.findUnique({
-        where: {
-          id: ndeshja_id,
-        },
-        select: {
-          turneu_id: true,
-        },
-      });
-      if (match) await recalculateStandings(match.turneu_id);
+      await recalculateStandings(access.match.turneu_id);
     } catch (err) {
       console.error("Standings recalculation failed", err);
     }
 
     res.status(201).json(formatMatchResult(created));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: getErrorMessage(err) });
   }
 });
 
-// Route for updating an existing match result by its ID. This route is protected and only admins can use it.
-router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
+// Route for updating an existing match result by its ID. Admins and owning organizers can use it.
+router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const { id } = req.params;
   const matchResultId = parsePositiveInteger(id);
   if (!matchResultId) {
@@ -280,49 +334,77 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const existing = await prisma.matchresults.findUnique({
       where: { id: matchResultId },
-      select: { id: true },
+      select: {
+        id: true,
+        ndeshja_id: true,
+        golat_shtepiak: true,
+        golat_mysafir: true,
+        fitues_id: true,
+      },
     });
 
     if (!existing) {
       return res.status(404).json({ error: "Match result not found." });
     }
 
-    const updated = await prisma.matchresults.update({
-      where: { id: matchResultId },
-      data: {
-        ndeshja_id,
-        golat_shtepiak,
-        golat_mysafir,
-        fitues_id,
-        shenime,
-        mvp_id,
-      },
-      include: matchResultInclude,
+    if (ndeshja_id !== undefined && ndeshja_id !== existing.ndeshja_id) {
+      return res.status(400).json({
+        error: "Match ID cannot be changed for an existing result.",
+      });
+    }
+
+    const access = await fetchManageableMatch(existing.ndeshja_id, req.user);
+    if (!access.ok) {
+      return res.status(access.status).json({ error: access.error });
+    }
+
+    const nextScores = {
+      golat_shtepiak: golat_shtepiak ?? existing.golat_shtepiak,
+      golat_mysafir: golat_mysafir ?? existing.golat_mysafir,
+      fitues_id: Object.prototype.hasOwnProperty.call(req.body, "fitues_id")
+        ? fitues_id ?? null
+        : null,
+    };
+
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.matchresults.update({
+        where: { id: matchResultId },
+        data: {
+          golat_shtepiak,
+          golat_mysafir,
+          fitues_id,
+          shenime,
+          mvp_id,
+        },
+      });
+
+      await applyBracketResultProgression(
+        tx,
+        existing.ndeshja_id,
+        nextScores,
+      );
+
+      return tx.matchresults.findUnique({
+        where: { id: matchResultId },
+        include: matchResultInclude,
+      });
     });
 
     // Recalculate standings for the tournament this match belongs to
     try {
-      const match = await prisma.matches.findUnique({
-        where: {
-          id: ndeshja_id,
-        },
-        select: {
-          turneu_id: true,
-        },
-      });
-      if (match) await recalculateStandings(match.turneu_id);
+      await recalculateStandings(access.match.turneu_id);
     } catch (err) {
       console.error("Standings recalculation failed", err);
     }
 
     res.json(formatMatchResult(updated));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: getErrorMessage(err) });
   }
 });
 
-// Route for deleting an existing match result by its ID. This route is protected and only admins can use it.
-router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
+// Route for deleting an existing match result by its ID. Admins and owning organizers can use it.
+router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const { id } = req.params;
   const matchResultId = parsePositiveInteger(id);
   if (!matchResultId) {
@@ -345,8 +427,16 @@ router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
       return res.status(404).json({ error: "Match result not found." });
     }
 
-    await prisma.matchresults.delete({
-      where: { id: matchResultId },
+    const access = await fetchManageableMatch(existing.ndeshja_id, req.user);
+    if (!access.ok) {
+      return res.status(access.status).json({ error: access.error });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await revertBracketResultProgression(tx, existing.ndeshja_id);
+      await tx.matchresults.delete({
+        where: { id: matchResultId },
+      });
     });
 
     // Recalculate standings for the tournament this match belongs to
@@ -360,7 +450,7 @@ router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
 
     res.json({ message: "Match result deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: getErrorMessage(err) });
   }
 });
 
