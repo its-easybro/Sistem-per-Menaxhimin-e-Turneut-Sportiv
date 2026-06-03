@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowDown,
   ArrowUp,
@@ -11,6 +12,8 @@ import {
   RotateCcw,
   Trash2,
   Trophy,
+  Users,
+  Layers,
 } from "lucide-react";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
@@ -19,9 +22,54 @@ import BracketTree from "../../components/BracketTree";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const panel =
-  "rounded-lg border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800";
+  "rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800";
 const strongText = "text-gray-900 dark:text-slate-100";
 const mutedText = "text-gray-500 dark:text-slate-400";
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4 },
+  },
+};
+
+const headerVariants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6 },
+  },
+};
+
+const slideInLeft = {
+  hidden: { opacity: 0, x: -30 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.5 },
+  },
+};
+
+const slideInRight = {
+  hidden: { opacity: 0, x: 30 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.5 },
+  },
+};
 
 function getArrayPayload(payload) {
   if (Array.isArray(payload)) return payload;
@@ -40,24 +88,36 @@ function getRegistrationTeamName(registration) {
 }
 
 function shuffleIds(ids) {
-  // Randomizes only the seed order; backend generation still receives a normal ordered list.
   const next = [...ids];
-
   for (let index = next.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
     [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
   }
-
   return next;
 }
 
 function moveItem(items, index, direction) {
   const targetIndex = index + direction;
   if (targetIndex < 0 || targetIndex >= items.length) return items;
-
   const next = [...items];
   [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
   return next;
+}
+
+function StatCard({ icon, label, value }) {
+  return (
+    <div className={`${panel} p-4`}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className={`text-xs font-bold uppercase ${mutedText}`}>{label}</p>
+          <p className={`mt-1 text-2xl font-black ${strongText}`}>{value}</p>
+        </div>
+        <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function SeedList({ teams, seedIds, onMove }) {
@@ -73,45 +133,57 @@ function SeedList({ teams, seedIds, onMove }) {
   }
 
   return (
-    <div className="space-y-2">
-      {seedIds.map((teamId, index) => {
-        const team = teams.find((item) => item.id === teamId);
+    <motion.div
+      className="space-y-2"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <AnimatePresence>
+        {seedIds.map((teamId, index) => {
+          const team = teams.find((item) => item.id === teamId);
 
-        return (
-          <div
-            key={teamId}
-            className="grid grid-cols-[44px_1fr_auto] items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900"
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-md bg-blue-50 text-sm font-black text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
-              {index + 1}
-            </span>
-            <span className={`min-w-0 truncate font-bold ${strongText}`}>
-              {team?.emertimi || `Team #${teamId}`}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onMove(index, -1)}
-                disabled={index === 0}
-                className="grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                aria-label="Move seed up"
-              >
-                <ArrowUp size={15} />
-              </button>
-              <button
-                type="button"
-                onClick={() => onMove(index, 1)}
-                disabled={index === seedIds.length - 1}
-                className="grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                aria-label="Move seed down"
-              >
-                <ArrowDown size={15} />
-              </button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+          return (
+            <motion.div
+              key={teamId}
+              layout
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="grid grid-cols-[44px_1fr_auto] items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900 transition-colors hover:border-blue-200 dark:hover:border-blue-500/30"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-md bg-blue-50 text-sm font-black text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                {index + 1}
+              </span>
+              <span className={`min-w-0 truncate font-bold ${strongText}`}>
+                {team?.emertimi || `Team #${teamId}`}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onMove(index, -1)}
+                  disabled={index === 0}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  aria-label="Move seed up"
+                >
+                  <ArrowUp size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onMove(index, 1)}
+                  disabled={index === seedIds.length - 1}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-gray-200 bg-white text-gray-600 transition hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  aria-label="Move seed down"
+                >
+                  <ArrowDown size={15} />
+                </button>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -140,7 +212,6 @@ export default function Brackets() {
   );
 
   const approvedRegistrations = useMemo(() => {
-    // Default seeding follows approval time so the first load is predictable.
     return registrations
       .filter(
         (registration) =>
@@ -258,12 +329,9 @@ export default function Brackets() {
 
     try {
       setSaving(true);
-      // Sends the final seed order to the backend, where the actual bracket nodes are created.
       const response = await api.post(
         `/brackets/tournament/${selectedTournamentId}/generate`,
-        {
-          team_ids: seedIds,
-        },
+        { team_ids: seedIds },
       );
       setBracket(response.data);
       setAlert({ type: "success", message: "Bracket generated successfully." });
@@ -283,7 +351,6 @@ export default function Brackets() {
   const handleScheduleChange = async (match, schedulePayload) => {
     try {
       setSavingScheduleId(match.id);
-      // Scheduling updates the bracket node and its linked real match together.
       const response = await api.patch(
         `/brackets/match/${match.id}/schedule`,
         {
@@ -349,21 +416,29 @@ export default function Brackets() {
       )}
 
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className={`${panel} overflow-hidden`}>
-          <div className="border-b border-gray-200 bg-slate-900 p-5 text-white dark:border-slate-700 sm:p-6">
+
+        {/* ── HEADER PANEL ── */}
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={headerVariants}
+          className={`${panel} overflow-hidden`}
+        >
+          <div className="border-b border-gray-200 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-5 text-white dark:border-slate-700 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold uppercase">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold uppercase text-blue-100">
                   <GitBranch size={14} />
                   Knockout setup
                 </div>
-                <h1 className="mt-3 text-3xl font-black sm:text-4xl">
+                <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
                   Brackets
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm text-slate-300">
+                <p className="mt-2 max-w-2xl text-sm text-blue-100">
                   Seed approved teams, schedule knockout matches, then advance winners when live matches are finished.
                 </p>
               </div>
+
               <button
                 type="button"
                 onClick={() => loadBracket(selectedTournamentId)}
@@ -376,38 +451,52 @@ export default function Brackets() {
             </div>
           </div>
 
-          <div className="grid gap-3 p-4 md:grid-cols-3 sm:p-5">
-            <div className={`${panel} p-4 shadow-none`}>
-              <p className={`text-xs font-bold uppercase ${mutedText}`}>Tournaments</p>
-              <p className={`mt-1 text-2xl font-black ${strongText}`}>{tournaments.length}</p>
-            </div>
-            <div className={`${panel} p-4 shadow-none`}>
-              <p className={`text-xs font-bold uppercase ${mutedText}`}>Approved Teams</p>
-              <p className={`mt-1 text-2xl font-black ${strongText}`}>{approvedTeams.length}</p>
-            </div>
-            <div className={`${panel} p-4 shadow-none`}>
-              <p className={`text-xs font-bold uppercase ${mutedText}`}>Rounds</p>
-              <p className={`mt-1 text-2xl font-black ${strongText}`}>
-                {bracket?.rounds?.length || 0}
-              </p>
-            </div>
+          {/* Stat Cards */}
+          <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
+            <StatCard
+              icon={<Trophy size={20} />}
+              label="Tournaments"
+              value={tournaments.length}
+            />
+            <StatCard
+              icon={<Users size={20} />}
+              label="Approved Teams"
+              value={approvedTeams.length}
+            />
+            <StatCard
+              icon={<Layers size={20} />}
+              label="Rounds"
+              value={bracket?.rounds?.length || 0}
+            />
           </div>
-        </section>
+        </motion.section>
 
+        {/* ── ERROR STATE ── */}
         {error ? (
-          <section className={`${panel} p-6 text-sm text-red-600 dark:text-red-300`}>
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`${panel} p-6 text-sm text-red-600 dark:text-red-300`}
+          >
             {error}
-          </section>
+          </motion.section>
         ) : (
           <>
-            <section className={`${panel} p-4 sm:p-5`}>
+            {/* ── TOURNAMENT SELECTOR ── */}
+            <motion.section
+              initial="hidden"
+              animate="visible"
+              variants={headerVariants}
+              transition={{ delay: 0.1 }}
+              className={`${panel} p-4 sm:p-5`}
+            >
               <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_auto] lg:items-end">
                 <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
                   Tournament
                   <select
                     value={selectedTournamentId}
                     onChange={(event) => setSelectedTournamentId(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
                   >
                     <option value="">Select tournament</option>
                     {tournaments.map((tournament) => (
@@ -421,10 +510,17 @@ export default function Brackets() {
                   Generate pairings first. Schedule each playable match from its card.
                 </p>
               </div>
-            </section>
+            </motion.section>
 
-            <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-              <section className={`${panel} p-4 sm:p-5`}>
+            {/* ── SEEDS + BRACKET TREE ── */}
+            <motion.div
+              className="grid gap-6 lg:grid-cols-[360px_1fr]"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {/* Seeds Panel */}
+              <motion.section variants={slideInLeft} className={`${panel} p-4 sm:p-5`}>
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
                     <h2 className={`text-xl font-black ${strongText}`}>Seeds</h2>
@@ -432,9 +528,14 @@ export default function Brackets() {
                       {selectedTournament?.emertimi || "Select a tournament"}
                     </p>
                   </div>
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                  <motion.span
+                    key={seedIds.length}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
+                  >
                     {seedIds.length}
-                  </span>
+                  </motion.span>
                 </div>
 
                 <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -442,7 +543,7 @@ export default function Brackets() {
                     type="button"
                     onClick={() => setSeedIds(shuffleIds(seedIds))}
                     disabled={seedIds.length < 2 || saving}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
                     <Dices size={16} />
                     Randomize
@@ -451,7 +552,7 @@ export default function Brackets() {
                     type="button"
                     onClick={() => setSeedIds(registrationOrderSeedIds)}
                     disabled={saving}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 transition hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
                     <RotateCcw size={16} />
                     Reset Order
@@ -461,28 +562,33 @@ export default function Brackets() {
                 <SeedList teams={approvedTeams} seedIds={seedIds} onMove={handleMoveSeed} />
 
                 <div className="mt-5 grid gap-2">
-                  <button
+                  <motion.button
                     type="button"
                     onClick={handleGenerate}
                     disabled={saving || !selectedTournamentId || seedIds.length < 2 || bracket?.matches?.length > 0}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
                   >
                     <Play size={16} />
-                    Generate Bracket
-                  </button>
-                  <button
+                    {saving ? "Generating..." : "Generate Bracket"}
+                  </motion.button>
+                  <motion.button
                     type="button"
                     onClick={handleResetBracket}
                     disabled={saving || !bracket?.matches?.length}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
                   >
                     <Trash2 size={16} />
                     Reset Bracket
-                  </button>
+                  </motion.button>
                 </div>
-              </section>
+              </motion.section>
 
-              <section className={`${panel} p-4 sm:p-5`}>
+              {/* Bracket Tree Panel */}
+              <motion.section variants={slideInRight} className={`${panel} p-4 sm:p-5`}>
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 className={`text-xl font-black ${strongText}`}>Bracket Tree</h2>
@@ -490,33 +596,58 @@ export default function Brackets() {
                       Start scheduled matches from live match tools, update the score, then finish the match to move winners forward.
                     </p>
                   </div>
-                  {bracket?.champion ? (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-sm font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                      <Trophy size={15} />
-                      {bracket.champion.emertimi}
-                    </span>
-                  ) : (
-                    <span className={`inline-flex items-center gap-2 text-sm ${mutedText}`}>
-                      <CalendarDays size={15} />
-                      {bracket?.matches?.length ? "In progress" : "Not generated"}
-                    </span>
-                  )}
+                  <AnimatePresence mode="wait">
+                    {bracket?.champion ? (
+                      <motion.span
+                        key="champion"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-sm font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+                      >
+                        <Trophy size={15} />
+                        {bracket.champion.emertimi}
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="status"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className={`inline-flex items-center gap-2 text-sm ${mutedText}`}
+                      >
+                        <CalendarDays size={15} />
+                        {bracket?.matches?.length ? "In progress" : "Not generated"}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {bracketLoading ? (
-                  <TableSkeleton />
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <TableSkeleton />
+                  </motion.div>
                 ) : (
-                  <BracketTree
-                    rounds={bracket?.rounds || []}
-                    champion={bracket?.champion}
-                    editable
-                    venues={venues}
-                    savingScheduleId={savingScheduleId}
-                    onScheduleChange={handleScheduleChange}
-                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <BracketTree
+                      rounds={bracket?.rounds || []}
+                      champion={bracket?.champion}
+                      editable
+                      venues={venues}
+                      savingScheduleId={savingScheduleId}
+                      onScheduleChange={handleScheduleChange}
+                    />
+                  </motion.div>
                 )}
-              </section>
-            </div>
+              </motion.section>
+            </motion.div>
           </>
         )}
       </div>
