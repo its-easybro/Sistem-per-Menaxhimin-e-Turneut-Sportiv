@@ -157,12 +157,35 @@ function buildRefereeFilters(query) {
 
 // Route for getting all referees. This route is protected.
 router.get("/", protect, async (req, res) => {
+  const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
+  const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
+  const skip = page && limit ? (page - 1) * limit : undefined;
+
   try {
     const where = buildRefereeFilters(req.query);
-    const referees = await prisma.referees.findMany({
+    const queryOptions = {
       where,
       orderBy: { id: "asc" },
-    });
+      ...(page && limit ? { skip, take: limit } : {}),
+    };
+
+    const referees = await prisma.referees.findMany(queryOptions);
+
+    if (page && limit) {
+      const total = await prisma.referees.count({ where });
+      return res.json({
+        data: referees,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
+      });
+    }
+
     res.json(referees);
   } catch (err) {
     res.status(500).json({ error: err.message });

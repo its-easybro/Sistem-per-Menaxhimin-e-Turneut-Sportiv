@@ -237,7 +237,7 @@ export default function Matches() {
 
       const params = new URLSearchParams({
         page: pageNum,
-        limit: 10,
+        limit: 5,
         ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
         ...(filtersObj.turneu_id && { turneu_id: filtersObj.turneu_id }),
         ...(filtersObj.team_id && { team_id: filtersObj.team_id }),

@@ -187,6 +187,10 @@ router.post("/upload-team-logo", protect, requireRole("is_admin", "is_organizer"
 });
 // Route for getting all teams
 router.get("/", protect, async (req, res) => {
+  const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
+  const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
+  const skip = page && limit ? (page - 1) * limit : undefined;
+
   try {
     const teamFilters = buildTeamFilters(req.query);
     const sportIdFilter = req.query.sporti_id ? parsePositiveInt(req.query.sporti_id) : null;
@@ -194,15 +198,37 @@ router.get("/", protect, async (req, res) => {
       return res.status(400).json({ error: "Invalid sport id" });
     }
 
-    const teams = await prisma.teams.findMany({
-      where: {
-        ...teamFilters,
-        ...(sportIdFilter ? { sporti_id: sportIdFilter } : {}),
-      },
+    const where = {
+      ...teamFilters,
+      ...(sportIdFilter ? { sporti_id: sportIdFilter } : {}),
+    };
+
+    const queryOptions = {
+      where,
       include: teamInclude,
       orderBy: { id: "asc" },
-    });
-    res.json(teams.map(formatTeam));
+      ...(page && limit ? { skip, take: limit } : {}),
+    };
+
+    const teams = await prisma.teams.findMany(queryOptions);
+    const formattedTeams = teams.map(formatTeam);
+
+    if (page && limit) {
+      const total = await prisma.teams.count({ where });
+      return res.json({
+        data: formattedTeams,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
+      });
+    }
+
+    res.json(formattedTeams);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

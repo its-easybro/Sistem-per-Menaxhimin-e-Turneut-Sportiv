@@ -95,17 +95,38 @@ function buildMatchRefereeFilters(query) {
 
 // Route for managing match referees. This route is protected and only admins can use it.
 router.get("/", protect, async (req, res) => {
+  const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
+  const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
+  const skip = page && limit ? (page - 1) * limit : undefined;
+
   try {
     let result;
     const filters = buildMatchRefereeFilters(req.query);
 
+    const queryOptions = {
+      where: filters,
+      orderBy: { id: "asc" },
+      ...(page && limit ? { skip, take: limit } : {}),
+    };
+
     if (req.user.is_admin) {
-      result = await prisma.matchreferees.findMany({
-        where: filters,
-        orderBy: { id: "asc" },
-      });
+      result = await prisma.matchreferees.findMany(queryOptions);
+
+      if (page && limit) {
+        const total = await prisma.matchreferees.count({ where: filters });
+        return res.json({
+          data: result,
+          pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            hasNext: page < Math.ceil(total / limit),
+            hasPrev: page > 1,
+          },
+        });
+      }
     } else if (req.user.is_referee) {
-      // Gjej referee rekordin nga tabela referees duke përdorur user_id
       const refereeRecord = await prisma.referees.findFirst({
         where: { user_id: req.user.id },
       });
@@ -114,11 +135,26 @@ router.get("/", protect, async (req, res) => {
         return res.status(404).json({ error: "Referee profile not found for this user" });
       }
 
-      // Tani përdor ID e referee (jo user ID) për të gjetur ndeshjet
+      const refereeWhere = { ...filters, gjyqtari_id: refereeRecord.id };
       result = await prisma.matchreferees.findMany({
-        where: { ...filters, gjyqtari_id: refereeRecord.id },
-        orderBy: { id: "asc" },
+        ...queryOptions,
+        where: refereeWhere,
       });
+
+      if (page && limit) {
+        const total = await prisma.matchreferees.count({ where: refereeWhere });
+        return res.json({
+          data: result,
+          pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            hasNext: page < Math.ceil(total / limit),
+            hasPrev: page > 1,
+          },
+        });
+      }
     } else {
       return res.status(403).json({ error: "Forbidden" });
     }

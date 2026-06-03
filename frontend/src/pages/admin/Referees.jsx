@@ -95,7 +95,7 @@ export default function Referees() {
       setLoading(true);
       const params = {
         page: pageNum,
-        limit: 10,
+        limit: 5,
         ...(filtersObj.search ? { search: filtersObj.search } : {}),
         ...(filtersObj.kategoria ? { kategoria: filtersObj.kategoria } : {}),
       };

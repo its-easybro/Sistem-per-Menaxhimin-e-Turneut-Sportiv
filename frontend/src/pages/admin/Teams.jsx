@@ -169,7 +169,7 @@ export default function Teams() {
         setLoading(true);
         setError(null);
 
-        const params = { page: pageNum, limit: 10 };
+        const params = { page: pageNum, limit: 5 };
         const search = filtersObj.search.trim();
 
         if (search) params.search = search;

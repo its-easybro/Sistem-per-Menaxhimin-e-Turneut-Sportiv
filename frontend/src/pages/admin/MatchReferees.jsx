@@ -189,7 +189,7 @@ export default function MatchReferees() {
 
       const params = {
         page: pageNum,
-        limit: 10,
+        limit: 5,
         ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
         ...(filtersObj.date_from && { date_from: filtersObj.date_from }),
         ...(filtersObj.date_to && { date_to: filtersObj.date_to }),

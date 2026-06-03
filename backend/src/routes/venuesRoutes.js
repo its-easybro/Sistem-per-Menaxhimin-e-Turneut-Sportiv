@@ -105,12 +105,35 @@ function buildVenueFilters(query) {
 
 // Route for getting all venues. This route is public.
 router.get("/", protect, async (req, res) => {
+  const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
+  const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
+  const skip = page && limit ? (page - 1) * limit : undefined;
+
   try {
     const where = buildVenueFilters(req.query);
-    const venues = await prisma.venues.findMany({
+    const queryOptions = {
       where,
       orderBy: { id: "asc" },
-    });
+      ...(page && limit ? { skip, take: limit } : {}),
+    };
+
+    const venues = await prisma.venues.findMany(queryOptions);
+
+    if (page && limit) {
+      const total = await prisma.venues.count({ where });
+      return res.json({
+        data: venues,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
+      });
+    }
+
     res.json(venues);
   } catch (err) {
     res.status(500).json({ error: err.message });

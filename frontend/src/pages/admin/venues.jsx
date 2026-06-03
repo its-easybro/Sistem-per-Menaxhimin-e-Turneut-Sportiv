@@ -105,7 +105,7 @@ export default function Venues() {
       setLoading(true);
       const params = {
         page: pageNum,
-        limit: 10,
+        limit: 5,
         ...(filtersObj.search && { search: filtersObj.search }),
         ...(filtersObj.qyteti && { qyteti: filtersObj.qyteti }),
         ...(filtersObj.statusi && { statusi: filtersObj.statusi }),

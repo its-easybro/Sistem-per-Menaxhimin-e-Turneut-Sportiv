@@ -119,12 +119,35 @@ function buildSportsFilters(query) {
 
 // Route for getting all sports.
 router.get("/", protect, async (req, res) => {
+  const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
+  const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
+  const skip = page && limit ? (page - 1) * limit : undefined;
+
   try {
     const where = buildSportsFilters(req.query);
-    const sports = await prisma.sports.findMany({
+    const queryOptions = {
       where,
       orderBy: { id: "asc" },
-    });
+      ...(page && limit ? { skip, take: limit } : {}),
+    };
+
+    const sports = await prisma.sports.findMany(queryOptions);
+
+    if (page && limit) {
+      const total = await prisma.sports.count({ where });
+      return res.json({
+        data: sports,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
+      });
+    }
+
     res.json(sports);
   } catch (err) {
     res.status(500).json({ error: err.message });

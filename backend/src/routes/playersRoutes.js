@@ -242,6 +242,10 @@ router.post("/upload-player-foto", protect, requireRole("is_admin", "is_organize
 });
 // Route for getting all players with their team information attached. This route is protected.
 router.get("/", protect, async (req, res) => {
+  const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
+  const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
+  const skip = page && limit ? (page - 1) * limit : undefined;
+
   try {
     const { search, ekipi_id, pozicioni, kombesia } = req.query;
 
@@ -266,7 +270,7 @@ router.get("/", protect, async (req, res) => {
       where.kombesia = { contains: kombesia, mode: "insensitive" };
     }
 
-    const players = await prisma.players.findMany({
+    const queryOptions = {
       where,
       orderBy: { id: "asc" },
       select: {
@@ -287,7 +291,10 @@ router.get("/", protect, async (req, res) => {
           },
         }
       },
-    });  
+      ...(page && limit ? { skip, take: limit } : {}),
+    };
+
+    const players = await prisma.players.findMany(queryOptions);
 
     const result = players.map(players => ({
       id: players.id,
@@ -303,7 +310,23 @@ router.get("/", protect, async (req, res) => {
       team_id: players.ekipi_id,
       ekipi_id: players.teams?.emertimi ?? "No Team",
       ekipi_emri: players.teams?.emertimi ?? "No Team",
-    }))
+    }));
+
+    if (page && limit) {
+      const total = await prisma.players.count({ where });
+      return res.json({
+        data: result,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
+      });
+    }
+
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
