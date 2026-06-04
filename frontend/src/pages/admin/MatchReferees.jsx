@@ -177,7 +177,7 @@ export default function MatchReferees() {
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
 
-  const loadData = useCallback(async (pageNum, filtersObj) => {
+  const loadData = useCallback(async (pageNum, filtersObj, searchValue = "") => {
     if (!canAccessPage) {
       setLoading(false);
       return;
@@ -194,6 +194,9 @@ export default function MatchReferees() {
         ...(filtersObj.date_from && { date_from: filtersObj.date_from }),
         ...(filtersObj.date_to && { date_to: filtersObj.date_to }),
       };
+      const search = searchValue.trim();
+
+      if (search) params.search = search;
 
       const [
         assignmentsResponse,
@@ -232,12 +235,13 @@ export default function MatchReferees() {
   }, [canAccessPage]);
 
   useEffect(() => {
-    loadData(page, filters);
-  }, [page, filters, loadData]);
+    loadData(page, filters, debouncedSearch);
+  }, [page, filters, debouncedSearch, loadData]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery.trim());
+      setPage(1);
     }, 400);
 
     return () => clearTimeout(timer);
@@ -470,14 +474,6 @@ export default function MatchReferees() {
     roli: formData.roli,
   });
 
-  const validateForm = () => {
-    if (!formData.ndeshja_id || !formData.gjyqtari_id || !formData.roli) {
-      return "Please fill in all required fields.";
-    }
-
-    return null;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -486,7 +482,7 @@ export default function MatchReferees() {
 
       await api.post("/match-referees", buildPayload());
 
-      await loadData(filters);
+      await loadData(page, filters, debouncedSearch);
       handleCloseModal();
       setFormErrors({});
       setAlert({ type: "success", message: "Assignment created successfully!" });
@@ -521,7 +517,7 @@ export default function MatchReferees() {
         buildPayload(),
       );
 
-      await loadData(filters);
+      await loadData(page, filters, debouncedSearch);
 
       handleCloseEditModal();
       setAlert({ type: "success", message: "Assignment updated successfully!" });
@@ -540,8 +536,13 @@ export default function MatchReferees() {
 
     try {
       await api.delete(`/match-referees/${selectedAssignment.id}`);
+      const nextPage = assignments.length === 1 && page > 1 ? page - 1 : page;
 
-      await loadData(filters);
+      if (nextPage !== page) {
+        setPage(nextPage);
+      } else {
+        await loadData(page, filters, debouncedSearch);
+      }
 
       handleCloseDeleteModal();
       setAlert({ type: "success", message: "Assignment deleted successfully!" });
@@ -560,27 +561,6 @@ export default function MatchReferees() {
     filters.statusi !== "" ||
     filters.date_from !== "" ||
     filters.date_to !== "";
-
-  const filteredAssignments = assignments.filter((item) => {
-    const query = debouncedSearch.toLowerCase();
-    if (!query) {
-      return true;
-    }
-
-    const match = getMatchById(item.ndeshja_id);
-    const referee = getRefereeById(item.gjyqtari_id);
-
-    return (
-      String(item.id).includes(query) ||
-      item.roli?.toLowerCase().includes(query) ||
-      getMatchLabel(item.ndeshja_id).toLowerCase().includes(query) ||
-      referee?.emri?.toLowerCase().includes(query) ||
-      referee?.mbiemri?.toLowerCase().includes(query) ||
-      referee?.kategoria?.toLowerCase().includes(query) ||
-      match?.statusi?.toLowerCase().includes(query) ||
-      formatDate(match?.data_ndeshjes).toLowerCase().includes(query)
-    );
-  });
 
   if (!user || !canAccessPage) {
     return <Navigate to="/login" replace />;
@@ -716,7 +696,7 @@ export default function MatchReferees() {
         </div>
 
         <div className={`flex overflow-x-auto rounded-lg bg-white shadow-md dark:bg-slate-800 ${loading ? "pointer-events-none opacity-60" : ""}`}>
-          {filteredAssignments.length === 0 ? (
+          {assignments.length === 0 ? (
             <div className="w-full px-6 py-12 text-center text-gray-600 dark:text-slate-400">
               {hasActiveFilters
                 ? debouncedSearch
@@ -743,7 +723,7 @@ export default function MatchReferees() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                {filteredAssignments.map((assignment) => {
+                {assignments.map((assignment) => {
                   const match = getMatchById(assignment.ndeshja_id);
                   const referee = getRefereeById(assignment.gjyqtari_id);
 
@@ -824,6 +804,82 @@ export default function MatchReferees() {
             </table>
           )}
         </div>
+
+        {pagination && (
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Close
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Forward
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  {pagination.total ? (
+                    <>
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> assignments)
+                    </>
+                  ) : null}
+                </p>
+              </div>
+
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {isAdmin && showModal && (

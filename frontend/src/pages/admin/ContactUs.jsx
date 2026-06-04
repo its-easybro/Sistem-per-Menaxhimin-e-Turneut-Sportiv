@@ -1,10 +1,12 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
 import {
   Bug,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   Clock,
   HelpCircle,
@@ -93,36 +95,80 @@ export default function AdminContactUs() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeTab, setActiveTab] = useState("unread");
   const [expandedId, setExpandedId] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch messages on component mount
+  const fetchMessages = useCallback(async (pageNum, tab, search) => {
+    if (!user?.is_admin) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = {
+        page: pageNum,
+        limit: 10,
+        status: tab,
+      };
+      const trimmedSearch = search.trim();
+
+      if (trimmedSearch) params.search = trimmedSearch;
+
+      const response = await api.get("/contactUs", { params });
+      const messagePayload = response.data;
+      const messageData = Array.isArray(messagePayload)
+        ? messagePayload
+        : messagePayload?.data ?? [];
+      const paginationData = Array.isArray(messagePayload)
+        ? null
+        : messagePayload?.pagination ?? null;
+
+      setMessages(Array.isArray(messageData) ? messageData : []);
+      setPagination(paginationData);
+      setUnreadCount(Array.isArray(messagePayload) ? 0 : messagePayload?.unreadCount ?? 0);
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || "Failed to fetch messages");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const response = await api.get("/contactUs");
-        setMessages(response.data);
-      } catch (err) {
-        setError(err.message || "Failed to fetch messages");
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchMessages(page, activeTab, debouncedSearch);
+  }, [fetchMessages, page, activeTab, debouncedSearch]);
 
-    fetchMessages();
-  }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const nextSearch = searchQuery.trim();
+      setDebouncedSearch(nextSearch);
+      setPage(1);
+      setExpandedId(null);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Handle mark as read
   const handleMarkAsRead = async (id, event) => {
     if (event) event.stopPropagation();
     try {
       await api.patch(`/contactUs/${id}/read`);
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === id ? { ...msg, lexuar: true, lexuar_at: new Date() } : msg
-        )
-      );
+      const nextPage = messages.length === 1 && page > 1 ? page - 1 : page;
+
+      setExpandedId(null);
+      if (nextPage !== page) {
+        setPage(nextPage);
+      } else {
+        await fetchMessages(page, activeTab, debouncedSearch);
+      }
       setAlert({ type: 'success', message: 'Message marked as read!' });
     } catch (err) {
       setAlert({ type: 'error', message: 'Error marking as read: ' + err.message });
@@ -143,9 +189,15 @@ export default function AdminContactUs() {
 
     try {
       await api.delete(`/contactUs/${selectedMessage.id}`);
-      setMessages((prev) => prev.filter((msg) => msg.id !== selectedMessage.id));
+      const nextPage = messages.length === 1 && page > 1 ? page - 1 : page;
+
       if (expandedId === selectedMessage.id) {
         setExpandedId(null);
+      }
+      if (nextPage !== page) {
+        setPage(nextPage);
+      } else {
+        await fetchMessages(page, activeTab, debouncedSearch);
       }
       setShowDeleteModal(false);
       setSelectedMessage(null);
@@ -160,23 +212,6 @@ export default function AdminContactUs() {
     setShowDeleteModal(false);
     setSelectedMessage(null);
   };
-
-  // Filter messages by search query
-  const filteredMessages = messages.filter((msg) => {
-    const query = searchQuery.trim().toLowerCase();
-    const matchesQuery =
-      !query ||
-      msg.emri?.toLowerCase().includes(query) ||
-      msg.email?.toLowerCase().includes(query) ||
-      msg.subjekti?.toLowerCase().includes(query) ||
-      msg.kategoria?.toLowerCase().includes(query) ||
-      msg.mesazhi?.toLowerCase().includes(query);
-    const isRead = Boolean(msg.lexuar);
-    const matchesTab = activeTab === "unread" ? !isRead : isRead;
-    return matchesQuery && matchesTab;
-  });
-
-  const unreadCount = messages.filter((msg) => !msg.lexuar).length;
 
   // Loading state
   if (!user || !user.is_admin) {
@@ -238,7 +273,11 @@ export default function AdminContactUs() {
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
         <div className="flex border-b border-gray-200 dark:border-slate-800">
           <button
-            onClick={() => setActiveTab("unread")}
+            onClick={() => {
+              setActiveTab("unread");
+              setPage(1);
+              setExpandedId(null);
+            }}
             className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 text-sm font-semibold transition-colors relative ${
               activeTab === "unread"
                 ? "text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/10"
@@ -253,7 +292,11 @@ export default function AdminContactUs() {
           </button>
 
           <button
-            onClick={() => setActiveTab("read")}
+            onClick={() => {
+              setActiveTab("read");
+              setPage(1);
+              setExpandedId(null);
+            }}
             className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 text-sm font-semibold transition-colors relative ${
               activeTab === "read"
                 ? "text-gray-900 dark:text-white bg-gray-50 dark:bg-slate-800/50"
@@ -269,14 +312,18 @@ export default function AdminContactUs() {
         </div>
 
         <div className="divide-y divide-gray-100 dark:divide-slate-800/60">
-          {filteredMessages.length === 0 ? (
+          {messages.length === 0 ? (
             <div className="p-12 text-center text-gray-500 dark:text-slate-400">
               <CheckCircle2 size={48} className="mx-auto mb-4 opacity-20" />
               <p className="text-lg font-medium">Inbox Zero!</p>
-              <p className="text-sm mt-1">No {activeTab} messages found.</p>
+              <p className="text-sm mt-1">
+                {debouncedSearch
+                  ? `No ${activeTab} messages match "${debouncedSearch}".`
+                  : `No ${activeTab} messages found.`}
+              </p>
             </div>
           ) : (
-            filteredMessages.map((msg) => {
+            messages.map((msg) => {
               const isExpanded = expandedId === msg.id;
               const isUnread = !msg.lexuar;
               const subject = msg.subjekti || getMessageSubject(msg.mesazhi);
@@ -366,6 +413,82 @@ export default function AdminContactUs() {
           )}
         </div>
       </div>
+
+      {pagination && (
+        <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+              className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+            >
+              Close
+            </button>
+            <button
+              disabled={page === pagination.totalPages}
+              onClick={() => setPage(page + 1)}
+              className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+            >
+              Forward
+            </button>
+          </div>
+
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-slate-400">
+                Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                {pagination.total ? (
+                  <>
+                    {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> messages)
+                  </>
+                ) : null}
+              </p>
+            </div>
+
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(page - 1)}
+                  className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                  aria-label="Previous Page"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+
+                {Array.from({ length: pagination.totalPages }, (_, index) => {
+                  const pageNum = index + 1;
+                  const isActive = pageNum === page;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  disabled={page === pagination.totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                  aria-label="Next Page"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDeleteModal && selectedMessage && (
         <div

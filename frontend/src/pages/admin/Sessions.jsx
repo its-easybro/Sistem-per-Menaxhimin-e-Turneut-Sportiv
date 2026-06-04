@@ -1,9 +1,9 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Monitor, Smartphone, Trash2, Laptop, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Monitor, Smartphone, Trash2, Laptop, Search, SlidersHorizontal } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 function formatDate(iso) {
@@ -41,6 +41,17 @@ function getDeviceIcon(deviceLabel) {
   return Laptop;
 }
 
+const browserFilterOptions = [
+  "Microsoft Edge",
+  "Google Chrome",
+  "Mozilla Firefox",
+  "Safari",
+  "Opera",
+  "Unknown browser",
+];
+
+const deviceFilterOptions = ["Desktop", "Mobile", "Unknown device"];
+
 export default function Sessions() {
   const { user } = useContext(AuthContext);
   const [sessions, setSessions] = useState([]);
@@ -52,30 +63,55 @@ export default function Sessions() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filters, setFilters] = useState({ browser: "", device: "", search: "" });
   const [alert, setAlert] = useState(null);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
+
+  const loadSessions = useCallback(async (pageNum, filtersObj) => {
+    if (!user?.is_admin) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        page: pageNum,
+        limit: 10,
+      };
+      const search = filtersObj.search.trim();
+
+      if (search) params.search = search;
+      if (filtersObj.browser) params.browser = filtersObj.browser;
+      if (filtersObj.device) params.device = filtersObj.device;
+
+      const res = await api.get("/sessions", { params });
+      const sessionsPayload = res.data;
+      const sessionsData = Array.isArray(sessionsPayload)
+        ? sessionsPayload
+        : sessionsPayload?.data ?? [];
+      const paginationData = Array.isArray(sessionsPayload)
+        ? null
+        : sessionsPayload?.pagination ?? null;
+
+      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      setPagination(paginationData);
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err.message ||
+        "Failed to load sessions";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
-    const load = async () => {
-      if (!user?.is_admin) {
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        const res = await api.get("/sessions");
-        setSessions(res.data || []);
-      } catch (err) {
-        const msg =
-          err?.response?.data?.message ||
-          err.message ||
-          "Failed to load sessions";
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [user]);
+    loadSessions(page, filters);
+  }, [loadSessions, page, filters]);
 
   const handleDelete = (id) => {
     const s = sessions.find((x) => x.id === id) || { id };
@@ -87,11 +123,18 @@ export default function Sessions() {
     if (!selectedSession) return;
     try {
       await api.delete(`/sessions/${selectedSession.id}`);
-      setSessions((prev) => prev.filter((t) => t.id !== selectedSession.id));
+      const nextPage = sessions.length === 1 && page > 1 ? page - 1 : page;
+
+      if (nextPage !== page) {
+        setPage(nextPage);
+      } else {
+        await loadSessions(page, filters);
+      }
       setAlert({ type: "success", message: "Session deleted." });
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
+        err?.response?.data?.error ||
         err.message ||
         "Failed to delete session";
       setAlert({ type: "error", message: msg });
@@ -109,10 +152,14 @@ export default function Sessions() {
   // Implements debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-      setFilters((prev) =>
-        prev.search === searchQuery ? prev : { ...prev, search: searchQuery }
-      );
+      const nextSearch = searchQuery.trim();
+
+      setDebouncedSearch(nextSearch);
+      setFilters((prev) => {
+        if (prev.search === nextSearch) return prev;
+        setPage(1);
+        return { ...prev, search: nextSearch };
+      });
     }, 400);
 
     return () => clearTimeout(timer);
@@ -121,45 +168,18 @@ export default function Sessions() {
   // Handles filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
+    setPage(1);
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   // Clear filters handler
   const handleClearFilters = () => {
     setSearchQuery("");
+    setPage(1);
     setFilters({ browser: "", device: "", search: "" });
   };
 
-  const hasActiveFilters = filters.browser !== "" || filters.device !== "" || filters.search !== "";
-
-  // Get unique browsers and devices from sessions
-  const uniqueBrowsers = [...new Set(sessions.map((s) => getBrowserLabel(s.userAgent)))].sort();
-  const uniqueDevices = [...new Set(sessions.map((s) => getDeviceLabel(s.userAgent)))].sort();
-
-  const filtered = sessions.filter((s) => {
-    const q = debouncedSearch.toLowerCase();
-    const browserLabel = getBrowserLabel(s.userAgent);
-    const deviceLabel = getDeviceLabel(s.userAgent);
-
-    const matchesSearch =
-      !q ||
-      String(s.id).toLowerCase().includes(q) ||
-      String(s.userId).toLowerCase().includes(q) ||
-      (s.user?.email || "").toLowerCase().includes(q) ||
-      ((s.user?.emri || "") + " " + (s.user?.mbiemri || ""))
-        .toLowerCase()
-        .includes(q) ||
-      browserLabel.toLowerCase().includes(q) ||
-      deviceLabel.toLowerCase().includes(q) ||
-      (s.lastSeenAt || "").toLowerCase().includes(q) ||
-      (s.createdAt || "").toLowerCase().includes(q) ||
-      (s.expiresAt || "").toLowerCase().includes(q);
-
-    const matchesBrowser = !filters.browser || browserLabel === filters.browser;
-    const matchesDevice = !filters.device || deviceLabel === filters.device;
-
-    return matchesSearch && matchesBrowser && matchesDevice;
-  });
+  const hasActiveFilters = filters.browser !== "" || filters.device !== "" || filters.search.trim() !== "";
 
   if (!user?.is_admin && !loading) return <Navigate to="/" replace />;
 
@@ -216,7 +236,7 @@ export default function Sessions() {
                   className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
                 >
                   <option value="">All Browsers</option>
-                  {uniqueBrowsers.map((browser) => (
+                  {browserFilterOptions.map((browser) => (
                     <option key={browser} value={browser}>
                       {browser}
                     </option>
@@ -250,7 +270,7 @@ export default function Sessions() {
                   className="w-full pl-9 pr-8 py-2 border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer font-medium transition-all"
                 >
                   <option value="">All Devices</option>
-                  {uniqueDevices.map((device) => (
+                  {deviceFilterOptions.map((device) => (
                     <option key={device} value={device}>
                       {device}
                     </option>
@@ -317,17 +337,19 @@ export default function Sessions() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-                {filtered.length === 0 ? (
+                {sessions.length === 0 ? (
                   <tr>
                     <td
                       colSpan={7}
                       className="px-4 py-6 text-center text-gray-500 dark:text-slate-400"
                     >
-                      No sessions found.
+                      {debouncedSearch
+                        ? `No sessions match "${debouncedSearch}". Try a different search.`
+                        : "No sessions found."}
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((s) => (
+                  sessions.map((s) => (
                     <tr
                       key={s.id}
                       className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors duration-150"
@@ -377,6 +399,82 @@ export default function Sessions() {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {pagination && (
+          <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+                className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Close
+              </button>
+              <button
+                disabled={page === pagination.totalPages}
+                onClick={() => setPage(page + 1)}
+                className="relative ml-3 inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+              >
+                Forward
+              </button>
+            </div>
+
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  {pagination.total ? (
+                    <>
+                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> sessions)
+                    </>
+                  ) : null}
+                </p>
+              </div>
+
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {Array.from({ length: pagination.totalPages }, (_, index) => {
+                    const pageNum = index + 1;
+                    const isActive = pageNum === page;
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm"
+                            : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    disabled={page === pagination.totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="relative inline-flex items-center rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 focus:z-20 disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
+                    aria-label="Next Page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         )}
 

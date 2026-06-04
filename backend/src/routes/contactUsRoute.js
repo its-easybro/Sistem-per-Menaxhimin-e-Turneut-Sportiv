@@ -10,6 +10,29 @@ const SUBJECT_MAX_LENGTH = 120;
 
 const CATEGORY_VALUES = ["dispute", "upgrade", "bug", "other"];
 
+function buildContactMessageFilters(query) {
+    const where = {};
+    const search = String(query.search || "").trim();
+
+    if (query.status === "unread") {
+        where.lexuar = false;
+    } else if (query.status === "read") {
+        where.lexuar = true;
+    }
+
+    if (search) {
+        where.OR = [
+            { emri: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+            { subjekti: { contains: search, mode: "insensitive" } },
+            { kategoria: { contains: search, mode: "insensitive" } },
+            { mesazhi: { contains: search, mode: "insensitive" } },
+        ];
+    }
+
+    return where;
+}
+
 // Validation Schemas
 const contactMessageSchema = Joi.object({
   emri: Joi.string().trim().required().messages({
@@ -34,10 +57,39 @@ const contactMessageSchema = Joi.object({
 });
 
 router.get("/", protect, requireRole("is_admin"), async (req, res) => {
+    const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
+    const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
+    const skip = page && limit ? (page - 1) * limit : undefined;
+    const where = buildContactMessageFilters(req.query);
+
     try{
-        const msg = await prisma.contactMessages.findMany({
-            orderBy: { created_at: "desc" }
-        })
+        const [msg, unreadCount] = await Promise.all([
+            prisma.contactMessages.findMany({
+                where,
+                orderBy: { created_at: "desc" },
+                ...(page && limit ? { skip, take: limit } : {}),
+            }),
+            prisma.contactMessages.count({ where: { lexuar: false } }),
+        ]);
+
+        if (page && limit) {
+            const total = await prisma.contactMessages.count({ where });
+            const totalPages = Math.max(1, Math.ceil(total / limit));
+
+            return res.status(200).json({
+                data: msg,
+                unreadCount,
+                pagination: {
+                    total,
+                    page,
+                    limit,
+                    totalPages,
+                    hasNext: page < totalPages,
+                    hasPrev: page > 1,
+                },
+            });
+        }
+
         res.status(200).json(msg);
     } catch (err) {
         res.status(500).json({ error: err.message })

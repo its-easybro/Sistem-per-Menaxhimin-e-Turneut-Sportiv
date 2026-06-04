@@ -70,9 +70,11 @@ function parseMatchDate(value) {
 
 function buildMatchRefereeFilters(query) {
   const statusi = parseStringQuery(query.statusi);
+  const search = parseStringQuery(query.search);
   const exactDate = parseMatchDate(query.date);
   const dateFrom = parseMatchDate(query.date_from);
   const dateTo = parseMatchDate(query.date_to);
+  const filters = [];
   const matchFilters = {};
 
   if (statusi) {
@@ -88,9 +90,47 @@ function buildMatchRefereeFilters(query) {
     };
   }
 
-  return Object.keys(matchFilters).length > 0
-    ? { matches: matchFilters }
-    : {};
+  if (Object.keys(matchFilters).length > 0) {
+    filters.push({ matches: matchFilters });
+  }
+
+  if (search) {
+    const searchFilters = [
+      { roli: { contains: search, mode: "insensitive" } },
+      { referees: { emri: { contains: search, mode: "insensitive" } } },
+      { referees: { mbiemri: { contains: search, mode: "insensitive" } } },
+      { referees: { kategoria: { contains: search, mode: "insensitive" } } },
+      { matches: { statusi: { contains: search, mode: "insensitive" } } },
+      { matches: { faza: { contains: search, mode: "insensitive" } } },
+      {
+        matches: {
+          teams_matches_ekipi_shtepiak_idToteams: {
+            emertimi: { contains: search, mode: "insensitive" },
+          },
+        },
+      },
+      {
+        matches: {
+          teams_matches_ekipi_mysafir_idToteams: {
+            emertimi: { contains: search, mode: "insensitive" },
+          },
+        },
+      },
+    ];
+    const numericSearch = Number(search);
+
+    if (Number.isInteger(numericSearch)) {
+      searchFilters.push(
+        { id: numericSearch },
+        { ndeshja_id: numericSearch },
+        { gjyqtari_id: numericSearch },
+      );
+    }
+
+    filters.push({ OR: searchFilters });
+  }
+
+  return filters.length > 0 ? { AND: filters } : {};
 }
 
 // Route for managing match referees. This route is protected and only admins can use it.
@@ -114,14 +154,15 @@ router.get("/", protect, async (req, res) => {
 
       if (page && limit) {
         const total = await prisma.matchreferees.count({ where: filters });
+        const totalPages = Math.max(1, Math.ceil(total / limit));
         return res.json({
           data: result,
           pagination: {
             total,
             page,
             limit,
-            totalPages: Math.ceil(total / limit),
-            hasNext: page < Math.ceil(total / limit),
+            totalPages,
+            hasNext: page < totalPages,
             hasPrev: page > 1,
           },
         });
@@ -143,14 +184,15 @@ router.get("/", protect, async (req, res) => {
 
       if (page && limit) {
         const total = await prisma.matchreferees.count({ where: refereeWhere });
+        const totalPages = Math.max(1, Math.ceil(total / limit));
         return res.json({
           data: result,
           pagination: {
             total,
             page,
             limit,
-            totalPages: Math.ceil(total / limit),
-            hasNext: page < Math.ceil(total / limit),
+            totalPages,
+            hasNext: page < totalPages,
             hasPrev: page > 1,
           },
         });
