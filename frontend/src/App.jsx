@@ -51,6 +51,7 @@ const LiveMatches = lazy(() => import("./pages/Users/LiveMatches"))
 const PublicLiveMatch = lazy(() => import("./pages/Users/PublicLiveMatch"))
 const PublicStandings = lazy(() => import("./pages/Users/PublicStandings"))
 const PublicBrackets = lazy(() => import("./pages/Users/PublicBrackets"))
+const PublicPlayers = lazy(() => import("./pages/Users/PublicPlayers"))
 const Profile = lazy(() => import("./pages/Users/Profile"))
 
 function App() {
@@ -84,6 +85,7 @@ function App() {
         {/* /brackets stays public; admin editing is kept on /admin/brackets. */}
         <Route path="/brackets" element={<PublicBrackets />} />
         <Route path="/public/brackets" element={<PublicBrackets />} />
+        <Route path="/public/players" element={<PublicPlayers />} />
 
         {/* Authenticated profile route available to every signed-in user. */}
         <Route element={<ProtectedRoute />}>

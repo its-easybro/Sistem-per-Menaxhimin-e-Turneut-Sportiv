@@ -589,17 +589,16 @@ export default function Standings({ publicView = false }) {
               </div>
             </label>
 
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="inline-flex h-10 items-center justify-center gap-2 self-end rounded-lg border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                <X size={16} />
-                Reset
-              </button>
-            )}
           </div>
+          
+            {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0 mt-3"
+            >
+              Clear Filters
+            </button>
+            )}
         </motion.section>
 
         {error ? (

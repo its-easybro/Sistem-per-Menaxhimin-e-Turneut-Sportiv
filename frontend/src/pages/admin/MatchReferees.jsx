@@ -189,7 +189,7 @@ export default function MatchReferees() {
 
       const params = {
         page: pageNum,
-        limit: 5,
+        limit: 10,
         ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
         ...(filtersObj.date_from && { date_from: filtersObj.date_from }),
         ...(filtersObj.date_to && { date_to: filtersObj.date_to }),
@@ -703,15 +703,16 @@ export default function MatchReferees() {
               </div>
             </div>
 
+            </div>
+            
             {hasActiveFilters && (
-              <button
-                onClick={handleClearFilters}
-                className="ml-auto flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-gray-500 transition-all duration-200 hover:bg-gray-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-red-400"
-              >
-                Clear Filters
-              </button>
+            <button
+              onClick={handleClearFilters}
+              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+            >
+              Clear Filters
+            </button>
             )}
-          </div>
         </div>
 
         <div className={`flex overflow-x-auto rounded-lg bg-white shadow-md dark:bg-slate-800 ${loading ? "pointer-events-none opacity-60" : ""}`}>

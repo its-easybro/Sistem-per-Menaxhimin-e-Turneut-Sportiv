@@ -169,7 +169,7 @@ export default function Teams() {
         setLoading(true);
         setError(null);
 
-        const params = { page: pageNum, limit: 5 };
+        const params = { page: pageNum, limit: 10 };
         const search = filtersObj.search.trim();
 
         if (search) params.search = search;
@@ -490,16 +490,16 @@ export default function Teams() {
                 </div>
               </div>
 
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0"
-                >
-                  Clear
-                </button>
-              )}
             </div>
+            
+            {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+            >
+              Clear Filters
+            </button>
+            )}
 
             <button
               onClick={handleCreate}

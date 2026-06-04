@@ -117,6 +117,22 @@ function buildSportsFilters(query) {
   return where;
 }
 
+// Route for getting all sports publicly.
+router.get("/public", async (req, res) => {
+  try {
+    const sports = await prisma.sports.findMany({
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        emertimi: true,
+      }
+    });
+    res.json(sports);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Route for getting all sports.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;

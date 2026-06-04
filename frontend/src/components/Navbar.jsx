@@ -18,6 +18,7 @@ import {
   InformationCircleIcon,
   EnvelopeIcon,
   XMarkIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import { Moon, Sun } from "lucide-react";
 import { ChevronDownIcon, PhoneIcon, PlayCircleIcon } from '@heroicons/react/20/solid'
@@ -28,6 +29,7 @@ import { ThemeContext } from "../context/ThemeContext"
 const products = [
   { name: 'About Us', description: 'About us', Link: '/about-us', icon: InformationCircleIcon },
   { name: 'Contact Us', description: 'Get in contact with us', Link: '/contact-us', icon: EnvelopeIcon },
+  { name: 'Players', description: 'Browse players and teams', Link: '/public/players', icon: UserGroupIcon },
 ]
 
 const getInitials = (user) => {
@@ -259,6 +261,18 @@ const Navbar = () => {
                     Product
                     <ChevronDownIcon aria-hidden="true" className="size-5 flex-none group-data-open:rotate-180" />
                   </DisclosureButton>
+                  <DisclosurePanel className="mt-2 space-y-2">
+                    {[...products].map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.Link}
+                        className="block rounded-lg py-2 pl-6 pr-3 text-sm/7 font-semibold text-white hover:bg-white/5"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </DisclosurePanel>
                 </Disclosure>
                 {/* Mobile public links mirror the desktop viewer routes. */}
                 <Link

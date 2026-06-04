@@ -273,15 +273,16 @@ export default function Sessions() {
                 </div>
               </div>
 
-              {hasActiveFilters && (
-                <button
-                  onClick={handleClearFilters}
-                  className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer md:absolute md:left-[calc(100%-13rem)] md:top-1/2 md:-translate-y-1/2 md:ml-0"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+              </div>
+            
+            {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+            >
+              Clear Filters
+            </button>
+            )}
           </div>
         </div>
 

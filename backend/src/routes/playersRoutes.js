@@ -240,6 +240,61 @@ router.post("/upload-player-foto", protect, requireRole("is_admin", "is_organize
     return res.json({ message: "File uploaded successfully", file: req.file, url: logoURL });
   });
 });
+// Route for getting all players publicly, with team and sport information attached.
+router.get("/public", async (req, res) => {
+  try {
+    const players = await prisma.players.findMany({
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        emri: true,
+        mbiemri: true,
+        data_lindjes: true,
+        pozicioni: true,
+        numri: true,
+        gjatesia: true,
+        pesha: true,
+        kombesia: true,
+        foto: true,
+        ekipi_id: true,
+        teams: {
+          select: {
+            emertimi: true,
+            sports: {
+              select: {
+                id: true,
+                emertimi: true,
+              }
+            }
+          },
+        }
+      },
+    });
+
+    const result = players.map(player => ({
+      id: player.id,
+      emri: player.emri,
+      mbiemri: player.mbiemri,
+      data_lindjes: player.data_lindjes,
+      pozicioni: player.pozicioni,
+      numri: player.numri,
+      gjatesia: player.gjatesia,
+      pesha: player.pesha,
+      kombesia: player.kombesia,
+      foto: player.foto,
+      team_id: player.ekipi_id,
+      ekipi_id: player.teams?.emertimi ?? "No Team",
+      ekipi_emri: player.teams?.emertimi ?? "No Team",
+      sporti_id: player.teams?.sports?.id ?? null,
+      sporti_emri: player.teams?.sports?.emertimi ?? "No Sport",
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Route for getting all players with their team information attached. This route is protected.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;

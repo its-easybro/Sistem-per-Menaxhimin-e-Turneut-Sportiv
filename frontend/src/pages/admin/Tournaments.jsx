@@ -393,7 +393,7 @@ export default function Tournaments() {
 
       const params = new URLSearchParams({
         page: pageNum,
-        limit: 5,
+        limit: 10,
         ...(filtersObj.search && { search: filtersObj.search }),
         ...(filtersObj.lloji && { lloji: filtersObj.lloji }),
         ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
