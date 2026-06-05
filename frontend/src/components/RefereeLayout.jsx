@@ -1,14 +1,23 @@
 import { useContext, useState } from "react";
 import { Link, Navigate, Outlet } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
-import { LogOut, Menu, Award, LayoutDashboard, Swords, Flag, Radio } from "lucide-react";
+import {
+  LogOut,
+  Menu,
+  Award,
+  LayoutDashboard,
+  Swords,
+  Flag,
+  Radio,
+} from "lucide-react";
 
+// Renders the main layout wrapper for referee pages with a responsive sidebar.
 const RefereeLayout = () => {
-  const { user, logout} = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-return (
-  <div className="flex h-screen md:h-[calc(100vh-80px)] bg-gray-100 dark:bg-slate-900 overflow-hidden transition-colors duration-300">
+  return (
+    <div className="flex h-screen md:h-[calc(100vh-80px)] bg-gray-100 dark:bg-slate-900 overflow-hidden transition-colors duration-300">
       {/* Sidebar */}
       <aside
         className={`w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col justify-between shrink-0 transition-all duration-300 ${isSidebarOpen ? "ml-0" : "-ml-64 hidden md:flex md:-ml-64 md:hidden"} ${!isSidebarOpen && "hidden"}`}
@@ -38,7 +47,9 @@ return (
             </Link>
             {/* Duties */}
             <div className="px-4 pt-4 pb-2">
-              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-300 uppercase tracking-wider">Match Duties</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-300 uppercase tracking-wider">
+                Match Duties
+              </p>
             </div>
             <Link
               to="/referee/matches"
@@ -74,7 +85,9 @@ return (
               <p className="text-sm font-bold text-gray-900 dark:text-slate-200 truncate">
                 {user.full_name || user.username || user.email}
               </p>
-              <p className="text-xs text-gray-500 dark:text-slate-400">Referee</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                Referee
+              </p>
             </div>
           </div>
           <button

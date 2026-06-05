@@ -7,6 +7,7 @@ import axios from "axios";
 import { AUTH_API_URL } from "../../config/api";
 import { Eye, EyeOff } from "lucide-react";
 
+// Renders a registration form that allows new users to create an account by providing a username, email, and password, with client-side validation and error handling to ensure a smooth user experience during the sign-up process.
 const Register = () => {
   const [formData, setFormData] = useState({
     username: "",
@@ -20,6 +21,7 @@ const Register = () => {
   const { login } = useContext(AuthContext);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Validation schema for the registration form.
   const validationSchema = yup.object().shape({
     username: yup
       .string()
@@ -39,6 +41,7 @@ const Register = () => {
       .required("Password is required"),
   });
 
+  // Handles changes to the form input fields, updating the form data state and clearing any existing validation errors for the specific field when the user modifies it.
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -69,7 +72,11 @@ const Register = () => {
         });
         setErrors(validationErrors);
       } else {
-        setError( err?.response?.data?.message || err?.message || "Error occurred while registering");
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Error occurred while registering",
+        );
       }
     } finally {
       setLoading(false);
@@ -96,6 +103,7 @@ const Register = () => {
             </div>
           )}
 
+          {/* Registration Form */}
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               <label
@@ -184,6 +192,7 @@ const Register = () => {
               )}
             </div>
 
+            {/* SUBMIT BUTTON */}
             <button
               type="submit"
               disabled={loading}

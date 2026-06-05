@@ -21,6 +21,7 @@ import { Alert } from "../../components/Alert";
 import BracketTree from "../../components/BracketTree";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
+// Renders the bracket management interface for administrators and organizers, allowing them to seed teams, generate brackets, schedule matches, and track tournament progress.
 const panel =
   "rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800";
 const strongText = "text-gray-900 dark:text-slate-100";
@@ -34,7 +35,7 @@ const containerVariants = {
     transition: { staggerChildren: 0.1 },
   },
 };
-
+// Each item (seed) will fade in and slide up when appearing.
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -43,7 +44,7 @@ const itemVariants = {
     transition: { duration: 0.4 },
   },
 };
-
+// The header will fade in and slide down when appearing.
 const headerVariants = {
   hidden: { opacity: 0, y: -20 },
   visible: {
@@ -53,6 +54,7 @@ const headerVariants = {
   },
 };
 
+// The seed list will slide in from the left, while the bracket tree will slide in from the right, creating a dynamic entrance effect for both panels.
 const slideInLeft = {
   hidden: { opacity: 0, x: -30 },
   visible: {
@@ -70,7 +72,7 @@ const slideInRight = {
     transition: { duration: 0.5 },
   },
 };
-
+// Utility functions
 function getArrayPayload(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
@@ -84,9 +86,12 @@ function getRegistrationTime(registration) {
 }
 
 function getRegistrationTeamName(registration) {
-  return registration.ekipi_emri || registration.teams?.emertimi || "Unknown team";
+  return (
+    registration.ekipi_emri || registration.teams?.emertimi || "Unknown team"
+  );
 }
 
+// Shuffles an array of team IDs using the Fisher-Yates algorithm to randomize their order for seeding purposes.
 function shuffleIds(ids) {
   const next = [...ids];
   for (let index = next.length - 1; index > 0; index -= 1) {
@@ -96,6 +101,7 @@ function shuffleIds(ids) {
   return next;
 }
 
+// Moves an item in the array of team IDs up or down based on the specified direction, allowing organizers to manually adjust seed order before generating the bracket.
 function moveItem(items, index, direction) {
   const targetIndex = index + direction;
   if (targetIndex < 0 || targetIndex >= items.length) return items;
@@ -104,6 +110,7 @@ function moveItem(items, index, direction) {
   return next;
 }
 
+// A reusable card component for displaying tournament statistics such as the number of tournaments, approved teams, and rounds, with an icon and styled text.
 function StatCard({ icon, label, value }) {
   return (
     <div className={`${panel} p-4`}>
@@ -211,6 +218,7 @@ export default function Brackets() {
     [selectedTournamentId, tournaments],
   );
 
+  // Filters registrations to only include those that are approved for the selected tournament, then sorts them by registration time and ID to ensure a consistent seeding order
   const approvedRegistrations = useMemo(() => {
     return registrations
       .filter(
@@ -225,6 +233,7 @@ export default function Brackets() {
       });
   }, [registrations, selectedTournamentId]);
 
+  // Maps approved registrations to a list of teams with their IDs and names, which will be used for seeding in the bracket generation process.
   const approvedTeams = useMemo(
     () =>
       approvedRegistrations.map((registration) => ({
@@ -288,8 +297,10 @@ export default function Brackets() {
         setTournaments(nextTournaments);
         setRegistrations(getArrayPayload(registrationResponse.data));
         setVenues(getArrayPayload(venueResponse.data));
-        setSelectedTournamentId((current) =>
-          current || (nextTournaments[0]?.id ? String(nextTournaments[0].id) : ""),
+        setSelectedTournamentId(
+          (current) =>
+            current ||
+            (nextTournaments[0]?.id ? String(nextTournaments[0].id) : ""),
         );
       } catch (err) {
         setError(
@@ -347,20 +358,17 @@ export default function Brackets() {
       setSaving(false);
     }
   };
-
+  // Handles schedule changes for a specific match by sending a PATCH request to update the match's schedule information, then reloads the bracket to reflect the changes and provides user feedback on success or failure.
   const handleScheduleChange = async (match, schedulePayload) => {
     try {
       setSavingScheduleId(match.id);
-      const response = await api.patch(
-        `/brackets/match/${match.id}/schedule`,
-        {
-          data_ndeshjes: schedulePayload.data_ndeshjes || null,
-          ora_fillimit: schedulePayload.ora_fillimit || null,
-          fusha_id: schedulePayload.fusha_id
-            ? Number(schedulePayload.fusha_id)
-            : null,
-        },
-      );
+      const response = await api.patch(`/brackets/match/${match.id}/schedule`, {
+        data_ndeshjes: schedulePayload.data_ndeshjes || null,
+        ora_fillimit: schedulePayload.ora_fillimit || null,
+        fusha_id: schedulePayload.fusha_id
+          ? Number(schedulePayload.fusha_id)
+          : null,
+      });
       setBracket(response.data);
       setAlert({ type: "success", message: "Match schedule saved." });
     } catch (err) {
@@ -412,11 +420,14 @@ export default function Brackets() {
   return (
     <div className="min-h-screen bg-gray-50 p-4 dark:bg-slate-950 sm:p-6">
       {alert && (
-        <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
       )}
 
       <div className="mx-auto max-w-7xl space-y-6">
-
         {/* ── HEADER PANEL ── */}
         <motion.section
           initial="hidden"
@@ -426,6 +437,7 @@ export default function Brackets() {
         >
           <div className="border-b border-gray-200 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-5 text-white dark:border-slate-700 sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              {/* Tournament Info */}
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold uppercase text-blue-100">
                   <GitBranch size={14} />
@@ -435,17 +447,22 @@ export default function Brackets() {
                   Brackets
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-blue-100">
-                  Seed approved teams, schedule knockout matches, then advance winners when live matches are finished.
+                  Seed approved teams, schedule knockout matches, then advance
+                  winners when live matches are finished.
                 </p>
               </div>
 
+              {/* Action Buttons */}
               <button
                 type="button"
                 onClick={() => loadBracket(selectedTournamentId)}
                 disabled={bracketLoading}
                 className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <RefreshCcw size={16} className={bracketLoading ? "animate-spin" : ""} />
+                <RefreshCcw
+                  size={16}
+                  className={bracketLoading ? "animate-spin" : ""}
+                />
                 Refresh
               </button>
             </div>
@@ -490,12 +507,15 @@ export default function Brackets() {
               transition={{ delay: 0.1 }}
               className={`${panel} p-4 sm:p-5`}
             >
+              {/* Tournament Selector */}
               <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_auto] lg:items-end">
                 <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
                   Tournament
                   <select
                     value={selectedTournamentId}
-                    onChange={(event) => setSelectedTournamentId(event.target.value)}
+                    onChange={(event) =>
+                      setSelectedTournamentId(event.target.value)
+                    }
                     className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
                   >
                     <option value="">Select tournament</option>
@@ -507,7 +527,8 @@ export default function Brackets() {
                   </select>
                 </label>
                 <p className={`text-sm ${mutedText}`}>
-                  Generate pairings first. Schedule each playable match from its card.
+                  Generate pairings first. Schedule each playable match from its
+                  card.
                 </p>
               </div>
             </motion.section>
@@ -520,10 +541,15 @@ export default function Brackets() {
               animate="visible"
             >
               {/* Seeds Panel */}
-              <motion.section variants={slideInLeft} className={`${panel} p-4 sm:p-5`}>
+              <motion.section
+                variants={slideInLeft}
+                className={`${panel} p-4 sm:p-5`}
+              >
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <div>
-                    <h2 className={`text-xl font-black ${strongText}`}>Seeds</h2>
+                    <h2 className={`text-xl font-black ${strongText}`}>
+                      Seeds
+                    </h2>
                     <p className={`mt-1 text-sm ${mutedText}`}>
                       {selectedTournament?.emertimi || "Select a tournament"}
                     </p>
@@ -539,6 +565,7 @@ export default function Brackets() {
                 </div>
 
                 <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {/* Randomize Button */}
                   <button
                     type="button"
                     onClick={() => setSeedIds(shuffleIds(seedIds))}
@@ -548,6 +575,7 @@ export default function Brackets() {
                     <Dices size={16} />
                     Randomize
                   </button>
+                  {/* Reset Order Button */}
                   <button
                     type="button"
                     onClick={() => setSeedIds(registrationOrderSeedIds)}
@@ -559,13 +587,22 @@ export default function Brackets() {
                   </button>
                 </div>
 
-                <SeedList teams={approvedTeams} seedIds={seedIds} onMove={handleMoveSeed} />
+                <SeedList
+                  teams={approvedTeams}
+                  seedIds={seedIds}
+                  onMove={handleMoveSeed}
+                />
 
                 <div className="mt-5 grid gap-2">
                   <motion.button
                     type="button"
                     onClick={handleGenerate}
-                    disabled={saving || !selectedTournamentId || seedIds.length < 2 || bracket?.matches?.length > 0}
+                    disabled={
+                      saving ||
+                      !selectedTournamentId ||
+                      seedIds.length < 2 ||
+                      bracket?.matches?.length > 0
+                    }
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
@@ -573,6 +610,7 @@ export default function Brackets() {
                     <Play size={16} />
                     {saving ? "Generating..." : "Generate Bracket"}
                   </motion.button>
+                  {/* Reset Bracket Button */}
                   <motion.button
                     type="button"
                     onClick={handleResetBracket}
@@ -588,12 +626,18 @@ export default function Brackets() {
               </motion.section>
 
               {/* Bracket Tree Panel */}
-              <motion.section variants={slideInRight} className={`${panel} p-4 sm:p-5`}>
+              <motion.section
+                variants={slideInRight}
+                className={`${panel} p-4 sm:p-5`}
+              >
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className={`text-xl font-black ${strongText}`}>Bracket Tree</h2>
+                    <h2 className={`text-xl font-black ${strongText}`}>
+                      Bracket Tree
+                    </h2>
                     <p className={`mt-1 text-sm ${mutedText}`}>
-                      Start scheduled matches from live match tools, update the score, then finish the match to move winners forward.
+                      Start scheduled matches from live match tools, update the
+                      score, then finish the match to move winners forward.
                     </p>
                   </div>
                   <AnimatePresence mode="wait">
@@ -617,17 +661,17 @@ export default function Brackets() {
                         className={`inline-flex items-center gap-2 text-sm ${mutedText}`}
                       >
                         <CalendarDays size={15} />
-                        {bracket?.matches?.length ? "In progress" : "Not generated"}
+                        {bracket?.matches?.length
+                          ? "In progress"
+                          : "Not generated"}
                       </motion.span>
                     )}
                   </AnimatePresence>
                 </div>
 
+                {/* Bracket Tree */}
                 {bracketLoading ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                  >
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                     <TableSkeleton />
                   </motion.div>
                 ) : (

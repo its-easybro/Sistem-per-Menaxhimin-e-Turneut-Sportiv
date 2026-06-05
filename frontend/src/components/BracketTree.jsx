@@ -13,18 +13,20 @@ const containerVariants = {
   },
 };
 
+// --- Helper Functions ---
 const roundVariants = {
   hidden: { opacity: 0, x: 20 },
   visible: {
     opacity: 1,
     x: 0,
-    transition: { 
+    transition: {
       duration: 0.5,
-      staggerChildren: 0.1
+      staggerChildren: 0.1,
     },
   },
 };
 
+// Animation variants for individual match cards, with a subtle fade and slide effect.
 const matchVariants = {
   hidden: { opacity: 0, y: 15 },
   visible: {
@@ -34,6 +36,7 @@ const matchVariants = {
   },
 };
 
+// Animation variants for the champion card, using a spring effect to make it pop when revealed.
 const championVariants = {
   hidden: { opacity: 0, scale: 0.9, y: -10 },
   visible: {
@@ -44,10 +47,12 @@ const championVariants = {
   },
 };
 
+// Helper to get the team name or a fallback text if unavailable.
 function getTeamLabel(team, fallback) {
   return team?.emertimi || fallback;
 }
 
+// Formats a date string into a readable format (DD/MM/YYYY).
 function formatDate(value) {
   if (!value) return "TBD";
 
@@ -57,6 +62,7 @@ function formatDate(value) {
   return date.toLocaleDateString("en-GB");
 }
 
+// Extracts the HH:MM time portion from a datetime string.
 function formatTime(value) {
   if (!value) return "";
 
@@ -75,7 +81,7 @@ function toTimeInput(value) {
   if (!value) return "";
   return formatTime(value);
 }
-
+// Determines the display status of a match based on its linked match status, presence of a winner, and team assignments.
 function getMatchStatus(match) {
   // Prefer the real match status once a bracket card has been scheduled.
   if (match.linked_match?.statusi) return match.linked_match.statusi;
@@ -83,6 +89,7 @@ function getMatchStatus(match) {
   return "Pending";
 }
 
+// Renders a single team row within a match card, showing the team name and a trophy icon if they are the winner.
 function TeamRow({ team, fallback, winner }) {
   return (
     <div
@@ -101,16 +108,28 @@ function TeamRow({ team, fallback, winner }) {
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
-          <Trophy size={15} className="shrink-0 text-emerald-600 dark:text-emerald-300" />
+          <Trophy
+            size={15}
+            className="shrink-0 text-emerald-600 dark:text-emerald-300"
+          />
         </motion.div>
       )}
     </div>
   );
 }
 
-function MatchCard({ match, editable, venues, savingScheduleId, onScheduleChange }) {
-  const homeWins = match.fitues_id && match.fitues_id === match.ekipi_shtepiak_id;
-  const awayWins = match.fitues_id && match.fitues_id === match.ekipi_mysafir_id;
+// Renders a match card with team names, match status, score, and editable scheduling options if allowed.
+function MatchCard({
+  match,
+  editable,
+  venues,
+  savingScheduleId,
+  onScheduleChange,
+}) {
+  const homeWins =
+    match.fitues_id && match.fitues_id === match.ekipi_shtepiak_id;
+  const awayWins =
+    match.fitues_id && match.fitues_id === match.ekipi_mysafir_id;
   const score = match.score;
   // Schedule edits stop once the linked match starts or gets a result.
   const canEditSchedule =
@@ -121,7 +140,7 @@ function MatchCard({ match, editable, venues, savingScheduleId, onScheduleChange
   const isSaving = savingScheduleId === match.id;
 
   return (
-    <motion.article 
+    <motion.article
       variants={matchVariants}
       className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
     >
@@ -160,6 +179,7 @@ function MatchCard({ match, editable, venues, savingScheduleId, onScheduleChange
         )}
       </div>
 
+      {/* Match Details */}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
         <span className={mutedText}>
           Match ID: {match.ndeshja_id || "Not created"}
@@ -194,26 +214,34 @@ function MatchCard({ match, editable, venues, savingScheduleId, onScheduleChange
                 <input
                   type="date"
                   name="data_ndeshjes"
-                  defaultValue={toDateInput(match.linked_match?.data_ndeshjes || match.data_ndeshjes)}
+                  defaultValue={toDateInput(
+                    match.linked_match?.data_ndeshjes || match.data_ndeshjes,
+                  )}
                   disabled={!canEditSchedule || isSaving}
                   className="mt-1 w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/20 dark:disabled:bg-slate-800"
                 />
               </label>
+              {/* Time */}
               <label className={`text-[11px] font-bold uppercase ${mutedText}`}>
                 Time
                 <input
                   type="time"
                   name="ora_fillimit"
-                  defaultValue={toTimeInput(match.linked_match?.ora_fillimit || match.ora_fillimit)}
+                  defaultValue={toTimeInput(
+                    match.linked_match?.ora_fillimit || match.ora_fillimit,
+                  )}
                   disabled={!canEditSchedule || isSaving}
                   className="mt-1 w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/20 dark:disabled:bg-slate-800"
                 />
               </label>
+              {/* Venue */}
               <label className={`text-[11px] font-bold uppercase ${mutedText}`}>
                 Venue
                 <select
                   name="fusha_id"
-                  defaultValue={String(match.linked_match?.fusha_id || match.fusha_id || "")}
+                  defaultValue={String(
+                    match.linked_match?.fusha_id || match.fusha_id || "",
+                  )}
                   disabled={!canEditSchedule || isSaving}
                   className="mt-1 w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/20 dark:disabled:bg-slate-800"
                 >
@@ -247,7 +275,7 @@ function MatchCard({ match, editable, venues, savingScheduleId, onScheduleChange
     </motion.article>
   );
 }
-
+// Renders the entire bracket tree with rounds, matches, and champion display, including animations and editable scheduling if allowed.
 export default function BracketTree({
   rounds = [],
   champion = null,
@@ -258,7 +286,7 @@ export default function BracketTree({
 }) {
   if (!rounds.length) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-800"
@@ -275,11 +303,12 @@ export default function BracketTree({
   }
 
   return (
+    // The main container for the bracket tree, with spacing and overflow handling for smaller screens.
     <div className="space-y-4">
       {/* Champion appears only after the final bracket node has a winner. */}
       <AnimatePresence>
         {champion && (
-          <motion.div 
+          <motion.div
             variants={championVariants}
             initial="hidden"
             animate="visible"
@@ -296,7 +325,7 @@ export default function BracketTree({
       </AnimatePresence>
 
       <div className="overflow-x-auto pb-2">
-        <motion.div 
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"

@@ -15,6 +15,7 @@ import socket from "../../socket";
 import CardSkeleton from "../../components/Skeletons/CardSkeleton";
 import { useMatchTimer } from "../../hooks/useMatchTimer";
 
+// Shared styles and utility functions for the live match page, including formatting helpers, event type checks, and components for rendering match events and status badges.
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 const panel =
   "rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800";
@@ -39,6 +40,7 @@ function formatTime(value) {
   return text.slice(0, 5);
 }
 
+// Extracts initials from a team name for display in the team badge, handling edge cases gracefully.
 function getInitials(value) {
   return (value || "Team")
     .split(/\s+/)
@@ -88,6 +90,7 @@ function isFinished(match) {
   );
 }
 
+// Maps raw event types to user-friendly labels for display in the match timeline and report.
 function getEventLabel(type) {
   const labels = {
     Goal: "Goal",
@@ -283,6 +286,7 @@ function EmptyEventsState() {
   );
 }
 
+// Component for rendering a badge with the team's initials, styled according to the event type (goal, yellow card, red card) for display in the match timeline.
 function TeamBadge({ name, tone }) {
   return (
     <div
@@ -421,7 +425,9 @@ function PublicLiveMatch() {
         setError("");
         // Load the selector list first so /live-matches can pick a sensible default.
         const listResponse = await api.get("/matches/public/live");
-        const matches = Array.isArray(listResponse.data) ? listResponse.data : [];
+        const matches = Array.isArray(listResponse.data)
+          ? listResponse.data
+          : [];
         let nextMatchId = id;
 
         setAvailableMatches(matches);
@@ -466,7 +472,11 @@ function PublicLiveMatch() {
       });
     };
 
-    const handleScoreUpdate = ({ matchId: updatedMatchId, homeScore, awayScore }) => {
+    const handleScoreUpdate = ({
+      matchId: updatedMatchId,
+      homeScore,
+      awayScore,
+    }) => {
       if (updatedMatchId !== matchId) return;
 
       updateSelectedMatch((current) => ({
@@ -521,6 +531,7 @@ function PublicLiveMatch() {
       }));
     };
 
+    // Some events use snake_case and others use camelCase, so listen to both just in case.
     socket.on("score_update", handleScoreUpdate);
     socket.on("score-updated", handleScoreUpdate);
     socket.on("match-event-created", upsertEvent);
@@ -550,6 +561,7 @@ function PublicLiveMatch() {
     );
   }
 
+  // If there was an error loading the match or no match was found, show a user-friendly message with a link back to the live matches list.
   if (error || !match) {
     return (
       <main className="w-full bg-gray-100 px-4 py-6 text-gray-900 dark:bg-slate-900 dark:text-slate-100">
@@ -572,6 +584,7 @@ function PublicLiveMatch() {
   }
 
   return (
+    // The main content area for the live match page, displaying match details, score, timeline of events, and a report section, all styled with Tailwind CSS and responsive design principles.
     <main className="w-full bg-gray-100 px-4 py-6 text-gray-900 dark:bg-slate-900 dark:text-slate-100 sm:px-6 lg:px-0">
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -613,6 +626,7 @@ function PublicLiveMatch() {
           </div>
         </div>
 
+        {/* MATCH DETAILS */}
         <section className={`${panel} overflow-hidden`}>
           <div className="grid items-center gap-5 p-5 sm:p-6 md:grid-cols-[1fr_auto_1fr]">
             <div className="flex min-w-0 items-center gap-4 md:justify-end md:text-right">
@@ -659,7 +673,7 @@ function PublicLiveMatch() {
               </div>
             </div>
           </div>
-
+          {/* MATCH DETAILS */}
           <div className="grid gap-3 border-t border-gray-100 bg-gray-50 px-5 py-4 text-sm text-gray-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400 sm:grid-cols-2 lg:grid-cols-4">
             <div className="inline-flex items-center gap-2">
               <CalendarDays size={16} />
@@ -689,6 +703,7 @@ function PublicLiveMatch() {
               </span>
             </div>
 
+            {/* MATCH REPORT SECTIONS */}
             {events.length > 0 ? (
               <div className="space-y-5">
                 {matchReportSections.map((section) => (
@@ -773,12 +788,12 @@ function PublicLiveMatch() {
 
           <aside className="space-y-6">
             <section className={`${panel} p-5`}>
-              <h2 className={`mb-4 font-bold ${strongText}`}>
-                Match Snapshot
-              </h2>
+              <h2 className={`mb-4 font-bold ${strongText}`}>Match Snapshot</h2>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                  <span
+                    className={`inline-flex items-center gap-2 ${mutedText}`}
+                  >
                     <EventIcon type="Goal" size={14} />
                     Goals
                   </span>
@@ -787,7 +802,9 @@ function PublicLiveMatch() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                  <span
+                    className={`inline-flex items-center gap-2 ${mutedText}`}
+                  >
                     <EventIcon type="YellowCard" />
                     Yellow Cards
                   </span>
@@ -796,7 +813,9 @@ function PublicLiveMatch() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                  <span
+                    className={`inline-flex items-center gap-2 ${mutedText}`}
+                  >
                     <EventIcon type="RedCard" />
                     Red Cards
                   </span>
@@ -811,7 +830,9 @@ function PublicLiveMatch() {
               <h2 className={`mb-4 font-bold ${strongText}`}>System</h2>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                  <span
+                    className={`inline-flex items-center gap-2 ${mutedText}`}
+                  >
                     <Activity size={16} />
                     Server Status
                   </span>
@@ -820,7 +841,9 @@ function PublicLiveMatch() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                  <span
+                    className={`inline-flex items-center gap-2 ${mutedText}`}
+                  >
                     <Radio size={16} />
                     Feed
                   </span>

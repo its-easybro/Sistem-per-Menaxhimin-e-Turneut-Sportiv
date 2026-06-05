@@ -24,6 +24,7 @@ import {
 import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
 
+// Variants for the main container to stagger the appearance of child elements
 const dashboardShell =
   "min-h-screen overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300";
 const panel =
@@ -31,6 +32,7 @@ const panel =
 const subtlePanel =
   "rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-md dark:border-slate-700 dark:bg-slate-800/70 transition-colors duration-300";
 
+// Variants for individual sport icons
 const sportIconMap = [
   { match: /football|futboll|soccer/i, icon: Target },
   { match: /basket/i, icon: BarChart3 },
@@ -55,6 +57,7 @@ const fadeUp = {
   },
 };
 
+// Utility function to extract initials from a name, used for avatar placeholders
 const staggerContainer = {
   hidden: {},
   visible: {
@@ -64,6 +67,7 @@ const staggerContainer = {
   },
 };
 
+// Utility function to get initials from a name, used for avatar placeholders when no logo is available
 function getInitials(name) {
   return (
     String(name || "")
@@ -87,6 +91,7 @@ function formatDate(value) {
   });
 }
 
+// Formats a time value to display only hours and minutes, handling both ISO strings and plain time formats.
 function formatTime(value) {
   if (!value) return "--:--";
   const text = String(value);
@@ -107,6 +112,7 @@ function getElapsedLabel(match) {
   return `${match.elapsedMinutes} min`;
 }
 
+// Determines the appropriate call-to-action based on the user's role, guiding them to the most relevant section of the platform.
 function getCTA(user) {
   const role =
     user?.roli ||
@@ -142,6 +148,7 @@ function MiniAvatar({ name, logo }) {
   return <span>{getInitials(name)}</span>;
 }
 
+// Renders the main landing page, showcasing public active tournaments, live matches, and global search functionality.
 function Home() {
   const { user } = useContext(AuthContext);
   const [dashboard, setDashboard] = useState(null);
@@ -241,6 +248,7 @@ function Home() {
         <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-amber-400/10 blur-3xl" />
       </div>
 
+      {/* Main Content */}
       <motion.main
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -410,6 +418,7 @@ function Home() {
               </div>
             </div>
 
+            {/* User Profile Card */}
             <div className="flex h-full flex-col justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-5 backdrop-blur-md transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
               <div>
                 <div className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
@@ -425,6 +434,7 @@ function Home() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
+                {/* Call to Action Button */}
                 <Link
                   to={cta.to}
                   className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5"
@@ -452,6 +462,7 @@ function Home() {
           </section>
         )}
 
+        {/* Live Matches Section */}
         <section className={`${panel} p-5 transition-colors duration-300`}>
           <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
             <Activity className="h-4 w-4 text-red-400" />
@@ -478,7 +489,7 @@ function Home() {
                   transition={{ duration: 0.5 }}
                   className="min-w-[280px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-colors dark:border-white/10 dark:bg-white/5"
                 >
-                  {/* header */}
+                  {/* Header */}
                   <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                     <span className="inline-flex items-center gap-2 text-red-500">
                       <span className="relative flex h-2.5 w-2.5">
@@ -534,6 +545,7 @@ function Home() {
           )}
         </section>
 
+        {/* Stats Section */}
         <motion.section
           variants={staggerContainer}
           initial="hidden"

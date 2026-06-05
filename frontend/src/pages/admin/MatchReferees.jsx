@@ -4,10 +4,21 @@ import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Calendar, Edit, Eye, Plus, Search, SlidersHorizontal, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Calendar,
+  Edit,
+  Eye,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import socket from "../../socket";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
+// Validation schemas for creating and updating match referee assignments using Yup.
 const matchRefereeSchema = yup.object().shape({
   ndeshja_id: yup.string().required("Match is required"),
   gjyqtari_id: yup.string().required("Referee is required"),
@@ -33,7 +44,7 @@ const roles = [
   "Gjyqtar i 4-të",
   "VAR",
 ];
-
+// Statuses are defined in the backend but we hardcode them here for filter dropdown options and consistent badge styling.
 const statusOptions = [
   "Planifikuar",
   "Live",
@@ -57,7 +68,7 @@ function formatDate(value) {
     return "Invalid date";
   }
 }
-
+// Helper functions to determine badge classes based on role and match status for consistent styling across the UI.
 function getRoleBadgeClasses(role) {
   if (role === "Kryegjyqtar") return "bg-blue-100 text-blue-700";
   if (role === "VAR") return "bg-purple-100 text-purple-700";
@@ -83,13 +94,16 @@ function MatchRefereeFormFields({
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      {/* Match */}
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Match</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
+          Match
+        </span>
         <select
           name="ndeshja_id"
           value={formData.ndeshja_id}
           onChange={onChange}
-          className={`rounded-lg border ${formErrors?.ndeshja_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
+          className={`rounded-lg border ${formErrors?.ndeshja_id ? "border-red-500" : "border-gray-300 dark:border-slate-600"} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           <option value="">Select match</option>
@@ -99,16 +113,21 @@ function MatchRefereeFormFields({
             </option>
           ))}
         </select>
-        {formErrors?.ndeshja_id && <p className="text-sm text-red-500 mt-1">{formErrors.ndeshja_id}</p>}
+        {formErrors?.ndeshja_id && (
+          <p className="text-sm text-red-500 mt-1">{formErrors.ndeshja_id}</p>
+        )}
       </label>
 
+      {/* Referee */}
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Referee</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
+          Referee
+        </span>
         <select
           name="gjyqtari_id"
           value={formData.gjyqtari_id}
           onChange={onChange}
-          className={`rounded-lg border ${formErrors?.gjyqtari_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
+          className={`rounded-lg border ${formErrors?.gjyqtari_id ? "border-red-500" : "border-gray-300 dark:border-slate-600"} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           <option value="">Select referee</option>
@@ -118,16 +137,21 @@ function MatchRefereeFormFields({
             </option>
           ))}
         </select>
-        {formErrors?.gjyqtari_id && <p className="text-sm text-red-500 mt-1">{formErrors.gjyqtari_id}</p>}
+        {formErrors?.gjyqtari_id && (
+          <p className="text-sm text-red-500 mt-1">{formErrors.gjyqtari_id}</p>
+        )}
       </label>
 
+      {/* Role */}
       <label className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">Role</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
+          Role
+        </span>
         <select
           name="roli"
           value={formData.roli}
           onChange={onChange}
-          className={`rounded-lg border ${formErrors?.roli ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
+          className={`rounded-lg border ${formErrors?.roli ? "border-red-500" : "border-gray-300 dark:border-slate-600"} dark:bg-slate-700 dark:text-slate-200 px-3 py-2 outline-none focus:border-blue-500`}
           required
         >
           {roles.map((role) => (
@@ -136,7 +160,9 @@ function MatchRefereeFormFields({
             </option>
           ))}
         </select>
-        {formErrors?.roli && <p className="text-sm text-red-500 mt-1">{formErrors.roli}</p>}
+        {formErrors?.roli && (
+          <p className="text-sm text-red-500 mt-1">{formErrors.roli}</p>
+        )}
       </label>
     </div>
   );
@@ -177,62 +203,66 @@ export default function MatchReferees() {
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
 
-  const loadData = useCallback(async (pageNum, filtersObj, searchValue = "") => {
-    if (!canAccessPage) {
-      setLoading(false);
-      return;
-    }
+  const loadData = useCallback(
+    async (pageNum, filtersObj, searchValue = "") => {
+      if (!canAccessPage) {
+        setLoading(false);
+        return;
+      }
 
-    try {
-      setLoading(true);
-      setError("");
+      try {
+        setLoading(true);
+        setError("");
 
-      const params = {
-        page: pageNum,
-        limit: 10,
-        ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
-        ...(filtersObj.date_from && { date_from: filtersObj.date_from }),
-        ...(filtersObj.date_to && { date_to: filtersObj.date_to }),
-      };
-      const search = searchValue.trim();
+        const params = {
+          page: pageNum,
+          limit: 10,
+          ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
+          ...(filtersObj.date_from && { date_from: filtersObj.date_from }),
+          ...(filtersObj.date_to && { date_to: filtersObj.date_to }),
+        };
+        const search = searchValue.trim();
 
-      if (search) params.search = search;
+        if (search) params.search = search;
 
-      const [
-        assignmentsResponse,
-        matchesResponse,
-        refereesResponse,
-        teamsResponse,
-      ] =
-        await Promise.all([
+        const [
+          assignmentsResponse,
+          matchesResponse,
+          refereesResponse,
+          teamsResponse,
+        ] = await Promise.all([
           api.get("/match-referees", { params }),
           api.get("/matches"),
           api.get("/referees"),
           api.get("/teams"),
         ]);
 
-      const assignmentPayload = assignmentsResponse.data;
-      const assignmentsData = Array.isArray(assignmentPayload)
-        ? assignmentPayload
-        : assignmentPayload?.data ?? [];
-      const paginationData = Array.isArray(assignmentPayload)
-        ? null
-        : assignmentPayload?.pagination ?? null;
+        const assignmentPayload = assignmentsResponse.data;
+        const assignmentsData = Array.isArray(assignmentPayload)
+          ? assignmentPayload
+          : (assignmentPayload?.data ?? []);
+        const paginationData = Array.isArray(assignmentPayload)
+          ? null
+          : (assignmentPayload?.pagination ?? null);
 
-      setAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
-      setPagination(paginationData);
-      setMatches(Array.isArray(matchesResponse.data) ? matchesResponse.data : []);
-      setReferees(
-        Array.isArray(refereesResponse.data) ? refereesResponse.data : [],
-      );
-      setTeams(Array.isArray(teamsResponse.data) ? teamsResponse.data : []);
-    } catch (err) {
-      setError(err?.response?.data?.error || err.message);
-    } finally {
-      setLoading(false);
-      setHasLoaded(true);
-    }
-  }, [canAccessPage]);
+        setAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
+        setPagination(paginationData);
+        setMatches(
+          Array.isArray(matchesResponse.data) ? matchesResponse.data : [],
+        );
+        setReferees(
+          Array.isArray(refereesResponse.data) ? refereesResponse.data : [],
+        );
+        setTeams(Array.isArray(teamsResponse.data) ? teamsResponse.data : []);
+      } catch (err) {
+        setError(err?.response?.data?.error || err.message);
+      } finally {
+        setLoading(false);
+        setHasLoaded(true);
+      }
+    },
+    [canAccessPage],
+  );
 
   useEffect(() => {
     loadData(page, filters, debouncedSearch);
@@ -485,7 +515,10 @@ export default function MatchReferees() {
       await loadData(page, filters, debouncedSearch);
       handleCloseModal();
       setFormErrors({});
-      setAlert({ type: "success", message: "Assignment created successfully!" });
+      setAlert({
+        type: "success",
+        message: "Assignment created successfully!",
+      });
     } catch (err) {
       if (err.inner) {
         const validationErrors = {};
@@ -512,15 +545,15 @@ export default function MatchReferees() {
     try {
       await matchRefereeUpdateSchema.validate(formData, { abortEarly: false });
 
-      await api.put(
-        `/match-referees/${selectedAssignment.id}`,
-        buildPayload(),
-      );
+      await api.put(`/match-referees/${selectedAssignment.id}`, buildPayload());
 
       await loadData(page, filters, debouncedSearch);
 
       handleCloseEditModal();
-      setAlert({ type: "success", message: "Assignment updated successfully!" });
+      setAlert({
+        type: "success",
+        message: "Assignment updated successfully!",
+      });
     } catch (err) {
       setAlert({
         type: "error",
@@ -545,7 +578,10 @@ export default function MatchReferees() {
       }
 
       handleCloseDeleteModal();
-      setAlert({ type: "success", message: "Assignment deleted successfully!" });
+      setAlert({
+        type: "success",
+        message: "Assignment deleted successfully!",
+      });
     } catch (err) {
       setAlert({
         type: "error",
@@ -604,7 +640,10 @@ export default function MatchReferees() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row">
               <div className="relative max-w-2xl flex-1">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                  <Search
+                    size={18}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
                 </div>
                 <input
                   type="text"
@@ -619,6 +658,7 @@ export default function MatchReferees() {
                 />
               </div>
 
+              {/* Assign Referee Button */}
               {isAdmin && (
                 <button
                   onClick={handleCreate}
@@ -650,6 +690,7 @@ export default function MatchReferees() {
                 </select>
               </div>
 
+              {/* Date Range */}
               <div className="relative min-w-[160px] flex-1 sm:flex-none">
                 <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
                   <Calendar size={14} />
@@ -682,20 +723,21 @@ export default function MatchReferees() {
                 />
               </div>
             </div>
-
-            </div>
-            
-            {hasActiveFilters && (
+          </div>
+          {/* Clear Filters Button */}
+          {hasActiveFilters && (
             <button
               onClick={handleClearFilters}
               className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
             >
               Clear Filters
             </button>
-            )}
+          )}
         </div>
 
-        <div className={`flex overflow-x-auto rounded-lg bg-white shadow-md dark:bg-slate-800 ${loading ? "pointer-events-none opacity-60" : ""}`}>
+        <div
+          className={`flex overflow-x-auto rounded-lg bg-white shadow-md dark:bg-slate-800 ${loading ? "pointer-events-none opacity-60" : ""}`}
+        >
           {assignments.length === 0 ? (
             <div className="w-full px-6 py-12 text-center text-gray-600 dark:text-slate-400">
               {hasActiveFilters
@@ -713,13 +755,19 @@ export default function MatchReferees() {
                   <th className="px-4 py-3 text-center font-semibold">ID</th>
                   <th className="px-4 py-3 text-left font-semibold">Match</th>
                   {isAdmin && (
-                    <th className="px-4 py-3 text-left font-semibold">Referee</th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Referee
+                    </th>
                   )}
                   <th className="px-4 py-3 text-left font-semibold">Role</th>
                   <th className="px-4 py-3 text-center font-semibold">Date</th>
                   <th className="px-4 py-3 text-left font-semibold">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold">Category</th>
-                  <th className="px-4 py-3 text-center font-semibold">Actions</th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    Category
+                  </th>
+                  <th className="px-4 py-3 text-center font-semibold">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
@@ -805,9 +853,11 @@ export default function MatchReferees() {
           )}
         </div>
 
+        {/* Pagination */}
         {pagination && (
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
             <div className="flex flex-1 justify-between sm:hidden">
+              {/* Close Button */}
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
@@ -815,6 +865,7 @@ export default function MatchReferees() {
               >
                 Close
               </button>
+              {/* Next Page Button */}
               <button
                 disabled={page === pagination.totalPages}
                 onClick={() => setPage(page + 1)}
@@ -827,18 +878,32 @@ export default function MatchReferees() {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-slate-400">
-                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
-                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  Page{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {page}
+                  </span>{" "}
+                  from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {pagination.totalPages}
+                  </span>
                   {pagination.total ? (
                     <>
-                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> assignments)
+                      {" "}
+                      (Total{" "}
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {pagination.total}
+                      </span>{" "}
+                      assignments)
                     </>
                   ) : null}
                 </p>
               </div>
 
               <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                <nav
+                  className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1"
+                  aria-label="Pagination"
+                >
                   <button
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
@@ -923,6 +988,7 @@ export default function MatchReferees() {
         </div>
       )}
 
+      {/* View Assignment Modal */}
       {showViewModal && selectedAssignment && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -965,7 +1031,9 @@ export default function MatchReferees() {
                   Date
                 </label>
                 <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
-                  {formatDate(getMatchById(selectedAssignment.ndeshja_id)?.data_ndeshjes)}
+                  {formatDate(
+                    getMatchById(selectedAssignment.ndeshja_id)?.data_ndeshjes,
+                  )}
                 </p>
               </div>
               <div>
@@ -973,7 +1041,8 @@ export default function MatchReferees() {
                   Start Time
                 </label>
                 <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
-                  {getMatchById(selectedAssignment.ndeshja_id)?.ora_fillimit || "N/A"}
+                  {getMatchById(selectedAssignment.ndeshja_id)?.ora_fillimit ||
+                    "N/A"}
                 </p>
               </div>
               <div>
@@ -981,7 +1050,8 @@ export default function MatchReferees() {
                   Status
                 </label>
                 <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
-                  {getMatchById(selectedAssignment.ndeshja_id)?.statusi || "N/A"}
+                  {getMatchById(selectedAssignment.ndeshja_id)?.statusi ||
+                    "N/A"}
                 </p>
               </div>
               <div>
@@ -989,7 +1059,8 @@ export default function MatchReferees() {
                   Referee Category
                 </label>
                 <p className="rounded-lg bg-gray-100 dark:bg-slate-700 px-4 py-2 text-gray-800 dark:text-slate-200">
-                  {getRefereeById(selectedAssignment.gjyqtari_id)?.kategoria || "N/A"}
+                  {getRefereeById(selectedAssignment.gjyqtari_id)?.kategoria ||
+                    "N/A"}
                 </p>
               </div>
             </div>
@@ -1051,6 +1122,7 @@ export default function MatchReferees() {
         </div>
       )}
 
+      {/* EDIT MODAL */}
       {isAdmin && showEditModal && selectedAssignment && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -1092,6 +1164,7 @@ export default function MatchReferees() {
         </div>
       )}
 
+      {/* DELETE MODAL */}
       {isAdmin && showDeleteModal && selectedAssignment && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"

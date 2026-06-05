@@ -4,7 +4,17 @@ import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { Edit, Trash2, Eye, Plus, Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Eye,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const initialFormData = {
@@ -17,9 +27,17 @@ const initialFormData = {
   statusi: "Aktiv",
 };
 
-const surfaceTypeOptions = ["Bari Natyror", "Bari Artificial", "Parket", "Beton", "PVC", "Tartan"];
+const surfaceTypeOptions = [
+  "Bari Natyror",
+  "Bari Artificial",
+  "Parket",
+  "Beton",
+  "PVC",
+  "Tartan",
+];
 const statusOptions = ["Aktiv", "Nën Rinovim", "Joaktiv"];
 
+// Validation schemas for creating and updating venues.
 const venueCreateSchema = yup.object().shape({
   emertimi: yup
     .string()
@@ -29,13 +47,8 @@ const venueCreateSchema = yup.object().shape({
     .string()
     .min(2, "City must be at least 2 characters")
     .required("City is required"),
-  adresa: yup
-    .string()
-    .min(3, "Address must be at least 3 characters"),
-  kapaciteti: yup
-    .number()
-    .min(0, "Capacity must be zero or higher")
-    .nullable(),
+  adresa: yup.string().min(3, "Address must be at least 3 characters"),
+  kapaciteti: yup.number().min(0, "Capacity must be zero or higher").nullable(),
   lloji_siperfaqes: yup
     .string()
     .oneOf(surfaceTypeOptions, "Invalid surface type")
@@ -48,25 +61,14 @@ const venueCreateSchema = yup.object().shape({
 });
 
 const venueUpdateSchema = yup.object().shape({
-  emertimi: yup
-    .string()
-    .min(2, "Venue name must be at least 2 characters"),
-  qyteti: yup
-    .string()
-    .min(2, "City must be at least 2 characters"),
-  adresa: yup
-    .string()
-    .min(3, "Address must be at least 3 characters"),
-  kapaciteti: yup
-    .number()
-    .min(0, "Capacity must be zero or higher")
-    .nullable(),
+  emertimi: yup.string().min(2, "Venue name must be at least 2 characters"),
+  qyteti: yup.string().min(2, "City must be at least 2 characters"),
+  adresa: yup.string().min(3, "Address must be at least 3 characters"),
+  kapaciteti: yup.number().min(0, "Capacity must be zero or higher").nullable(),
   lloji_siperfaqes: yup
     .string()
     .oneOf(surfaceTypeOptions, "Invalid surface type"),
-  statusi: yup
-    .string()
-    .oneOf(statusOptions, "Invalid status"),
+  statusi: yup.string().oneOf(statusOptions, "Invalid status"),
   ndricimi: yup.boolean(),
 });
 
@@ -95,38 +97,41 @@ export default function Venues() {
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
 
-  const loadVenues = useCallback(async (pageNum, filtersObj) => {
-    if (!user?.is_admin) {
-      setLoading(false);
-      return;
-    }
+  const loadVenues = useCallback(
+    async (pageNum, filtersObj) => {
+      if (!user?.is_admin) {
+        setLoading(false);
+        return;
+      }
 
-    try {
-      setLoading(true);
-      const params = {
-        page: pageNum,
-        limit: 10,
-        ...(filtersObj.search && { search: filtersObj.search }),
-        ...(filtersObj.qyteti && { qyteti: filtersObj.qyteti }),
-        ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
-      };
-      const response = await api.get(`/venues`, { params });
-      const venuePayload = response.data;
-      const venuesData = Array.isArray(venuePayload)
-        ? venuePayload
-        : venuePayload?.data ?? [];
-      const paginationData = Array.isArray(venuePayload)
-        ? null
-        : venuePayload?.pagination ?? null;
+      try {
+        setLoading(true);
+        const params = {
+          page: pageNum,
+          limit: 10,
+          ...(filtersObj.search && { search: filtersObj.search }),
+          ...(filtersObj.qyteti && { qyteti: filtersObj.qyteti }),
+          ...(filtersObj.statusi && { statusi: filtersObj.statusi }),
+        };
+        const response = await api.get(`/venues`, { params });
+        const venuePayload = response.data;
+        const venuesData = Array.isArray(venuePayload)
+          ? venuePayload
+          : (venuePayload?.data ?? []);
+        const paginationData = Array.isArray(venuePayload)
+          ? null
+          : (venuePayload?.pagination ?? null);
 
-      setVenues(Array.isArray(venuesData) ? venuesData : []);
-      setPagination(paginationData);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.is_admin]);
+        setVenues(Array.isArray(venuesData) ? venuesData : []);
+        setPagination(paginationData);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user?.is_admin],
+  );
 
   useEffect(() => {
     loadVenues(page, filters);
@@ -154,7 +159,8 @@ export default function Venues() {
     });
   };
 
-  const hasActiveFilters = filters.search !== "" || filters.qyteti !== "" || filters.statusi !== "";
+  const hasActiveFilters =
+    filters.search !== "" || filters.qyteti !== "" || filters.statusi !== "";
 
   const handleCreate = () => {
     resetForm();
@@ -239,7 +245,7 @@ export default function Venues() {
 
     try {
       await venueCreateSchema.validate(formData, { abortEarly: false });
-      await api.post(`/venues`, buildPayload())
+      await api.post(`/venues`, buildPayload());
 
       handleCloseModal();
       setPage(1);
@@ -253,7 +259,10 @@ export default function Venues() {
         });
         setFormErrors(validationErrors);
       } else {
-        setAlert({ type: "error", message: "Error creating venue: " + err.message });
+        setAlert({
+          type: "error",
+          message: "Error creating venue: " + err.message,
+        });
       }
     }
   };
@@ -266,7 +275,7 @@ export default function Venues() {
 
     try {
       await venueUpdateSchema.validate(formData, { abortEarly: false });
-      await api.put(`/venues/${selectedVenue.id}`, buildPayload())
+      await api.put(`/venues/${selectedVenue.id}`, buildPayload());
 
       handleCloseEditModal();
       await loadVenues(page, filters);
@@ -279,7 +288,10 @@ export default function Venues() {
         });
         setFormErrors(validationErrors);
       } else {
-        setAlert({ type: "error", message: "Error updating venue: " + err.message });
+        setAlert({
+          type: "error",
+          message: "Error updating venue: " + err.message,
+        });
       }
     }
   };
@@ -288,19 +300,24 @@ export default function Venues() {
     if (!selectedVenue) return;
 
     try {
-      await api.delete(`/venues/${selectedVenue.id}`)
+      await api.delete(`/venues/${selectedVenue.id}`);
 
       handleCloseDeleteModal();
       await loadVenues(page > 1 ? page - 1 : 1, filters);
       if (page > 1) setPage(page - 1);
       setAlert({ type: "success", message: "Venue deleted successfully!" });
     } catch (err) {
-      setAlert({ type: "error", message: "Error deleting venue: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error deleting venue: " + err.message,
+      });
     }
   };
 
   // Get unique cities from venues
-  const uniqueCities = [...new Set(venues.map(v => v.qyteti).filter(Boolean))].sort();
+  const uniqueCities = [
+    ...new Set(venues.map((v) => v.qyteti).filter(Boolean)),
+  ].sort();
 
   // Filters venue list by key searchable fields from the search box.
   // Note: Filtering is done on the backend, so venues array is already filtered
@@ -310,13 +327,12 @@ export default function Venues() {
     return <Navigate to="/login" replace />;
   }
 
-
   if (loading) {
     return (
       <div className="delay-skeleton">
         <TableSkeleton />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -330,21 +346,26 @@ export default function Venues() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-transparent p-4">
       {alert && (
-        <Alert 
-          type={alert.type} 
+        <Alert
+          type={alert.type}
           message={alert.message}
           onClose={() => setAlert(null)}
         />
       )}
       <div className="w-full mx-auto space-y-6">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">Venue Management</h2>
-          
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-5">
+            Venue Management
+          </h2>
+
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="relative flex-1 max-w-2xl">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                  <Search
+                    size={18}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
                 </div>
                 <input
                   type="text"
@@ -361,7 +382,7 @@ export default function Venues() {
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98] shrink-0"
               >
                 <Plus size={18} />
-               Add New Venue
+                Add New Venue
               </button>
             </div>
 
@@ -404,14 +425,14 @@ export default function Venues() {
                 </select>
               </div>
             </div>
-            
+
             {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
-            >
-              Clear Filters
-            </button>
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+              >
+                Clear Filters
+              </button>
             )}
           </div>
         </div>
@@ -434,19 +455,34 @@ export default function Venues() {
             <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {filteredVenues.length > 0 ? (
                 filteredVenues.map((venue) => (
-                  <tr key={venue.id} className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150">
-                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">{venue.id}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.emertimi}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.adresa || "-"}</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.qyteti }</td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.kapaciteti ?? "-"}</td>
+                  <tr
+                    key={venue.id}
+                    className="hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors duration-150"
+                  >
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400 text-center">
+                      {venue.id}
+                    </td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">
+                      {venue.emertimi}
+                    </td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">
+                      {venue.adresa || "-"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">
+                      {venue.qyteti}
+                    </td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">
+                      {venue.kapaciteti ?? "-"}
+                    </td>
                     <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">
                       {venue.lloji_siperfaqes || "-"}
                     </td>
                     <td className="px-6 py-4 text-gray-800 dark:text-slate-300">
                       {venue.ndricimi ? "Yes" : "No"}
                     </td>
-                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">{venue.statusi}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-slate-200 font-semibold">
+                      {venue.statusi}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
                         <button
@@ -476,7 +512,10 @@ export default function Venues() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="9" className="px-6 py-4 text-center text-gray-600 dark:text-slate-400">
+                  <td
+                    colSpan="9"
+                    className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
+                  >
                     {searchQuery
                       ? `No venue matches "${searchQuery}". Try a different search.`
                       : 'No venues found. Click "Add New Venue" to add one.'}
@@ -509,18 +548,32 @@ export default function Venues() {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-slate-400">
-                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
-                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  Page{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {page}
+                  </span>{" "}
+                  from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {pagination.totalPages}
+                  </span>
                   {pagination.total && (
                     <>
-                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> venues)
+                      {" "}
+                      (Total{" "}
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {pagination.total}
+                      </span>{" "}
+                      venues)
                     </>
                   )}
                 </p>
               </div>
 
               <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                <nav
+                  className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1"
+                  aria-label="Pagination"
+                >
                   <button
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
@@ -572,7 +625,9 @@ export default function Venues() {
               className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Add New Venue</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
+                Add New Venue
+              </h3>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <VenueForm formData={formData} onChange={handleInputChange} />
                 <div className="flex gap-4 pt-4">
@@ -604,12 +659,23 @@ export default function Venues() {
               className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Venue Details</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
+                Venue Details
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <VenueDetail label="Venue Name" value={selectedVenue.emertimi} />
-                <VenueDetail label="Address" value={selectedVenue.adresa || "-"} />
+                <VenueDetail
+                  label="Venue Name"
+                  value={selectedVenue.emertimi}
+                />
+                <VenueDetail
+                  label="Address"
+                  value={selectedVenue.adresa || "-"}
+                />
                 <VenueDetail label="City" value={selectedVenue.qyteti} />
-                <VenueDetail label="Capacity" value={selectedVenue.kapaciteti ?? "-"} />
+                <VenueDetail
+                  label="Capacity"
+                  value={selectedVenue.kapaciteti ?? "-"}
+                />
                 <VenueDetail
                   label="Surface Type"
                   value={selectedVenue.lloji_siperfaqes || "-"}
@@ -650,7 +716,9 @@ export default function Venues() {
               className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">Edit Venue</h3>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-6">
+                Edit Venue
+              </h3>
               <form onSubmit={handleEditSubmit} className="space-y-6">
                 <VenueForm formData={formData} onChange={handleInputChange} />
                 <div className="flex gap-4 pt-4">
@@ -682,10 +750,13 @@ export default function Venues() {
               className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-slate-800 p-8 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Delete Venue?</h3>
+              <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
+                Delete Venue?
+              </h3>
               <p className="text-gray-700 dark:text-slate-300 mb-6">
-                Are you sure you want to delete <strong>{selectedVenue.emertimi}</strong>? This
-                action cannot be undone.
+                Are you sure you want to delete{" "}
+                <strong>{selectedVenue.emertimi}</strong>? This action cannot be
+                undone.
               </p>
               <div className="flex gap-4">
                 <button
@@ -713,7 +784,9 @@ function VenueForm({ formData, onChange }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Venue Name *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          Venue Name *
+        </label>
         <input
           type="text"
           name="emertimi"
@@ -726,7 +799,9 @@ function VenueForm({ formData, onChange }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">City *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          City *
+        </label>
         <input
           type="text"
           name="qyteti"
@@ -739,7 +814,9 @@ function VenueForm({ formData, onChange }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Address *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          Address *
+        </label>
         <input
           type="text"
           name="adresa"
@@ -751,7 +828,9 @@ function VenueForm({ formData, onChange }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Capacity *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          Capacity *
+        </label>
         <input
           type="number"
           name="kapaciteti"
@@ -764,7 +843,9 @@ function VenueForm({ formData, onChange }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Surface Type *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          Surface Type *
+        </label>
         <select
           name="lloji_siperfaqes"
           value={formData.lloji_siperfaqes}
@@ -782,7 +863,9 @@ function VenueForm({ formData, onChange }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Status *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+          Status *
+        </label>
         <select
           name="statusi"
           value={formData.statusi}
@@ -805,7 +888,10 @@ function VenueForm({ formData, onChange }) {
           onChange={onChange}
           className="h-4 w-4 dark:bg-slate-700 dark:border-slate-600"
         />
-        <label htmlFor="ndricimi" className="text-sm font-medium text-gray-700 dark:text-slate-300">
+        <label
+          htmlFor="ndricimi"
+          className="text-sm font-medium text-gray-700 dark:text-slate-300"
+        >
           Lighting available
         </label>
       </div>
@@ -816,8 +902,12 @@ function VenueForm({ formData, onChange }) {
 function VenueDetail({ label, value }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">{label}</label>
-      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">{value}</p>
+      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+        {label}
+      </label>
+      <p className="text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+        {value}
+      </p>
     </div>
   );
 }

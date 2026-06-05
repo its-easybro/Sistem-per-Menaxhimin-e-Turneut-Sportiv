@@ -237,6 +237,13 @@ export default function Users() {
     setShowDeleteModal(false);
   };
 
+  /**
+   * Submits the new user form data to the API.
+   * Validates input against userCreateSchema, clears previous errors,
+   * and triggers a reload of the user list on success.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
+   */
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     setFormErrors({});
@@ -264,6 +271,13 @@ export default function Users() {
     }
   };
 
+  /**
+   * Submits the modified user form data to the API.
+   * If the password field is left empty, it is excluded from the update payload.
+   * Validates input against userUpdateSchema and triggers a reload on success.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
+   */
   const handleEditSubmit = async (e) => {
     e.preventDefault();
 
@@ -296,6 +310,11 @@ export default function Users() {
     }
   };
 
+  /**
+   * Confirms and processes the deletion of the currently selected user.
+   * Sends a DELETE request to the API and handles pagination adjustments
+   * if the deleted user was the last one on the current page.
+   */
   const handleDeleteConfirm = async () => {
     if (!selectedUser) return;
 
@@ -418,7 +437,6 @@ export default function Users() {
                     </svg>
                   </div>
                 </div>
-
               </div>
 
               {hasActiveFilters && (
@@ -485,14 +503,15 @@ export default function Users() {
                       </td>
                       <td className="px-6 py-4 text-gray-800 dark:text-slate-200 text-center">
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-semibold ${item.roli === "admin"
+                          className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                            item.roli === "admin"
                               ? "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400"
                               : item.roli === "organizator"
                                 ? "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-400"
                                 : item.roli === "gjyqtar"
                                   ? "bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-400"
                                   : "bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-slate-300"
-                            }`}
+                          }`}
                         >
                           {item.roli === "admin"
                             ? "Admin"
@@ -610,10 +629,11 @@ export default function Users() {
                           <button
                             key={pageNum}
                             onClick={() => setPage(pageNum)}
-                            className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${isActive
+                            className={`relative inline-flex items-center justify-center min-w-[36px] h-[36px] rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                              isActive
                                 ? "bg-blue-600 text-white shadow-sm"
                                 : "border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
-                              }`}
+                            }`}
                           >
                             {pageNum}
                           </button>
@@ -659,10 +679,11 @@ export default function Users() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.email
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.email
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
-                        }`}
+                      }`}
                       placeholder="Enter email"
                     />
                     {formErrors.email && (
@@ -682,10 +703,11 @@ export default function Users() {
                       name="username"
                       value={formData.username}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.username
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.username
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
-                        }`}
+                      }`}
                       placeholder="Enter username"
                     />
                     {formErrors.username && (
@@ -721,10 +743,11 @@ export default function Users() {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.password
+                        className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                          formErrors.password
                             ? "border-red-500 dark:border-red-500"
                             : "border-gray-300 dark:border-slate-700"
-                          }`}
+                        }`}
                         placeholder="Enter password"
                       />
                       <button
@@ -758,10 +781,11 @@ export default function Users() {
                       name="roli"
                       value={formData.roli}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.roli
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.roli
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
-                        }`}
+                      }`}
                     >
                       <option value="user">User</option>
                       <option value="admin">Admin</option>
@@ -821,10 +845,11 @@ export default function Users() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.email
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.email
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
-                        }`}
+                      }`}
                       placeholder="Enter email"
                     />
                     {formErrors.email && (
@@ -844,10 +869,11 @@ export default function Users() {
                       name="username"
                       value={formData.username}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.username
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.username
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
-                        }`}
+                      }`}
                       placeholder="Enter username"
                     />
                     {formErrors.username && (
@@ -883,10 +909,11 @@ export default function Users() {
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.password
+                        className={`w-full px-4 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${
+                          formErrors.password
                             ? "border-red-500 dark:border-red-500"
                             : "border-gray-300 dark:border-slate-700"
-                          }`}
+                        }`}
                         placeholder="Enter new password"
                       />
                       <button
@@ -920,10 +947,11 @@ export default function Users() {
                       name="roli"
                       value={formData.roli}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${formErrors.roli
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-slate-700 dark:text-slate-200 ${
+                        formErrors.roli
                           ? "border-red-500 dark:border-red-500"
                           : "border-gray-300 dark:border-slate-700"
-                        }`}
+                      }`}
                     >
                       <option value="user">User</option>
                       <option value="admin">Admin</option>

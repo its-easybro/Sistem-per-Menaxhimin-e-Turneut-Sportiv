@@ -23,6 +23,7 @@ const panel =
 const strongText = "text-gray-900 dark:text-slate-100";
 const mutedText = "text-gray-500 dark:text-slate-400";
 
+// Animation variants for the standings page, defining how elements should animate when they appear on the screen.
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -33,6 +34,7 @@ const containerVariants = {
   },
 };
 
+// Defines the animation for each individual item in the standings list, creating a fade-in and slight upward movement effect when they become visible.
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -41,7 +43,6 @@ const itemVariants = {
     transition: { duration: 0.4 },
   },
 };
-
 const headerVariants = {
   hidden: { opacity: 0, y: -20 },
   visible: {
@@ -51,6 +52,7 @@ const headerVariants = {
   },
 };
 
+// Utility function to extract an array of standings from the API response, handling different possible response structures gracefully.
 function getArrayPayload(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
@@ -74,12 +76,18 @@ function getSportName(standing, tournament) {
   );
 }
 
+// Calculates the goal difference for a standing, using the provided goal difference if available or computing it from goals scored and conceded as a fallback.
 function getGoalDifference(standing) {
-  if (standing.goal_difference !== undefined && standing.goal_difference !== null) {
+  if (
+    standing.goal_difference !== undefined &&
+    standing.goal_difference !== null
+  ) {
     return Number(standing.goal_difference);
   }
 
-  return Number(standing.golat_shenuar || 0) - Number(standing.golat_pranuar || 0);
+  return (
+    Number(standing.golat_shenuar || 0) - Number(standing.golat_pranuar || 0)
+  );
 }
 
 function formatGoalDifference(value) {
@@ -101,6 +109,7 @@ function getRankClasses(rank) {
   return "border-gray-200 bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300";
 }
 
+// Determines the appropriate text color classes for the goal difference value, using green for positive, red for negative, and gray for neutral values to visually indicate performance.
 function getGdClasses(value) {
   const parsed = Number(value || 0);
   if (parsed > 0) return "text-emerald-600 dark:text-emerald-300";
@@ -108,9 +117,12 @@ function getGdClasses(value) {
   return "text-gray-500 dark:text-slate-400";
 }
 
+// Determines the appropriate background and text color classes for the form result indicators, using green for wins, red for losses, and gray for draws or no form to visually represent recent performance.
 function getFormClasses(result) {
-  if (result === "W") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
-  if (result === "L") return "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300";
+  if (result === "W")
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
+  if (result === "L")
+    return "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300";
   return "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-200";
 }
 
@@ -135,6 +147,7 @@ function FormDots({ form }) {
   );
 }
 
+// Component to display the rank badge for each team in the standings, applying different styles based on the team's rank to visually differentiate top performers from the rest of the standings.
 function RankBadge({ rank }) {
   return (
     <span
@@ -145,6 +158,7 @@ function RankBadge({ rank }) {
   );
 }
 
+// Component to display a statistic card with an icon, label, and value, used for showing key metrics or summary information in a visually appealing format on the standings page.
 function StatCard({ icon, label, value }) {
   return (
     <div className={`${panel} p-4`}>
@@ -161,6 +175,7 @@ function StatCard({ icon, label, value }) {
   );
 }
 
+// Component to display an empty state message with an optional icon.
 function EmptyState({ title, description, icon }) {
   return (
     <div className={`${panel} p-8 text-center`}>
@@ -168,7 +183,9 @@ function EmptyState({ title, description, icon }) {
         {icon}
       </div>
       <p className={`font-bold ${strongText}`}>{title}</p>
-      <p className={`mx-auto mt-1 max-w-xl text-sm ${mutedText}`}>{description}</p>
+      <p className={`mx-auto mt-1 max-w-xl text-sm ${mutedText}`}>
+        {description}
+      </p>
     </div>
   );
 }
@@ -183,9 +200,12 @@ function StandingMobileCard({ standing }) {
         <div className="flex min-w-0 items-center gap-3">
           <RankBadge rank={rank} />
           <div className="min-w-0">
-            <p className={`truncate font-black ${strongText}`}>{getTeamName(standing)}</p>
+            <p className={`truncate font-black ${strongText}`}>
+              {getTeamName(standing)}
+            </p>
             <p className={`mt-0.5 text-xs ${mutedText}`}>
-              {standing.ndeshjet_luajtura} MP · {standing.fitoret}-{standing.barazimet}-{standing.humbjet}
+              {standing.ndeshjet_luajtura} MP · {standing.fitoret}-
+              {standing.barazimet}-{standing.humbjet}
             </p>
           </div>
         </div>
@@ -199,6 +219,7 @@ function StandingMobileCard({ standing }) {
         </div>
       </div>
 
+      {/* Goal Stats */}
       <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
         <div className="rounded-lg bg-gray-50 p-2 dark:bg-slate-900">
           <p className={`text-xs ${mutedText}`}>GF</p>
@@ -210,7 +231,9 @@ function StandingMobileCard({ standing }) {
         </div>
         <div className="rounded-lg bg-gray-50 p-2 dark:bg-slate-900">
           <p className={`text-xs ${mutedText}`}>GD</p>
-          <p className={`font-bold ${getGdClasses(gd)}`}>{formatGoalDifference(gd)}</p>
+          <p className={`font-bold ${getGdClasses(gd)}`}>
+            {formatGoalDifference(gd)}
+          </p>
         </div>
       </div>
 
@@ -254,16 +277,34 @@ function StandingsTable({ rows }) {
                   <td className="px-4 py-3 text-center">
                     <RankBadge rank={standing.rank} />
                   </td>
-                  <td className={`max-w-[280px] px-4 py-3 font-black ${strongText}`}>
-                    <span className="block truncate">{getTeamName(standing)}</span>
+                  <td
+                    className={`max-w-[280px] px-4 py-3 font-black ${strongText}`}
+                  >
+                    <span className="block truncate">
+                      {getTeamName(standing)}
+                    </span>
                   </td>
-                  <td className={`px-3 py-3 text-center ${strongText}`}>{standing.ndeshjet_luajtura}</td>
-                  <td className="px-3 py-3 text-center text-emerald-600 dark:text-emerald-300">{standing.fitoret}</td>
-                  <td className={`px-3 py-3 text-center ${mutedText}`}>{standing.barazimet}</td>
-                  <td className="px-3 py-3 text-center text-red-600 dark:text-red-300">{standing.humbjet}</td>
-                  <td className={`px-3 py-3 text-center ${strongText}`}>{standing.golat_shenuar}</td>
-                  <td className={`px-3 py-3 text-center ${strongText}`}>{standing.golat_pranuar}</td>
-                  <td className={`px-3 py-3 text-center font-bold ${getGdClasses(gd)}`}>
+                  <td className={`px-3 py-3 text-center ${strongText}`}>
+                    {standing.ndeshjet_luajtura}
+                  </td>
+                  <td className="px-3 py-3 text-center text-emerald-600 dark:text-emerald-300">
+                    {standing.fitoret}
+                  </td>
+                  <td className={`px-3 py-3 text-center ${mutedText}`}>
+                    {standing.barazimet}
+                  </td>
+                  <td className="px-3 py-3 text-center text-red-600 dark:text-red-300">
+                    {standing.humbjet}
+                  </td>
+                  <td className={`px-3 py-3 text-center ${strongText}`}>
+                    {standing.golat_shenuar}
+                  </td>
+                  <td className={`px-3 py-3 text-center ${strongText}`}>
+                    {standing.golat_pranuar}
+                  </td>
+                  <td
+                    className={`px-3 py-3 text-center font-bold ${getGdClasses(gd)}`}
+                  >
                     {formatGoalDifference(gd)}
                   </td>
                   <td className="px-3 py-3 text-center">
@@ -299,45 +340,50 @@ export default function Standings({ publicView = false }) {
   const [alert, setAlert] = useState(null);
   const [filterTournament, setFilterTournament] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [recalculatingTournamentId, setRecalculatingTournamentId] = useState(null);
+  const [recalculatingTournamentId, setRecalculatingTournamentId] =
+    useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const canManage = !publicView && (user?.is_admin || user?.is_organizer);
 
-  const fetchData = useCallback(async ({ quiet = false } = {}) => {
-    try {
-      if (quiet) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
+  const fetchData = useCallback(
+    async ({ quiet = false } = {}) => {
+      try {
+        if (quiet) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError("");
+
+        const standingsRequest = publicView
+          ? api.get("/standings/public")
+          : api.get("/standings");
+        const requests = [standingsRequest];
+
+        if (!publicView) {
+          requests.push(api.get("/tournaments"));
+        }
+
+        const [standingsResponse, tournamentsResponse] =
+          await Promise.all(requests);
+        setStandings(getArrayPayload(standingsResponse.data));
+        setTournaments(
+          publicView ? [] : getArrayPayload(tournamentsResponse?.data),
+        );
+      } catch (err) {
+        setError(
+          err.response?.data?.error ||
+            err.message ||
+            "Failed to load standings.",
+        );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      setError("");
-
-      const standingsRequest = publicView
-        ? api.get("/standings/public")
-        : api.get("/standings");
-      const requests = [standingsRequest];
-
-      if (!publicView) {
-        requests.push(api.get("/tournaments"));
-      }
-
-      const [standingsResponse, tournamentsResponse] = await Promise.all(requests);
-      setStandings(getArrayPayload(standingsResponse.data));
-      setTournaments(
-        publicView ? [] : getArrayPayload(tournamentsResponse?.data),
-      );
-    } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          err.message ||
-          "Failed to load standings.",
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [publicView]);
+    },
+    [publicView],
+  );
 
   useEffect(() => {
     if (!publicView && authLoading) return;
@@ -440,7 +486,8 @@ export default function Standings({ publicView = false }) {
 
   const totals = useMemo(() => {
     const teams = standings.length;
-    const tournamentsCount = new Set(standings.map((item) => item.turneu_id)).size;
+    const tournamentsCount = new Set(standings.map((item) => item.turneu_id))
+      .size;
     const played = standings.reduce(
       (sum, item) => sum + Number(item.ndeshjet_luajtura || 0),
       0,
@@ -465,7 +512,10 @@ export default function Standings({ publicView = false }) {
       setRecalculatingTournamentId(turneuId);
       await api.post(`/standings/recalculate/${turneuId}`);
       await fetchData({ quiet: true });
-      setAlert({ type: "success", message: "Standings recalculated successfully." });
+      setAlert({
+        type: "success",
+        message: "Standings recalculated successfully.",
+      });
     } catch (err) {
       setAlert({
         type: "error",
@@ -482,7 +532,9 @@ export default function Standings({ publicView = false }) {
   if (!publicView && authLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p className="text-lg text-gray-600 dark:text-slate-300">Checking access...</p>
+        <p className="text-lg text-gray-600 dark:text-slate-300">
+          Checking access...
+        </p>
       </div>
     );
   }
@@ -502,7 +554,11 @@ export default function Standings({ publicView = false }) {
   return (
     <div className="min-h-screen bg-gray-50 p-4 dark:bg-slate-950 sm:p-6">
       {alert && (
-        <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
       )}
 
       <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -529,22 +585,38 @@ export default function Standings({ publicView = false }) {
                 </p>
               </div>
 
+              {/* Refresh Button */}
               <button
                 type="button"
                 onClick={() => fetchData({ quiet: true })}
                 disabled={refreshing}
                 className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <RefreshCcw size={16} className={refreshing ? "animate-spin" : ""} />
+                <RefreshCcw
+                  size={16}
+                  className={refreshing ? "animate-spin" : ""}
+                />
                 Refresh
               </button>
             </div>
           </div>
 
           <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
-            <StatCard icon={<Trophy size={20} />} label="Tournaments" value={totals.tournaments} />
-            <StatCard icon={<Users size={20} />} label="Ranked Teams" value={totals.teams} />
-            <StatCard icon={<Activity size={20} />} label="Counted Matches" value={totals.matches} />
+            <StatCard
+              icon={<Trophy size={20} />}
+              label="Tournaments"
+              value={totals.tournaments}
+            />
+            <StatCard
+              icon={<Users size={20} />}
+              label="Ranked Teams"
+              value={totals.teams}
+            />
+            <StatCard
+              icon={<Activity size={20} />}
+              label="Counted Matches"
+              value={totals.matches}
+            />
           </div>
         </motion.section>
 
@@ -572,6 +644,7 @@ export default function Standings({ publicView = false }) {
               </select>
             </label>
 
+            {/* Search */}
             <label className="text-sm font-bold text-gray-700 dark:text-slate-300">
               Search
               <div className="relative mt-1">
@@ -588,17 +661,17 @@ export default function Standings({ publicView = false }) {
                 />
               </div>
             </label>
-
           </div>
-          
-            {hasActiveFilters && (
+
+          {/* Clear Filters Button */}
+          {hasActiveFilters && (
             <button
               onClick={resetFilters}
               className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0 mt-3"
             >
               Clear Filters
             </button>
-            )}
+          )}
         </motion.section>
 
         {error ? (
@@ -610,7 +683,11 @@ export default function Standings({ publicView = false }) {
         ) : groupedStandings.length === 0 ? (
           <EmptyState
             icon={<Shield size={22} />}
-            title={hasActiveFilters ? "No standings match your filters" : "No standings yet"}
+            title={
+              hasActiveFilters
+                ? "No standings match your filters"
+                : "No standings yet"
+            }
             description={
               hasActiveFilters
                 ? "Try a different team, sport, or tournament search."
@@ -628,7 +705,8 @@ export default function Standings({ publicView = false }) {
           >
             {groupedStandings.map((group) => {
               const isRecalculating =
-                String(recalculatingTournamentId) === String(group.tournamentId);
+                String(recalculatingTournamentId) ===
+                String(group.tournamentId);
 
               return (
                 <motion.section
@@ -639,7 +717,9 @@ export default function Standings({ publicView = false }) {
                   <div className="flex flex-col gap-3 border-b border-gray-200 p-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className={`truncate text-xl font-black ${strongText}`}>
+                        <h2
+                          className={`truncate text-xl font-black ${strongText}`}
+                        >
                           {getTournamentName(group)}
                         </h2>
                         {group.sportName && (
@@ -650,10 +730,12 @@ export default function Standings({ publicView = false }) {
                         )}
                       </div>
                       <p className={`mt-1 text-sm ${mutedText}`}>
-                        {group.rows.length} ranked team{group.rows.length === 1 ? "" : "s"}
+                        {group.rows.length} ranked team
+                        {group.rows.length === 1 ? "" : "s"}
                       </p>
                     </div>
 
+                    {/* Recalculate Button */}
                     {canManage && (
                       <button
                         type="button"

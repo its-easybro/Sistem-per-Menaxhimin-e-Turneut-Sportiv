@@ -456,6 +456,7 @@ export default function Teams() {
                 />
               </div>
 
+              {/* City Filter */}
               <div className="relative min-w-[160px]">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                   <SlidersHorizontal size={14} />
@@ -489,16 +490,16 @@ export default function Teams() {
                   </svg>
                 </div>
               </div>
-
             </div>
-            
+
+            {/* Clear Filters Button */}
             {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
-            >
-              Clear Filters
-            </button>
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+              >
+                Clear Filters
+              </button>
             )}
 
             <button
@@ -605,6 +606,7 @@ export default function Teams() {
           </table>
         </div>
 
+        {/* Pagination */}
         {pagination && (
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
             <div className="flex flex-1 justify-between sm:hidden">
@@ -624,21 +626,36 @@ export default function Teams() {
               </button>
             </div>
 
+            {/* Page Information */}
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-slate-400">
-                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
-                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  Page{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {page}
+                  </span>{" "}
+                  from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {pagination.totalPages}
+                  </span>
                   {pagination.total && (
                     <>
-                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> teams)
+                      {" "}
+                      (Total{" "}
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {pagination.total}
+                      </span>{" "}
+                      teams)
                     </>
                   )}
                 </p>
               </div>
 
               <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                <nav
+                  className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1"
+                  aria-label="Pagination"
+                >
                   <button
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
@@ -667,6 +684,7 @@ export default function Teams() {
                     );
                   })}
 
+                  {/* Next Page Button */}
                   <button
                     disabled={page === pagination.totalPages}
                     onClick={() => setPage(page + 1)}

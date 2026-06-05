@@ -3,9 +3,19 @@ import { Navigate } from "react-router-dom";
 import AuthContext from "../../context/AuthContext";
 import api from "../../config/axiosInstance";
 import { Alert } from "../../components/Alert";
-import { ChevronLeft, ChevronRight, Monitor, Smartphone, Trash2, Laptop, Search, SlidersHorizontal } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Monitor,
+  Smartphone,
+  Trash2,
+  Laptop,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
+// Utility functions for formatting dates and extracting browser/device information from user agent strings.
 function formatDate(iso) {
   if (!iso) return "-";
   try {
@@ -16,6 +26,7 @@ function formatDate(iso) {
   }
 }
 
+// These functions parse the user agent string to determine the browser and device type for display purposes in the sessions table.
 function getBrowserLabel(userAgent) {
   if (!userAgent) return "Unknown browser";
   if (userAgent.includes("Edg/")) return "Microsoft Edge";
@@ -41,6 +52,7 @@ function getDeviceIcon(deviceLabel) {
   return Laptop;
 }
 
+// Predefined filter options for browsers and devices to populate the filter dropdowns in the sessions management page.
 const browserFilterOptions = [
   "Microsoft Edge",
   "Google Chrome",
@@ -52,6 +64,7 @@ const browserFilterOptions = [
 
 const deviceFilterOptions = ["Desktop", "Mobile", "Unknown device"];
 
+// Main component for the sessions management page.
 export default function Sessions() {
   const { user } = useContext(AuthContext);
   const [sessions, setSessions] = useState([]);
@@ -61,53 +74,61 @@ export default function Sessions() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filters, setFilters] = useState({ browser: "", device: "", search: "" });
+  const [filters, setFilters] = useState({
+    browser: "",
+    device: "",
+    search: "",
+  });
   const [alert, setAlert] = useState(null);
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
 
-  const loadSessions = useCallback(async (pageNum, filtersObj) => {
-    if (!user?.is_admin) {
-      setLoading(false);
-      return;
-    }
+  const loadSessions = useCallback(
+    async (pageNum, filtersObj) => {
+      if (!user?.is_admin) {
+        setLoading(false);
+        return;
+      }
 
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        setLoading(true);
+        setError(null);
 
-      const params = {
-        page: pageNum,
-        limit: 10,
-      };
-      const search = filtersObj.search.trim();
+        const params = {
+          page: pageNum,
+          limit: 10,
+        };
+        const search = filtersObj.search.trim();
 
-      if (search) params.search = search;
-      if (filtersObj.browser) params.browser = filtersObj.browser;
-      if (filtersObj.device) params.device = filtersObj.device;
+        // Only include filter parameters if they have values to avoid sending empty filters to the API.
+        if (search) params.search = search;
+        if (filtersObj.browser) params.browser = filtersObj.browser;
+        if (filtersObj.device) params.device = filtersObj.device;
 
-      const res = await api.get("/sessions", { params });
-      const sessionsPayload = res.data;
-      const sessionsData = Array.isArray(sessionsPayload)
-        ? sessionsPayload
-        : sessionsPayload?.data ?? [];
-      const paginationData = Array.isArray(sessionsPayload)
-        ? null
-        : sessionsPayload?.pagination ?? null;
+        const res = await api.get("/sessions", { params });
+        const sessionsPayload = res.data;
+        const sessionsData = Array.isArray(sessionsPayload)
+          ? sessionsPayload
+          : (sessionsPayload?.data ?? []);
+        const paginationData = Array.isArray(sessionsPayload)
+          ? null
+          : (sessionsPayload?.pagination ?? null);
 
-      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
-      setPagination(paginationData);
-    } catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err.message ||
-        "Failed to load sessions";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+        setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+        setPagination(paginationData);
+      } catch (err) {
+        const msg =
+          err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err.message ||
+          "Failed to load sessions";
+        setError(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user],
+  );
 
   useEffect(() => {
     loadSessions(page, filters);
@@ -119,6 +140,7 @@ export default function Sessions() {
     setShowDeleteModal(true);
   };
 
+  // Handles the confirmation of session deletion by sending a DELETE request to the server and updating the sessions list accordingly, while also managing pagination edge cases when the last item on a page is deleted.
   const handleDeleteConfirm = async () => {
     if (!selectedSession) return;
     try {
@@ -179,7 +201,10 @@ export default function Sessions() {
     setFilters({ browser: "", device: "", search: "" });
   };
 
-  const hasActiveFilters = filters.browser !== "" || filters.device !== "" || filters.search.trim() !== "";
+  const hasActiveFilters =
+    filters.browser !== "" ||
+    filters.device !== "" ||
+    filters.search.trim() !== "";
 
   if (!user?.is_admin && !loading) return <Navigate to="/" replace />;
 
@@ -191,6 +216,7 @@ export default function Sessions() {
     );
   }
 
+  // Renders the main sessions management interface.
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4">
       {alert && (
@@ -201,6 +227,7 @@ export default function Sessions() {
         />
       )}
 
+      {/* Active Sessions Header */}
       <div className="w-full mx-auto">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">
@@ -225,6 +252,7 @@ export default function Sessions() {
                 />
               </div>
 
+              {/* Browser Filter */}
               <div className="relative min-w-[160px]">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                   <SlidersHorizontal size={14} />
@@ -259,6 +287,7 @@ export default function Sessions() {
                 </div>
               </div>
 
+              {/* Device Filter */}
               <div className="relative min-w-[160px]">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                   <SlidersHorizontal size={14} />
@@ -292,20 +321,20 @@ export default function Sessions() {
                   </svg>
                 </div>
               </div>
+            </div>
 
-              </div>
-            
             {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
-            >
-              Clear Filters
-            </button>
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+              >
+                Clear Filters
+              </button>
             )}
           </div>
         </div>
 
+        {/* Sessions Table */}
         {loading ? (
           <div className="delay-skeleton">
             <TableSkeleton />
@@ -402,6 +431,7 @@ export default function Sessions() {
           </div>
         )}
 
+        {/* Pagination */}
         {pagination && (
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
             <div className="flex flex-1 justify-between sm:hidden">
@@ -421,21 +451,36 @@ export default function Sessions() {
               </button>
             </div>
 
+            {/* Pagination Controls */}
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-slate-400">
-                  Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
-                  <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                  Page{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {page}
+                  </span>{" "}
+                  from{" "}
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {pagination.totalPages}
+                  </span>
                   {pagination.total ? (
                     <>
-                      {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> sessions)
+                      {" "}
+                      (Total{" "}
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {pagination.total}
+                      </span>{" "}
+                      sessions)
                     </>
                   ) : null}
                 </p>
               </div>
 
               <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                <nav
+                  className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1"
+                  aria-label="Pagination"
+                >
                   <button
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
@@ -464,6 +509,7 @@ export default function Sessions() {
                     );
                   })}
 
+                  {/* Next Page Button */}
                   <button
                     disabled={page === pagination.totalPages}
                     onClick={() => setPage(page + 1)}

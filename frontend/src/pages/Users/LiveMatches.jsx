@@ -24,6 +24,7 @@ import CardSkeleton from "../../components/Skeletons/CardSkeleton";
 import AuthContext from "../../context/AuthContext";
 import { useMatchTimer } from "../../hooks/useMatchTimer";
 
+// Constants and utility functions for the LiveMatches component
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 const initialEventDetails = {
   lojtari_id: "",
@@ -38,6 +39,7 @@ const panel =
 const mutedText = "text-gray-500 dark:text-slate-400";
 const strongText = "text-gray-900 dark:text-slate-200";
 
+// Utility functions for formatting and processing match data
 function formatDate(value) {
   if (!value) return "N/A";
 
@@ -47,6 +49,7 @@ function formatDate(value) {
   return date.toLocaleDateString("en-GB");
 }
 
+// Formats a time value, handling both ISO strings and simple time formats
 function formatTime(value) {
   if (!value) return "N/A";
 
@@ -56,6 +59,7 @@ function formatTime(value) {
   return text.slice(0, 5);
 }
 
+// Determines if a match is currently live based on its status.
 function isLive(match) {
   return match?.statusi === "Live";
 }
@@ -64,6 +68,7 @@ function isHalfTime(match) {
   return match?.statusi === "HalfTime";
 }
 
+// Determines if a match has finished based on its status, checking for various indicators of completion.
 function isFinished(match) {
   const status = String(match?.statusi || "").toLowerCase();
   return (
@@ -97,6 +102,7 @@ function getEventPerson(event) {
   return event.playerName || event.player_name || "";
 }
 
+// Maps event types to user-friendly labels for display in the UI.
 function getEventLabel(type) {
   const labels = {
     Goal: "Goal",
@@ -110,6 +116,7 @@ function getEventLabel(type) {
   return labels[type] || type || "Event";
 }
 
+// Determines the appropriate CSS classes for an event based on its type, applying different styles for goals, yellow cards, red cards, and other events.
 function getEventClasses(type) {
   if (isGoalEventType(type)) {
     return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300";
@@ -126,6 +133,7 @@ function getEventClasses(type) {
   return "border-gray-200 bg-gray-50 text-gray-700 dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-300";
 }
 
+// Sorts match events in descending order based on their minute and ID, ensuring that events are displayed in the correct sequence on the match timeline.
 function getTimelineEvents(match) {
   return [...(match?.cards || []), ...(match?.events || [])].sort((a, b) => {
     const minuteA = Number(getEventMinute(a));
@@ -142,6 +150,7 @@ function getTimelineEvents(match) {
   });
 }
 
+// Sorts match events in ascending order based on their minute and ID, which can be useful for generating match reports or timelines that display events in the order they occurred during the match.
 function getTimelineEventsAscending(match) {
   return [...(match?.cards || []), ...(match?.events || [])].sort((a, b) => {
     const minuteA = Number(getEventMinute(a));
@@ -164,6 +173,7 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+// Determines which team (home or away) an event belongs to based on the event's team ID and the match's team information, allowing for accurate categorization of events in the match timeline and reports.
 function getEventTeamSide(event, match) {
   const eventTeamId = Number(
     event.teamId ?? event.team_id ?? event.ekipi_id ?? event.ekipiId,
@@ -212,6 +222,7 @@ function getPeriodConfig(match) {
   };
 }
 
+// Generates sections for a match report based on the match's events and timing configuration, organizing events into periods (e.g., halves) and calculating the score progression throughout the match for accurate reporting and analysis.
 function getMatchReportSections(match) {
   const { duration, periods, label } = getPeriodConfig(match);
   const periodLength = Math.max(1, duration / periods);
@@ -260,6 +271,7 @@ function getMatchReportSections(match) {
   return sections;
 }
 
+// Extracts the initials from a given text, which can be used for displaying team badges or player initials in the UI.
 function getInitials(value) {
   const text = value || "Team";
   return text
@@ -309,6 +321,7 @@ function EventIcon({ type, size = 18 }) {
   return <CircleDot size={size} aria-hidden="true" />;
 }
 
+// Displays a full-page loading placeholder animation while match data is being fetched, providing users with visual feedback that the content is loading and improving the overall user experience during data retrieval.
 function EmptyEventsState({ title, description }) {
   return (
     <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-500 dark:border-slate-700 dark:text-slate-400">
@@ -336,7 +349,9 @@ function getPlayersForTeam(players, teamId) {
   const parsedTeamId = Number(teamId);
   if (!Number.isInteger(parsedTeamId)) return [];
 
-  return players.filter((player) => Number(getPlayerTeamId(player)) === parsedTeamId);
+  return players.filter(
+    (player) => Number(getPlayerTeamId(player)) === parsedTeamId,
+  );
 }
 
 function hasSelectedPlayerForTeam(details, teamId, players) {
@@ -354,13 +369,15 @@ function hasSelectedPlayerForTeam(details, teamId, players) {
   );
 }
 
+// Normalizes event details by ensuring that the selected player belongs to the specified team and that text fields are trimmed, preparing the data for submission or display in the UI while maintaining data integrity and consistency.
 function normalizeEventDetails(details, teamId, players) {
   const selectedPlayerId = Number(details.lojtari_id);
   const selectedPlayer = players.find(
     (player) => Number(player.id) === selectedPlayerId,
   );
   const selectedPlayerBelongsToTeam =
-    selectedPlayer && Number(getPlayerTeamId(selectedPlayer)) === Number(teamId);
+    selectedPlayer &&
+    Number(getPlayerTeamId(selectedPlayer)) === Number(teamId);
 
   return {
     ...(selectedPlayerBelongsToTeam && {
@@ -600,9 +617,7 @@ function LiveMatches() {
   useEffect(() => {
     const updateMatch = (matchId, updater) => {
       setMatches((prev) =>
-        prev.map((match) =>
-          match.id === matchId ? updater(match) : match,
-        ),
+        prev.map((match) => (match.id === matchId ? updater(match) : match)),
       );
     };
 
@@ -697,6 +712,7 @@ function LiveMatches() {
       });
     };
 
+    // Register socket event listeners for real-time updates on match status, score changes, and match events, ensuring that the UI reflects the latest information as it happens during live matches.
     socket.on("match_live", handleMatchLive);
     socket.on("match_finished", handleMatchFinished);
     socket.on("match-finished", handleMatchFinished);
@@ -765,7 +781,9 @@ function LiveMatches() {
         match.id === matchId
           ? {
               ...match,
-              cards: (match.cards || []).filter((event) => event.id !== eventId),
+              cards: (match.cards || []).filter(
+                (event) => event.id !== eventId,
+              ),
               events: (match.events || []).filter(
                 (event) => event.id !== eventId,
               ),
@@ -831,8 +849,7 @@ function LiveMatches() {
       setAlert({
         type: "error",
         message:
-          "Error adding event: " +
-          (err.response?.data?.error || err.message),
+          "Error adding event: " + (err.response?.data?.error || err.message),
       });
     } finally {
       setSavingAction("");
@@ -875,7 +892,9 @@ function LiveMatches() {
       setSavingAction(`update-${event.id}`);
       const response = await api.put(`/match-events/${event.id}`, {
         lloji: eventEditForm.lloji,
-        ekipi_id: eventEditForm.ekipi_id ? Number(eventEditForm.ekipi_id) : null,
+        ekipi_id: eventEditForm.ekipi_id
+          ? Number(eventEditForm.ekipi_id)
+          : null,
         lojtari_id: eventEditForm.lojtari_id
           ? Number(eventEditForm.lojtari_id)
           : null,
@@ -895,8 +914,7 @@ function LiveMatches() {
       setAlert({
         type: "error",
         message:
-          "Error updating event: " +
-          (err.response?.data?.error || err.message),
+          "Error updating event: " + (err.response?.data?.error || err.message),
       });
     } finally {
       setSavingAction("");
@@ -916,8 +934,7 @@ function LiveMatches() {
       setAlert({
         type: "error",
         message:
-          "Error deleting event: " +
-          (err.response?.data?.error || err.message),
+          "Error deleting event: " + (err.response?.data?.error || err.message),
       });
     } finally {
       setSavingAction("");
@@ -1030,6 +1047,7 @@ function LiveMatches() {
           </div>
         </header>
 
+        {/* Scoreboard */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className="space-y-6">
             <div className={`${panel} overflow-hidden`}>
@@ -1050,10 +1068,7 @@ function LiveMatches() {
 
               <div className="grid items-center gap-5 p-5 sm:p-6 md:grid-cols-[1fr_auto_1fr]">
                 <div className="flex min-w-0 items-center gap-4 md:justify-end md:text-right">
-                  <TeamBadge
-                    name={selectedMatch.ekipi_shtepiak}
-                    side="home"
-                  />
+                  <TeamBadge name={selectedMatch.ekipi_shtepiak} side="home" />
                   <div className="min-w-0">
                     <p className={`truncate text-xl font-black ${strongText}`}>
                       {selectedMatch.ekipi_shtepiak || "Home Team"}
@@ -1078,11 +1093,9 @@ function LiveMatches() {
                   )}
                 </div>
 
+                {/* Away Team */}
                 <div className="flex min-w-0 items-center gap-4 md:flex-row-reverse md:justify-end">
-                  <TeamBadge
-                    name={selectedMatch.ekipi_mysafir}
-                    side="away"
-                  />
+                  <TeamBadge name={selectedMatch.ekipi_mysafir} side="away" />
                   <div className="min-w-0 md:text-left">
                     <p className={`truncate text-xl font-black ${strongText}`}>
                       {selectedMatch.ekipi_mysafir || "Away Team"}
@@ -1109,7 +1122,8 @@ function LiveMatches() {
                 </div>
                 <div className="inline-flex items-center gap-2">
                   <Trophy size={16} />
-                  {selectedMatch.kohezgjatja || DEFAULT_MATCH_DURATION_MINUTES}{" "}
+                  {selectedMatch.kohezgjatja ||
+                    DEFAULT_MATCH_DURATION_MINUTES}{" "}
                   min
                 </div>
               </div>
@@ -1176,7 +1190,7 @@ function LiveMatches() {
                     />
                   </label>
                 </div>
-
+                {/* Home Team */}
                 <div className="grid gap-4 xl:grid-cols-2">
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
                     <div className="flex min-w-0 items-center justify-between gap-3">
@@ -1416,7 +1430,10 @@ function LiveMatches() {
                               const isEditing = editingEventId === event.id;
                               const editPlayers =
                                 isEditing && eventEditForm
-                                  ? getPlayersForTeam(players, eventEditForm.ekipi_id)
+                                  ? getPlayersForTeam(
+                                      players,
+                                      eventEditForm.ekipi_id,
+                                    )
                                   : [];
                               const primary =
                                 getEventPerson(event) || getEventLabel(type);
@@ -1470,9 +1487,13 @@ function LiveMatches() {
                                             {scoreLabel}
                                           </span>
                                         )}
-                                        <span className="truncate">{primary}</span>
+                                        <span className="truncate">
+                                          {primary}
+                                        </span>
                                       </p>
-                                      <p className={`truncate text-sm ${mutedText}`}>
+                                      <p
+                                        className={`truncate text-sm ${mutedText}`}
+                                      >
                                         {secondary}
                                       </p>
                                     </div>
@@ -1493,7 +1514,9 @@ function LiveMatches() {
                                         </button>
                                         <button
                                           type="button"
-                                          onClick={() => handleDeleteEvent(event)}
+                                          onClick={() =>
+                                            handleDeleteEvent(event)
+                                          }
                                           disabled={Boolean(savingAction)}
                                           className="rounded-lg p-2 text-red-500 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
                                           aria-label="Delete event"
@@ -1518,7 +1541,9 @@ function LiveMatches() {
                                           <option value="YellowCard">
                                             Yellow Card
                                           </option>
-                                          <option value="RedCard">Red Card</option>
+                                          <option value="RedCard">
+                                            Red Card
+                                          </option>
                                         </select>
                                       </label>
                                       <label className="text-sm font-semibold">
@@ -1531,13 +1556,17 @@ function LiveMatches() {
                                         >
                                           <option value="">No team</option>
                                           <option
-                                            value={selectedMatch.ekipi_shtepiak_id}
+                                            value={
+                                              selectedMatch.ekipi_shtepiak_id
+                                            }
                                           >
                                             {selectedMatch.ekipi_shtepiak ||
                                               "Home Team"}
                                           </option>
                                           <option
-                                            value={selectedMatch.ekipi_mysafir_id}
+                                            value={
+                                              selectedMatch.ekipi_mysafir_id
+                                            }
                                           >
                                             {selectedMatch.ekipi_mysafir ||
                                               "Away Team"}
@@ -1564,7 +1593,10 @@ function LiveMatches() {
                                             Select a player first
                                           </option>
                                           {editPlayers.map((player) => (
-                                            <option key={player.id} value={player.id}>
+                                            <option
+                                              key={player.id}
+                                              value={player.id}
+                                            >
                                               {getPlayerNameOption(player)}
                                             </option>
                                           ))}
@@ -1574,7 +1606,8 @@ function LiveMatches() {
                                         eventEditForm &&
                                         !eventEditForm.lojtari_id && (
                                           <p className="text-xs font-semibold text-amber-600 dark:text-amber-300">
-                                            Select a player before saving this event.
+                                            Select a player before saving this
+                                            event.
                                           </p>
                                         )}
                                       <label className="text-sm font-semibold">
@@ -1619,7 +1652,9 @@ function LiveMatches() {
                                         </button>
                                         <button
                                           type="button"
-                                          onClick={() => handleUpdateEvent(event)}
+                                          onClick={() =>
+                                            handleUpdateEvent(event)
+                                          }
                                           disabled={
                                             Boolean(savingAction) ||
                                             !eventEditForm.lojtari_id
@@ -1781,7 +1816,9 @@ function LiveMatches() {
                           </span>
                         </div>
                         <p className={`truncate text-sm ${mutedText}`}>
-                          {getEventPerson(event) || event.teamName || "Match update"}
+                          {getEventPerson(event) ||
+                            event.teamName ||
+                            "Match update"}
                         </p>
                       </div>
                     </div>
@@ -1807,7 +1844,9 @@ function LiveMatches() {
               <h2 className={`mb-4 font-bold ${strongText}`}>System</h2>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                  <span
+                    className={`inline-flex items-center gap-2 ${mutedText}`}
+                  >
                     <Activity size={16} />
                     Server Status
                   </span>
@@ -1816,7 +1855,9 @@ function LiveMatches() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <span className={`inline-flex items-center gap-2 ${mutedText}`}>
+                  <span
+                    className={`inline-flex items-center gap-2 ${mutedText}`}
+                  >
                     <Radio size={16} />
                     Feed
                   </span>

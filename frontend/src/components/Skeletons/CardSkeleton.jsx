@@ -1,3 +1,4 @@
+// Displays a placeholder card animation while content is loading.
 export default function CardSkeleton() {
   return (
     <div

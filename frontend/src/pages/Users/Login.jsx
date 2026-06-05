@@ -3,8 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import AuthContext from "../../context/AuthContext";
 import { Eye, EyeOff } from "lucide-react";
-import PageLoader from "../../components/Skeletons/PageLoader"
+import PageLoader from "../../components/Skeletons/PageLoader";
 
+// Renders the login page and authenticates users based on email and password.
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
@@ -25,6 +26,12 @@ const Login = () => {
       .required("Password is required"),
   });
 
+  /**
+   * Handles input changes for the login form.
+   * Updates the formData state and clears any validation error for the specific field being modified.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -33,6 +40,14 @@ const Login = () => {
     }
   };
 
+  /**
+   * Handles the form submission for user login.
+   * Prevents default form behavior, validates the input using Yup schema,
+   * calls the authentication context login method, and navigates the user
+   * to their respective dashboard based on their role (admin, organizer, referee, or normal user).
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -73,7 +88,7 @@ const Login = () => {
       <div className="delay-skeleton">
         <PageLoader />
       </div>
-    )
+    );
   }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
@@ -85,7 +100,9 @@ const Login = () => {
             <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100 mb-2">
               Welcome Back
             </h1>
-            <p className="text-gray-600 dark:text-slate-400">Sign in to your account</p>
+            <p className="text-gray-600 dark:text-slate-400">
+              Sign in to your account
+            </p>
           </div>
 
           {/* Error Message */}

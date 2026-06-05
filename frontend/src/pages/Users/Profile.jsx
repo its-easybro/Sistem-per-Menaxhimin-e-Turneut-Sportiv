@@ -23,13 +23,28 @@ import AuthContext from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
 import api from "../../config/axiosInstance";
 
+// Metadata for user roles, defining display labels and badge styles for each role type.
 const roleMeta = {
-  admin: { label: "Admin", badge: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" },
-  organizator: { label: "Organizer", badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300" },
-  gjyqtar: { label: "Referee", badge: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300" },
-  user: { label: "Spectator", badge: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300" },
+  admin: {
+    label: "Admin",
+    badge: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  },
+  organizator: {
+    label: "Organizer",
+    badge:
+      "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+  },
+  gjyqtar: {
+    label: "Referee",
+    badge: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+  },
+  user: {
+    label: "Spectator",
+    badge: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
+  },
 };
 
+// Base tabs available to all users, with conditional tabs for organizers and referees added dynamically based on user roles.
 const baseTabs = [
   { key: "account", label: "Account", icon: User },
   { key: "security", label: "Security", icon: Shield },
@@ -47,6 +62,7 @@ function formatDate(value) {
   }).format(date);
 }
 
+// Formats a date-time string into a more readable format, showing month, day, year, and time in 12-hour format with AM/PM.
 function formatDateTime(value) {
   if (!value) return "N/A";
   const date = new Date(value);
@@ -72,6 +88,7 @@ function formatTime(value) {
   }).format(date);
 }
 
+// Extracts initials from the user's first and last name, returning a default "U" if no valid name parts are provided.
 function initialsFromName(firstName = "", lastName = "") {
   const initials = [firstName, lastName]
     .filter(Boolean)
@@ -90,10 +107,21 @@ function sectionCardClass(extra = "") {
   return `rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 ${extra}`;
 }
 
-function ProfileField({ label, value, readOnly = false, onChange, name, type = "text" }) {
+// Reusable component for rendering a labeled input field in the profile forms, with support for read-only mode and different input types.
+function ProfileField({
+  label,
+  value,
+  readOnly = false,
+  onChange,
+  name,
+  type = "text",
+}) {
   return (
     <div className="grid w-full items-center gap-1.5">
-      <label htmlFor={name} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+      <label
+        htmlFor={name}
+        className="text-sm font-medium text-slate-700 dark:text-slate-300"
+      >
         {label}
       </label>
       <input
@@ -110,6 +138,7 @@ function ProfileField({ label, value, readOnly = false, onChange, name, type = "
   );
 }
 
+// Main profile component that renders user information, account management forms, and role-specific data for organizers and referees, with loading states and error handling.
 const Profile = () => {
   const { user, updateUser } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -125,15 +154,30 @@ const Profile = () => {
     return items;
   }, [user]);
 
+  // State variables
   const [activeTab, setActiveTab] = useState("account");
   const loadedUserIdRef = useRef(null);
   const [profile, setProfile] = useState(null);
-  const [accountForm, setAccountForm] = useState({ emri: "", mbiemri: "", email: "" });
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
+  const [accountForm, setAccountForm] = useState({
+    emri: "",
+    mbiemri: "",
+    email: "",
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+  });
   const [sessions, setSessions] = useState([]);
   const [tickets, setTickets] = useState([]);
-  const [organizerData, setOrganizerData] = useState({ stats: null, tournaments: [] });
-  const [refereeData, setRefereeData] = useState({ referee: null, upcomingMatches: [], pendingReports: [] });
+  const [organizerData, setOrganizerData] = useState({
+    stats: null,
+    tournaments: [],
+  });
+  const [refereeData, setRefereeData] = useState({
+    referee: null,
+    upcomingMatches: [],
+    pendingReports: [],
+  });
   const [loading, setLoading] = useState(true);
   const [savingAccount, setSavingAccount] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -167,12 +211,22 @@ const Profile = () => {
           return response.data;
         };
 
-        const [summary, ticketsResponse, sessionsResponse, organizerResponse, refereeResponse] = await Promise.all([
+        const [
+          summary,
+          ticketsResponse,
+          sessionsResponse,
+          organizerResponse,
+          refereeResponse,
+        ] = await Promise.all([
           request("/profile"),
           request("/profile/tickets"),
           request("/profile/sessions"),
-          user?.is_organizer ? request("/profile/organizer") : Promise.resolve(null),
-          user?.is_referee ? request("/profile/referee") : Promise.resolve(null),
+          user?.is_organizer
+            ? request("/profile/organizer")
+            : Promise.resolve(null),
+          user?.is_referee
+            ? request("/profile/referee")
+            : Promise.resolve(null),
         ]);
 
         setProfile(summary);
@@ -184,7 +238,13 @@ const Profile = () => {
         setSessions(sessionsResponse?.sessions || []);
         setTickets(ticketsResponse?.tickets || []);
         setOrganizerData(organizerResponse || { stats: null, tournaments: [] });
-        setRefereeData(refereeResponse || { referee: null, upcomingMatches: [], pendingReports: [] });
+        setRefereeData(
+          refereeResponse || {
+            referee: null,
+            upcomingMatches: [],
+            pendingReports: [],
+          },
+        );
       } catch (requestError) {
         setError(requestError.message || "Failed to load profile data");
         loadedUserIdRef.current = null;
@@ -196,12 +256,22 @@ const Profile = () => {
     loadProfile();
   }, [user?.id, user?.is_organizer, user?.is_referee]);
 
-  const heroName = profile?.fullName || user?.full_name || [user?.emri, user?.mbiemri].filter(Boolean).join(" ") || "Your profile";
+  // Derives display values for the profile header, including the user's name, email, membership date, role label, and initials for the avatar, using profile data with fallbacks to user context and defaults.
+  const heroName =
+    profile?.fullName ||
+    user?.full_name ||
+    [user?.emri, user?.mbiemri].filter(Boolean).join(" ") ||
+    "Your profile";
   const heroEmail = profile?.email || user?.email || "Not available";
   const memberSince = profile?.createdAt || user?.createdAt || user?.created_at;
   const roleKey = profile?.roli || user?.roli || "user";
   const roleLabel = roleMeta[roleKey]?.label || "Member";
-  const initials = profile?.initials || initialsFromName(profile?.emri || user?.emri, profile?.mbiemri || user?.mbiemri);
+  const initials =
+    profile?.initials ||
+    initialsFromName(
+      profile?.emri || user?.emri,
+      profile?.mbiemri || user?.mbiemri,
+    );
 
   const handleAccountChange = (event) => {
     const { name, value } = event.target;
@@ -238,8 +308,18 @@ const Profile = () => {
         }),
       });
 
-      setProfile((current) => current ? { ...current, ...updated, fullName: updated.fullName } : current);
-      setAccountForm((current) => ({ ...current, emri: updated.emri, mbiemri: updated.mbiemri, email: updated.email }));
+      // Update local state and user context with the new profile information after a successful account update, ensuring that the displayed name and email reflect the latest changes.
+      setProfile((current) =>
+        current
+          ? { ...current, ...updated, fullName: updated.fullName }
+          : current,
+      );
+      setAccountForm((current) => ({
+        ...current,
+        emri: updated.emri,
+        mbiemri: updated.mbiemri,
+        email: updated.email,
+      }));
       if (typeof updateUser === "function") {
         updateUser((currentUser) =>
           currentUser
@@ -292,7 +372,9 @@ const Profile = () => {
         method: "DELETE",
       });
 
-      setSessions((current) => current.filter((session) => session.id !== sessionId));
+      setSessions((current) =>
+        current.filter((session) => session.id !== sessionId),
+      );
       setMessage("Session revoked successfully.");
     } catch (requestError) {
       setError(requestError.message || "Failed to revoke session");
@@ -307,7 +389,9 @@ const Profile = () => {
         <div className="flex min-h-[280px] items-center justify-center rounded-xl bg-white p-6 dark:bg-slate-900">
           <div className="text-center">
             <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900 dark:border-slate-600 dark:border-t-white" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">Loading profile data...</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Loading profile data...
+            </p>
           </div>
         </div>
       );
@@ -315,18 +399,40 @@ const Profile = () => {
 
     if (activeTab === "account") {
       return (
-        <form onSubmit={handleAccountSubmit} className={sectionCardClass("p-6")}>
+        <form
+          onSubmit={handleAccountSubmit}
+          className={sectionCardClass("p-6")}
+        >
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Account Management</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Update your personal details. Email is read-only.</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Account Management
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Update your personal details. Email is read-only.
+            </p>
           </div>
 
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <ProfileField label="First Name" name="emri" value={accountForm.emri} onChange={handleAccountChange} />
-              <ProfileField label="Last Name" name="mbiemri" value={accountForm.mbiemri} onChange={handleAccountChange} />
+              <ProfileField
+                label="First Name"
+                name="emri"
+                value={accountForm.emri}
+                onChange={handleAccountChange}
+              />
+              <ProfileField
+                label="Last Name"
+                name="mbiemri"
+                value={accountForm.mbiemri}
+                onChange={handleAccountChange}
+              />
             </div>
-            <ProfileField label="Email" name="email" value={accountForm.email} readOnly />
+            <ProfileField
+              label="Email"
+              name="email"
+              value={accountForm.email}
+              readOnly
+            />
           </div>
 
           <div className="mt-6 flex justify-end border-t border-slate-200 pt-6 dark:border-slate-800">
@@ -335,7 +441,11 @@ const Profile = () => {
               disabled={savingAccount}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-900"
             >
-              {savingAccount ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+              {savingAccount ? (
+                <RefreshCcw className="h-4 w-4 animate-spin" />
+              ) : (
+                <ShieldCheck className="h-4 w-4" />
+              )}
               Save Changes
             </button>
           </div>
@@ -343,13 +453,21 @@ const Profile = () => {
       );
     }
 
+    // Render the security tab content, which includes forms for changing the password and managing active sessions, with appropriate loading states and error handling.
     if (activeTab === "security") {
       return (
         <div className="space-y-8">
-          <form onSubmit={handlePasswordSubmit} className={sectionCardClass("p-6")}>
+          <form
+            onSubmit={handlePasswordSubmit}
+            className={sectionCardClass("p-6")}
+          >
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Change Password</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Use your current password to set a new one.</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Change Password
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Use your current password to set a new one.
+              </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -375,7 +493,11 @@ const Profile = () => {
                 disabled={savingPassword}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-900"
               >
-                {savingPassword ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                {savingPassword ? (
+                  <RefreshCcw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="h-4 w-4" />
+                )}
                 Update Password
               </button>
             </div>
@@ -383,10 +505,15 @@ const Profile = () => {
 
           <div className={sectionCardClass("p-6")}>
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Active Sessions</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Review and manage devices that are currently signed in.</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Active Sessions
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Review and manage devices that are currently signed in.
+              </p>
             </div>
 
+            {/* Active Sessions */}
             <div className="space-y-4">
               {sessions.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
@@ -410,7 +537,11 @@ const Profile = () => {
                           )}
                         </p>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                          IP: {session.ipAddress || "Unknown"} &middot; Last seen: {formatDateTime(session.lastSeenAt || session.createdAt)}
+                          IP: {session.ipAddress || "Unknown"} &middot; Last
+                          seen:{" "}
+                          {formatDateTime(
+                            session.lastSeenAt || session.createdAt,
+                          )}
                         </p>
                       </div>
                     </div>
@@ -422,7 +553,11 @@ const Profile = () => {
                         disabled={revokeLoadingId === session.id}
                         className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-red-500/50 bg-transparent px-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20 dark:focus:ring-red-400 dark:focus:ring-offset-slate-900"
                       >
-                        {revokeLoadingId === session.id ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+                        {revokeLoadingId === session.id ? (
+                          <RefreshCcw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <LogOut className="h-4 w-4" />
+                        )}
                         Revoke
                       </button>
                     )}
@@ -439,8 +574,12 @@ const Profile = () => {
       return (
         <div className={sectionCardClass("p-6")}>
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Support Tickets</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">A read-only history of your submitted support tickets.</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Support Tickets
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              A read-only history of your submitted support tickets.
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -450,16 +589,23 @@ const Profile = () => {
               </p>
             ) : (
               tickets.map((ticket) => (
-                <div key={ticket.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                <div
+                  key={ticket.id}
+                  className="rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+                >
                   <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex-grow">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">{ticket.subjekti || "No subject"}</h3>
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+                          {ticket.subjekti || "No subject"}
+                        </h3>
                         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {ticket.kategoria}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Submitted: {formatDateTime(ticket.created_at)}</p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Submitted: {formatDateTime(ticket.created_at)}
+                      </p>
                     </div>
 
                     <span
@@ -480,29 +626,46 @@ const Profile = () => {
       );
     }
 
+    // Render the organizer tab content, which includes statistics and a list of tournaments owned by the organizer, with a link to the organizer dashboard and appropriate loading states and error handling.
     if (activeTab === "organizer" && user?.is_organizer) {
       return (
         <div className="space-y-8">
           <div className="grid gap-4 md:grid-cols-3">
             <div className={sectionCardClass("p-4")}>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Tournaments</p>
-              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{organizerData.stats?.totalTournaments ?? 0}</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Total Tournaments
+              </p>
+              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">
+                {organizerData.stats?.totalTournaments ?? 0}
+              </p>
             </div>
             <div className={sectionCardClass("p-4")}>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Tournaments</p>
-              <p className="mt-1 text-3xl font-bold text-emerald-600 dark:text-emerald-500">{organizerData.stats?.activeTournaments ?? 0}</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Active Tournaments
+              </p>
+              <p className="mt-1 text-3xl font-bold text-emerald-600 dark:text-emerald-500">
+                {organizerData.stats?.activeTournaments ?? 0}
+              </p>
             </div>
             <div className={sectionCardClass("p-4")}>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Completed</p>
-              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">{organizerData.stats?.completedTournaments ?? 0}</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Completed
+              </p>
+              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">
+                {organizerData.stats?.completedTournaments ?? 0}
+              </p>
             </div>
           </div>
 
           <div className={sectionCardClass("p-6")}>
             <div className="mb-6 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Your Tournaments</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Manage the competitions you currently own.</p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  Your Tournaments
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Manage the competitions you currently own.
+                </p>
               </div>
               <button
                 type="button"
@@ -525,11 +688,16 @@ const Profile = () => {
                     className="rounded-lg border border-slate-200 p-4 dark:border-slate-800 md:flex md:items-center md:justify-between"
                   >
                     <div>
-                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">{tournament.emertimi}</h3>
+                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+                        {tournament.emertimi}
+                      </h3>
                       <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {formatDate(tournament.data_fillimit)} - {formatDate(tournament.data_perfundimit)}
+                        {formatDate(tournament.data_fillimit)} -{" "}
+                        {formatDate(tournament.data_perfundimit)}
                       </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Location: {tournament.lokacioni || "Not specified"}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Location: {tournament.lokacioni || "Not specified"}
+                      </p>
                     </div>
                     <span className="mt-3 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300 md:mt-0">
                       {tournament.statusi}
@@ -550,34 +718,58 @@ const Profile = () => {
         <div className="space-y-8">
           <div className={sectionCardClass("p-6")}>
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Referee Details</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Your official referee record linked to this account.</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Referee Details
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Your official referee record linked to this account.
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">License</p>
-                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{referee?.nr_licences || "N/A"}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  License
+                </p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                  {referee?.nr_licences || "N/A"}
+                </p>
               </div>
               <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Category</p>
-                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{referee?.kategoria || "N/A"}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Category
+                </p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                  {referee?.kategoria || "N/A"}
+                </p>
               </div>
               <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Experience</p>
-                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{referee?.pervoja_vitesh ?? "N/A"} years</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Experience
+                </p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                  {referee?.pervoja_vitesh ?? "N/A"} years
+                </p>
               </div>
               <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Contact</p>
-                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{referee?.telefoni || "N/A"}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Contact
+                </p>
+                <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">
+                  {referee?.telefoni || "N/A"}
+                </p>
               </div>
             </div>
           </div>
 
           <div className={sectionCardClass("p-6")}>
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Upcoming Matches</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Matches you are scheduled to officiate.</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Upcoming Matches
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Matches you are scheduled to officiate.
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -587,15 +779,22 @@ const Profile = () => {
                 </p>
               ) : (
                 refereeData.upcomingMatches.map((match) => (
-                  <div key={match.matchId} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                  <div
+                    key={match.matchId}
+                    className="rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+                  >
                     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-                          {match.homeTeam || "Home"} vs {match.awayTeam || "Away"}
+                          {match.homeTeam || "Home"} vs{" "}
+                          {match.awayTeam || "Away"}
                         </h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {match.tournamentName || "Tournament"} &middot; {formatDate(match.matchDate)}{" "}
-                          {match.matchTime ? `at ${formatTime(match.matchTime)}` : ""}
+                          {match.tournamentName || "Tournament"} &middot;{" "}
+                          {formatDate(match.matchDate)}{" "}
+                          {match.matchTime
+                            ? `at ${formatTime(match.matchTime)}`
+                            : ""}
                         </p>
                       </div>
                       <span className="mt-2 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300 sm:mt-0">
@@ -610,8 +809,12 @@ const Profile = () => {
 
           <div className={sectionCardClass("p-6")}>
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Pending Match Reports</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Past matches that require a score report from you.</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Pending Match Reports
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Past matches that require a score report from you.
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -621,14 +824,19 @@ const Profile = () => {
                 </p>
               ) : (
                 refereeData.pendingReports.map((match) => (
-                  <div key={match.matchId} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                  <div
+                    key={match.matchId}
+                    className="rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+                  >
                     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <h3 className="font-semibold text-slate-800 dark:text-slate-200">
-                          {match.homeTeam || "Home"} vs {match.awayTeam || "Away"}
+                          {match.homeTeam || "Home"} vs{" "}
+                          {match.awayTeam || "Away"}
                         </h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {match.tournamentName || "Tournament"} &middot; Date: {formatDate(match.matchDate)}
+                          {match.tournamentName || "Tournament"} &middot; Date:{" "}
+                          {formatDate(match.matchDate)}
                         </p>
                       </div>
                       <span className="mt-2 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-300 sm:mt-0">
@@ -649,6 +857,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      {/* Profile Header */}
       <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -657,23 +866,32 @@ const Profile = () => {
                 {initials}
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{heroName}</h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{heroEmail}</p>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  {heroName}
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {heroEmail}
+                </p>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Member since {formatDate(memberSince)}
                 </p>
               </div>
             </div>
-            <span className={`rounded-full px-3 py-1 text-sm font-medium ${roleMeta[roleKey]?.badge || "bg-slate-100 text-slate-800"}`}>
+            <span
+              className={`rounded-full px-3 py-1 text-sm font-medium ${roleMeta[roleKey]?.badge || "bg-slate-100 text-slate-800"}`}
+            >
               {roleLabel}
             </span>
           </div>
         </div>
       </header>
 
+      {/* Profile Content */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {(message || error) && (
-          <div className={`mb-6 rounded-lg border p-4 text-sm ${error ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300" : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300"}`}>
+          <div
+            className={`mb-6 rounded-lg border p-4 text-sm ${error ? "border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300" : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300"}`}
+          >
             {error || message}
           </div>
         )}

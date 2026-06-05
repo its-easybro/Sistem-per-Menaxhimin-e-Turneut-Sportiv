@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 
 export const TeamCard = ({ image, name, role, description, linkedinUrl }) => {
   // Toggles glow visibility while the cursor is over the card.
@@ -28,7 +28,7 @@ export const TeamCard = ({ image, name, role, description, linkedinUrl }) => {
       {/* Gradient glow effect */}
       <div
         className={`pointer-events-none blur-3xl rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-300 size-60 absolute z-0 transition-opacity duration-500 ${
-          visible ? 'opacity-100' : 'opacity-0'
+          visible ? "opacity-100" : "opacity-0"
         }`}
         style={{ top: position.y - 120, left: position.x - 120 }}
       />

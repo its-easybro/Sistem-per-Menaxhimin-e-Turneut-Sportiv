@@ -19,9 +19,10 @@ import {
   Mail,
   Radio,
   Fingerprint,
-  GitBranch
+  GitBranch,
 } from "lucide-react";
 
+// Renders the main layout wrapper for administrative pages with a responsive sidebar.
 const AdminRoute = () => {
   // Reads auth/session state and logout action from the shared auth context.
   const { user, logout } = useContext(AuthContext);
@@ -60,7 +61,9 @@ const AdminRoute = () => {
 
             {/* Competitions */}
             <div className="px-4 pt-4 pb-2">
-              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-300 uppercase tracking-wider">Competitions</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-300 uppercase tracking-wider">
+                Competitions
+              </p>
             </div>
             <Link
               to="/tournaments"
@@ -108,7 +111,9 @@ const AdminRoute = () => {
 
             {/* Entities */}
             <div className="px-4 pt-4 pb-2">
-              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-300 uppercase tracking-wider">Entities</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-300 uppercase tracking-wider">
+                Entities
+              </p>
             </div>
             <Link
               to="/sports"
@@ -155,7 +160,9 @@ const AdminRoute = () => {
 
             {/* System */}
             <div className="px-4 pt-4 pb-2">
-              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-300 uppercase tracking-wider">System</p>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-300 uppercase tracking-wider">
+                System
+              </p>
             </div>
             <Link
               to="/users"
@@ -193,7 +200,9 @@ const AdminRoute = () => {
               <p className="text-sm font-bold text-gray-900 dark:text-slate-200 truncate">
                 {user.full_name || user.username || user.email}
               </p>
-              <p className="text-xs text-gray-500 dark:text-slate-400">Administrator</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                Administrator
+              </p>
             </div>
           </div>
           <button

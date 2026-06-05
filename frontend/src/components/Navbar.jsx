@@ -1,7 +1,7 @@
-'use client'
-import { useContext, useState } from 'react'
-import logo from '../assets/logo.png'
-import { User, Trophy, Shield, Lock, LogOut } from 'lucide-react';
+"use client";
+import { useContext, useState } from "react";
+import logo from "../assets/logo.png";
+import { User, Trophy, Shield, Lock, LogOut } from "lucide-react";
 import {
   Dialog,
   DialogPanel,
@@ -12,25 +12,45 @@ import {
   PopoverButton,
   PopoverGroup,
   PopoverPanel,
-} from '@headlessui/react'
+} from "@headlessui/react";
 import {
   Bars3Icon,
   InformationCircleIcon,
   EnvelopeIcon,
   XMarkIcon,
   UserGroupIcon,
-} from '@heroicons/react/24/outline'
+} from "@heroicons/react/24/outline";
 import { Moon, Sun } from "lucide-react";
-import { ChevronDownIcon, PhoneIcon, PlayCircleIcon } from '@heroicons/react/20/solid'
-import { Link, useNavigate } from 'react-router-dom'
-import AuthContext from '../context/AuthContext'
-import { ThemeContext } from "../context/ThemeContext"
+import {
+  ChevronDownIcon,
+  PhoneIcon,
+  PlayCircleIcon,
+} from "@heroicons/react/20/solid";
+import { Link, useNavigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
+import { ThemeContext } from "../context/ThemeContext";
 
+// Defines the main navigation bar component, which includes branding, navigation links, user profile actions, and a mobile-friendly menu with responsive design and dark mode support.
 const products = [
-  { name: 'About Us', description: 'About us', Link: '/about-us', icon: InformationCircleIcon },
-  { name: 'Contact Us', description: 'Get in contact with us', Link: '/contact-us', icon: EnvelopeIcon },
-  { name: 'Players', description: 'Browse players and teams', Link: '/public/players', icon: UserGroupIcon },
-]
+  {
+    name: "About Us",
+    description: "About us",
+    Link: "/about-us",
+    icon: InformationCircleIcon,
+  },
+  {
+    name: "Contact Us",
+    description: "Get in contact with us",
+    Link: "/contact-us",
+    icon: EnvelopeIcon,
+  },
+  {
+    name: "Players",
+    description: "Browse players and teams",
+    Link: "/public/players",
+    icon: UserGroupIcon,
+  },
+];
 
 const getInitials = (user) => {
   const parts = [user?.emri, user?.mbiemri]
@@ -38,7 +58,10 @@ const getInitials = (user) => {
     .map((part) => part.trim());
 
   if (parts.length > 0) {
-    return parts.map((part) => part.charAt(0).toUpperCase()).join('').slice(0, 2);
+    return parts
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("")
+      .slice(0, 2);
   }
 
   if (user?.full_name) {
@@ -46,40 +69,44 @@ const getInitials = (user) => {
       .split(/\s+/)
       .filter(Boolean)
       .map((part) => part.charAt(0).toUpperCase())
-      .join('')
+      .join("")
       .slice(0, 2);
   }
 
-  return user?.email?.charAt(0).toUpperCase() || 'U';
+  return user?.email?.charAt(0).toUpperCase() || "U";
 };
-
+// Defines the Navbar component, which renders the top navigation bar with responsive design, user authentication state handling, and dark mode toggle functionality.
 const Navbar = () => {
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
   // Tracks open/closed state for the mobile navigation drawer.
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Reads current session user and logout action from auth context.
-  const { user, logout } = useContext(AuthContext)
-  const navigate = useNavigate()
+  const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const rolePanel = user?.is_admin
-    ? { label: 'Admin Panel', to: '/dashboard' }
+    ? { label: "Admin Panel", to: "/dashboard" }
     : user?.is_organizer
-      ? { label: 'Organizer Panel', to: '/organizer/dashboard' }
+      ? { label: "Organizer Panel", to: "/organizer/dashboard" }
       : user?.is_referee
-        ? { label: 'Referee Panel', to: '/referee/dashboard' }
-        : null
-  const profileInitials = getInitials(user)
+        ? { label: "Referee Panel", to: "/referee/dashboard" }
+        : null;
+  const profileInitials = getInitials(user);
 
   // Logs out the user, closes mobile UI state, then returns to home.
   const handleLogout = async () => {
-    await logout()
-    setMobileMenuOpen(false)
-    navigate('/')
-  }
+    await logout();
+    setMobileMenuOpen(false);
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-white/10 shadow-lg transition-colors duration-300">
-      <nav aria-label="Global" className="mx-auto flex max-w-7xl items-center justify-between p-4 lg:px-8">
+      <nav
+        aria-label="Global"
+        className="mx-auto flex max-w-7xl items-center justify-between p-4 lg:px-8"
+      >
+        {/* Logo and Home Link */}
         <div className="flex lg:flex-1">
           <Link to="/" className="-m-1.5 p-1.5 group flex items-center gap-3">
             <span className="sr-only">Your Company</span>
@@ -104,7 +131,10 @@ const Navbar = () => {
           <Popover className="relative">
             <PopoverButton className="flex items-center gap-x-1 text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200 outline-none">
               More
-              <ChevronDownIcon aria-hidden="true" className="size-5 flex-none text-gray-400 group-hover:text-white" />
+              <ChevronDownIcon
+                aria-hidden="true"
+                className="size-5 flex-none text-gray-400 group-hover:text-white"
+              />
             </PopoverButton>
 
             <PopoverPanel
@@ -118,10 +148,16 @@ const Navbar = () => {
                     className="group relative flex items-center gap-x-6 rounded-lg p-4 text-sm/6 hover:bg-white/5"
                   >
                     <div className="flex size-11 flex-none items-center justify-center rounded-lg bg-gray-700/50 group-hover:bg-gray-700">
-                      <item.icon aria-hidden="true" className="size-6 text-gray-400 group-hover:text-white" />
+                      <item.icon
+                        aria-hidden="true"
+                        className="size-6 text-gray-400 group-hover:text-white"
+                      />
                     </div>
                     <div className="flex-auto">
-                      <Link to={item.Link} className="block font-semibold text-white">
+                      <Link
+                        to={item.Link}
+                        className="block font-semibold text-white"
+                      >
                         {item.name}
                         <span className="absolute inset-0" />
                       </Link>
@@ -134,13 +170,22 @@ const Navbar = () => {
           </Popover>
 
           {/* These links intentionally use public viewer routes, even when staff are logged in. */}
-          <Link to="/live-matches" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
+          <Link
+            to="/live-matches"
+            className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200"
+          >
             Live Matches
           </Link>
-          <Link to="/public/standings" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
+          <Link
+            to="/public/standings"
+            className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200"
+          >
             Standings
           </Link>
-          <Link to="/brackets" className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200">
+          <Link
+            to="/brackets"
+            className="text-sm/6 font-semibold text-gray-200 hover:text-white transition-colors duration-200"
+          >
             Brackets
           </Link>
         </PopoverGroup>
@@ -157,7 +202,10 @@ const Navbar = () => {
             </button>
 
             {!user ? (
-              <Link to="/login" className="text-sm/6 font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg">
+              <Link
+                to="/login"
+                className="text-sm/6 font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+              >
                 Log in <span aria-hidden="true">→</span>
               </Link>
             ) : (
@@ -232,7 +280,11 @@ const Navbar = () => {
         </div>
       </nav>
       {/* Mobile navigation drawer for small screens. */}
-      <Dialog open={mobileMenuOpen} onClose={setMobileMenuOpen} className="lg:hidden">
+      <Dialog
+        open={mobileMenuOpen}
+        onClose={setMobileMenuOpen}
+        className="lg:hidden"
+      >
         <div className="fixed inset-0 z-50 backdrop-blur-sm bg-black/30" />
         <DialogPanel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-slate-900 p-6 sm:max-w-sm sm:ring-1 sm:ring-white/10 shadow-2xl">
           <div className="flex items-center justify-between">
@@ -259,7 +311,10 @@ const Navbar = () => {
                 <Disclosure as="div" className="-mx-3">
                   <DisclosureButton className="group flex w-full items-center justify-between rounded-lg py-2 pr-3.5 pl-3 text-base/7 font-semibold text-white hover:bg-white/5">
                     Product
-                    <ChevronDownIcon aria-hidden="true" className="size-5 flex-none group-data-open:rotate-180" />
+                    <ChevronDownIcon
+                      aria-hidden="true"
+                      className="size-5 flex-none group-data-open:rotate-180"
+                    />
                   </DisclosureButton>
                   <DisclosurePanel className="mt-2 space-y-2">
                     {[...products].map((item) => (
@@ -351,7 +406,7 @@ const Navbar = () => {
         </DialogPanel>
       </Dialog>
     </header>
-  )
-}
+  );
+};
 
 export default Navbar;

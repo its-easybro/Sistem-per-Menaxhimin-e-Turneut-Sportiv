@@ -7,7 +7,12 @@ import { Alert } from "../../components/Alert";
 import { Trash2, Edit, Search, SlidersHorizontal } from "lucide-react";
 import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
-const registrationStatusOptions = ["Në Pritje", "Aprovuar", "Refuzuar", "Anuluar"];
+const registrationStatusOptions = [
+  "Në Pritje",
+  "Aprovuar",
+  "Refuzuar",
+  "Anuluar",
+];
 
 const initialFormData = {
   turneu_id: "",
@@ -17,43 +22,88 @@ const initialFormData = {
 };
 
 const registrationCreateSchema = yup.object().shape({
-  turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
-  ekipi_id: yup.number().typeError("Team must be a number").required("Team is required"),
-  statusi: yup.string().oneOf(registrationStatusOptions).required("Status is required"),
-  tarifa_paguar: yup.number().min(0, "Fee cannot be negative").typeError("Fee must be a number").required("Fee is required"),
+  turneu_id: yup
+    .number()
+    .typeError("Tournament must be a number")
+    .required("Tournament is required"),
+  ekipi_id: yup
+    .number()
+    .typeError("Team must be a number")
+    .required("Team is required"),
+  statusi: yup
+    .string()
+    .oneOf(registrationStatusOptions)
+    .required("Status is required"),
+  tarifa_paguar: yup
+    .number()
+    .min(0, "Fee cannot be negative")
+    .typeError("Fee must be a number")
+    .required("Fee is required"),
 });
 
 const registrationUpdateSchema = yup.object().shape({
-  turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
-  ekipi_id: yup.number().typeError("Team must be a number").required("Team is required"),
-  statusi: yup.string().oneOf(registrationStatusOptions).required("Status is required"),
-  tarifa_paguar: yup.number().min(0, "Fee cannot be negative").typeError("Fee must be a number").required("Fee is required"),
+  turneu_id: yup
+    .number()
+    .typeError("Tournament must be a number")
+    .required("Tournament is required"),
+  ekipi_id: yup
+    .number()
+    .typeError("Team must be a number")
+    .required("Team is required"),
+  statusi: yup
+    .string()
+    .oneOf(registrationStatusOptions)
+    .required("Status is required"),
+  tarifa_paguar: yup
+    .number()
+    .min(0, "Fee cannot be negative")
+    .typeError("Fee must be a number")
+    .required("Fee is required"),
 });
 
+/**
+ * OrganizerTeams – page component that lets organizers register, edit, and remove
+ * teams from their assigned tournaments. Displays registrations grouped by tournament
+ * with inline search and status filtering.
+ *
+ * @returns {JSX.Element} The organizer teams management page
+ */
 export default function OrganizerTeams() {
   const { user } = useContext(AuthContext);
+
+  // --- Domain data fetched from the API ---
   const [tournaments, setTournaments] = useState([]);
   const [teams, setTeams] = useState([]);
   const [registrations, setRegistrations] = useState([]);
+
+  // --- Form state for creating / editing registrations ---
   const [formData, setFormData] = useState(initialFormData);
+
+  // --- UI / loading state ---
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [alert, setAlert] = useState(null);
+
+  // --- Modal visibility and selection state ---
   const [showModal, setShowModal] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+
+  // --- Search and status filter state ---
   const [filters, setFilters] = useState({
     search: "",
     statusi: "",
   });
 
+  /** Resets the registration form back to its default (empty) state and clears any validation errors. */
   const resetForm = () => {
     setFormData(initialFormData);
     setFormErrors({});
   };
 
+  // Loads tournaments, teams, and registrations from the API when the user object changes
   useEffect(() => {
     if (!user?.is_organizer) {
       setLoading(false);
@@ -70,9 +120,13 @@ export default function OrganizerTeams() {
           api.get("/tournament-registrations"),
         ]);
 
-        setTournaments(Array.isArray(tournamentsRes.data) ? tournamentsRes.data : []);
+        setTournaments(
+          Array.isArray(tournamentsRes.data) ? tournamentsRes.data : [],
+        );
         setTeams(Array.isArray(teamsRes.data) ? teamsRes.data : []);
-        setRegistrations(Array.isArray(registrationsRes.data) ? registrationsRes.data : []);
+        setRegistrations(
+          Array.isArray(registrationsRes.data) ? registrationsRes.data : [],
+        );
       } catch (err) {
         setError(err.message);
       } finally {
@@ -83,26 +137,67 @@ export default function OrganizerTeams() {
     loadData();
   }, [user]);
 
-  const getTeamName = (id) => teams.find((item) => item.id === id)?.emertimi || "N/A";
+  /**
+   * Looks up a team's display name by its ID.
+   * @param {number} id - The team ID
+   * @returns {string} The team name or "N/A" if not found
+   */
+  const getTeamName = (id) =>
+    teams.find((item) => item.id === id)?.emertimi || "N/A";
+
+  /**
+   * Returns the team name for a registration, preferring the denormalized
+   * field on the registration object and falling back to a lookup by ID.
+   *
+   * @param {Object} registration - The tournament registration record
+   * @returns {string} The resolved team name
+   */
   const getRegistrationTeamName = (registration) =>
     registration.ekipi_emri || getTeamName(registration.ekipi_id);
+
+  /**
+   * Returns the tournament name for a registration, preferring the denormalized
+   * field on the registration object and falling back to the tournament's own name.
+   *
+   * @param {Object} registration - The tournament registration record
+   * @param {Object|undefined} tournament - The parent tournament object
+   * @returns {string} The resolved tournament name or "N/A"
+   */
   const getRegistrationTournamentName = (registration, tournament) =>
     registration.turneu_emri || tournament?.emertimi || "N/A";
 
+  /**
+   * Generic change handler for the search and status filter inputs.
+   * Updates the corresponding key in the filters state object.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLSelectElement>} e - The DOM change event
+   */
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
+  /** Resets all filter fields (search text and status dropdown) back to their defaults. */
   const handleClearFilters = () => {
     setFilters({ search: "", statusi: "" });
   };
 
-  const hasActiveFilters = filters.search.trim() !== "" || filters.statusi !== "";
+  const hasActiveFilters =
+    filters.search.trim() !== "" || filters.statusi !== "";
 
+  /**
+   * Determines whether a single registration record passes the current search
+   * and status filters. Concatenates team name, tournament name, status, and fee
+   * into one searchable string and checks for substring matches.
+   *
+   * @param {Object} registration - The registration record to test
+   * @param {Object} tournament - The parent tournament of the registration
+   * @returns {boolean} true if the registration matches all active filters
+   */
   const registrationMatchesFilters = (registration, tournament) => {
     const query = filters.search.trim().toLowerCase();
-    const matchesStatus = !filters.statusi || registration.statusi === filters.statusi;
+    const matchesStatus =
+      !filters.statusi || registration.statusi === filters.statusi;
 
     const searchableText = [
       getRegistrationTeamName(registration),
@@ -117,6 +212,8 @@ export default function OrganizerTeams() {
     return matchesStatus && (!query || searchableText.includes(query));
   };
 
+  // Groups registrations by tournament and applies the active filters.
+  // Empty tournament sections are hidden when any filter is active.
   const filteredTournamentSections = tournaments
     .map((tournament) => {
       const tournamentRegistrations = registrations.filter(
@@ -132,7 +229,13 @@ export default function OrganizerTeams() {
     })
     .filter(({ items }) => !hasActiveFilters || items.length > 0);
 
-  const selectedTournaments = tournaments.find((item) => String(item.id) === String(formData.turneu_id));
+  // Finds the tournament object currently selected in the form
+  const selectedTournaments = tournaments.find(
+    (item) => String(item.id) === String(formData.turneu_id),
+  );
+
+  // Derives the list of teams eligible for registration: must play the same sport as the
+  // selected tournament and must not already be registered in that tournament.
   const availableTeams = teams.filter((team) => {
     if (!selectedTournaments) return false;
 
@@ -142,9 +245,18 @@ export default function OrganizerTeams() {
         registration.ekipi_id === team.id,
     );
 
-    return team.sporti_id === selectedTournaments.sporti_id && !alreadyRegistered;
+    return (
+      team.sporti_id === selectedTournaments.sporti_id && !alreadyRegistered
+    );
   });
 
+  /**
+   * Handles the "Add Team" form submission.
+   * Validates the form against the Yup schema, posts a new tournament registration
+   * to the API, appends the new record to local state, and closes the modal.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -161,7 +273,10 @@ export default function OrganizerTeams() {
       setRegistrations((prev) => [...prev, response.data]);
       setShowModal(false);
       resetForm();
-      setAlert({ type: "success", message: "Team added to tournament successfully!" });
+      setAlert({
+        type: "success",
+        message: "Team added to tournament successfully!",
+      });
     } catch (err) {
       if (err.inner) {
         const validationErrors = {};
@@ -170,16 +285,29 @@ export default function OrganizerTeams() {
         });
         setFormErrors(validationErrors);
       } else {
-        setAlert({ type: "error", message: "Error adding team: " + err.message });
+        setAlert({
+          type: "error",
+          message: "Error adding team: " + err.message,
+        });
       }
     }
   };
+  /**
+   * Closes the edit modal and resets all related state (form data, errors,
+   * selected registration) so the modal is clean for the next use.
+   */
   const handleCloseEditModal = () => {
     setFormData(initialFormData);
     setFormErrors({});
     setSelectedRegistration(null);
     setShowEditModal(false);
-  }
+  };
+  /**
+   * Populates the edit form with an existing registration's data and opens the
+   * edit modal. ID values are converted to strings for the select elements.
+   *
+   * @param {number} id - The registration ID to edit
+   */
   const handleEdit = (id) => {
     const registration = registrations.find((item) => item.id === id);
     if (registration) {
@@ -193,6 +321,13 @@ export default function OrganizerTeams() {
       setShowEditModal(true);
     }
   };
+  /**
+   * Handles the "Edit Team" form submission.
+   * Validates the updated data against the Yup schema, sends a PUT request to the API,
+   * replaces the stale registration record in local state, and closes the modal.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
+   */
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!selectedRegistration) return;
@@ -200,16 +335,19 @@ export default function OrganizerTeams() {
     try {
       await registrationUpdateSchema.validate(formData, { abortEarly: false });
 
-      const response = await api.put(`/tournament-registrations/${selectedRegistration.id}`, {
-        turneu_id: Number(formData.turneu_id),
-        ekipi_id: Number(formData.ekipi_id),
-        statusi: formData.statusi,
-        tarifa_paguar: Number(formData.tarifa_paguar || 0),
-      });
+      const response = await api.put(
+        `/tournament-registrations/${selectedRegistration.id}`,
+        {
+          turneu_id: Number(formData.turneu_id),
+          ekipi_id: Number(formData.ekipi_id),
+          statusi: formData.statusi,
+          tarifa_paguar: Number(formData.tarifa_paguar || 0),
+        },
+      );
       setRegistrations((prev) =>
         prev.map((item) =>
-          item.id === selectedRegistration.id ? response.data : item
-        )
+          item.id === selectedRegistration.id ? response.data : item,
+        ),
       );
       setSelectedRegistration(null);
       setShowEditModal(false);
@@ -223,27 +361,47 @@ export default function OrganizerTeams() {
         });
         setFormErrors(validationErrors);
       } else {
-        setAlert({ type: "error", message: "Error updating team: " + err.message });
+        setAlert({
+          type: "error",
+          message: "Error updating team: " + err.message,
+        });
       }
     }
   };
 
+  /**
+   * Selects a registration for deletion and opens the delete confirmation modal.
+   *
+   * @param {number} id - The registration ID to delete
+   */
   const handleDelete = (id) => {
     const registration = registrations.find((item) => item.id === id);
     setSelectedRegistration(registration || null);
     setShowDeleteModal(true);
   };
+  /**
+   * Confirms deletion of the selected registration by calling the API DELETE endpoint.
+   * On success, removes the record from local state and closes the modal.
+   */
   const handleDeleteConfirm = async () => {
     if (!selectedRegistration?.id) return;
     try {
       // Removes a team from the tournament by deleting the registration record.
       await api.delete(`/tournament-registrations/${selectedRegistration.id}`);
-      setRegistrations((prev) => prev.filter((item) => item.id !== selectedRegistration.id));
+      setRegistrations((prev) =>
+        prev.filter((item) => item.id !== selectedRegistration.id),
+      );
       setShowDeleteModal(false);
       setSelectedRegistration(null);
-      setAlert({ type: "success", message: "Team removed from tournament successfully!" });
+      setAlert({
+        type: "success",
+        message: "Team removed from tournament successfully!",
+      });
     } catch (err) {
-      setAlert({ type: "error", message: "Error removing team: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error removing team: " + err.message,
+      });
     }
   };
 
@@ -252,24 +410,41 @@ export default function OrganizerTeams() {
   }
 
   if (loading) {
-    return <div className="delay-skeleton">
-      <TableSkeleton />
-    </div>;
+    return (
+      <div className="delay-skeleton">
+        <TableSkeleton />
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="rounded-xl bg-white p-6 text-sm text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400">Error: {error}</div>;
+    return (
+      <div className="rounded-xl bg-white p-6 text-sm text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400">
+        Error: {error}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      {alert && <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />}
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
 
+      {/* Teams Table */}
       <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-slate-900 dark:border dark:border-slate-800">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Tournament Teams</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">Register teams only to the tournaments assigned to you.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
+              Tournament Teams
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
+              Register teams only to the tournaments assigned to you.
+            </p>
           </div>
           <button
             onClick={() => {
@@ -297,6 +472,7 @@ export default function OrganizerTeams() {
             />
           </div>
 
+          {/* Filter Options */}
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative min-w-[220px]">
               <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
@@ -332,6 +508,7 @@ export default function OrganizerTeams() {
               </div>
             </div>
 
+            {/* Clear Filters Button */}
             {hasActiveFilters && (
               <button
                 type="button"
@@ -351,73 +528,98 @@ export default function OrganizerTeams() {
             </div>
           ) : (
             filteredTournamentSections.map(({ tournament, items }) => (
-              <div key={tournament.id} className="rounded-lg border border-gray-200 dark:border-slate-800 dark:bg-slate-900">
-                  <div className="border-b border-gray-200 px-4 py-3 dark:border-slate-800">
-                    <h2 className="font-semibold text-gray-900 dark:text-slate-100">{tournament.emertimi}</h2>
-                  </div>
+              <div
+                key={tournament.id}
+                className="rounded-lg border border-gray-200 dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="border-b border-gray-200 px-4 py-3 dark:border-slate-800">
+                  <h2 className="font-semibold text-gray-900 dark:text-slate-100">
+                    {tournament.emertimi}
+                  </h2>
+                </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left">
-                      <thead className="bg-gray-50 text-sm text-gray-700 dark:bg-slate-800 dark:text-slate-200">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left">
+                    <thead className="bg-gray-50 text-sm text-gray-700 dark:bg-slate-800 dark:text-slate-200">
+                      <tr>
+                        <th className="px-4 py-3">Team</th>
+                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3">Fee Paid</th>
+                        <th className="px-4 py-3 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
+                      {items.length === 0 ? (
                         <tr>
-                          <th className="px-4 py-3">Team</th>
-                          <th className="px-4 py-3">Status</th>
-                          <th className="px-4 py-3">Fee Paid</th>
-                          <th className="px-4 py-3 text-center">Actions</th>
+                          <td
+                            colSpan="4"
+                            className="px-4 py-6 text-center text-gray-500 dark:text-slate-400"
+                          >
+                            No teams registered yet.
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-                        {items.length === 0 ? (
-                          <tr>
-                            <td colSpan="4" className="px-4 py-6 text-center text-gray-500 dark:text-slate-400">
-                              No teams registered yet.
+                      ) : (
+                        items.map((item) => (
+                          <tr key={item.id}>
+                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">
+                              {getRegistrationTeamName(item)}
+                            </td>
+                            <td className="px-4 py-3 text-gray-700 dark:text-slate-200">
+                              {item.statusi}
+                            </td>
+                            <td className="px-4 py-3 text-gray-700 dark:text-slate-200">
+                              {Number(item.tarifa_paguar || 0).toFixed(2)} EUR
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEdit(item.id)}
+                                  className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
+                                  title="edit"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item.id)}
+                                  className="rounded bg-red-500 p-2 text-sm font-medium text-white"
+                                  title="delete"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
-                        ) : (
-                          items.map((item) => (
-                            <tr key={item.id}>
-                              <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">{getRegistrationTeamName(item)}</td>
-                              <td className="px-4 py-3 text-gray-700 dark:text-slate-200">{item.statusi}</td>
-                              <td className="px-4 py-3 text-gray-700 dark:text-slate-200">{Number(item.tarifa_paguar || 0).toFixed(2)} EUR</td>
-                              <td className="px-4 py-3">
-                                <div className="flex justify-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleEdit(item.id)}
-                                    className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded text-sm font-medium transition duration-200"
-                                    title="edit"
-                                  >
-                                    <Edit size={16} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(item.id)}
-                                    className="rounded bg-red-500 p-2 text-sm font-medium text-white"
-                                    title="delete"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ))
           )}
         </div>
       </div>
 
+      {/* Add Team Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
-          <div className="w-full max-w-2xl rounded-xl bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-slate-100">Add Team To Tournament</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-xl bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-6 text-2xl font-bold text-gray-900 dark:text-slate-100">
+              Add Team To Tournament
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Tournament</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Tournament
+                  </span>
                   <select
                     name="turneu_id"
                     value={formData.turneu_id}
@@ -442,17 +644,24 @@ export default function OrganizerTeams() {
                     ))}
                   </select>
                   {formErrors.turneu_id && (
-                    <p className="text-red-500 text-xs">{formErrors.turneu_id}</p>
+                    <p className="text-red-500 text-xs">
+                      {formErrors.turneu_id}
+                    </p>
                   )}
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Team</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Team
+                  </span>
                   <select
                     name="ekipi_id"
                     value={formData.ekipi_id}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, ekipi_id: e.target.value }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        ekipi_id: e.target.value,
+                      }));
                       if (formErrors.ekipi_id) {
                         setFormErrors((prev) => ({ ...prev, ekipi_id: "" }));
                       }
@@ -468,17 +677,24 @@ export default function OrganizerTeams() {
                     ))}
                   </select>
                   {formErrors.ekipi_id && (
-                    <p className="text-red-500 text-xs">{formErrors.ekipi_id}</p>
+                    <p className="text-red-500 text-xs">
+                      {formErrors.ekipi_id}
+                    </p>
                   )}
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Status</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Status
+                  </span>
                   <select
                     name="statusi"
                     value={formData.statusi}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, statusi: e.target.value }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        statusi: e.target.value,
+                      }));
                       if (formErrors.statusi) {
                         setFormErrors((prev) => ({ ...prev, statusi: "" }));
                       }
@@ -496,35 +712,53 @@ export default function OrganizerTeams() {
                   )}
                 </label>
 
+                {/* Fee Paid */}
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Fee Paid</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Fee Paid
+                  </span>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={formData.tarifa_paguar}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, tarifa_paguar: e.target.value }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        tarifa_paguar: e.target.value,
+                      }));
                       if (formErrors.tarifa_paguar) {
-                        setFormErrors((prev) => ({ ...prev, tarifa_paguar: "" }));
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          tarifa_paguar: "",
+                        }));
                       }
                     }}
                     className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.tarifa_paguar ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                   />
                   {formErrors.tarifa_paguar && (
-                    <p className="text-red-500 text-xs">{formErrors.tarifa_paguar}</p>
+                    <p className="text-red-500 text-xs">
+                      {formErrors.tarifa_paguar}
+                    </p>
                   )}
                 </label>
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button type="submit" className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white"
+                >
                   Add Team
                 </button>
-                <button type="button" onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }} className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    resetForm();
+                  }}
+                  className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white"
+                >
                   Cancel
                 </button>
               </div>
@@ -532,19 +766,34 @@ export default function OrganizerTeams() {
           </div>
         </div>
       )}
+
+      {/* Edit Team Modal */}
       {showEditModal && selectedRegistration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={handleCloseEditModal}>
-          <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-slate-100">Edit Team</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={handleCloseEditModal}
+        >
+          <div
+            className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-slate-100">
+              Edit Team
+            </h2>
             <form onSubmit={handleEditSubmit}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Tournament</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Tournament
+                  </span>
                   <select
                     name="turneu_id"
                     value={formData.turneu_id}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, turneu_id: e.target.value }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        turneu_id: e.target.value,
+                      }));
                       if (formErrors.turneu_id) {
                         setFormErrors((prev) => ({ ...prev, turneu_id: "" }));
                       }
@@ -560,17 +809,25 @@ export default function OrganizerTeams() {
                     ))}
                   </select>
                   {formErrors.turneu_id && (
-                    <p className="text-red-500 text-xs">{formErrors.turneu_id}</p>
+                    <p className="text-red-500 text-xs">
+                      {formErrors.turneu_id}
+                    </p>
                   )}
                 </label>
 
+                {/* Team */}
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Team</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Team
+                  </span>
                   <select
                     name="ekipi_id"
                     value={formData.ekipi_id}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, ekipi_id: e.target.value }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        ekipi_id: e.target.value,
+                      }));
                       if (formErrors.ekipi_id) {
                         setFormErrors((prev) => ({ ...prev, ekipi_id: "" }));
                       }
@@ -586,17 +843,24 @@ export default function OrganizerTeams() {
                     ))}
                   </select>
                   {formErrors.ekipi_id && (
-                    <p className="text-red-500 text-xs">{formErrors.ekipi_id}</p>
+                    <p className="text-red-500 text-xs">
+                      {formErrors.ekipi_id}
+                    </p>
                   )}
                 </label>
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Status</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Status
+                  </span>
                   <select
                     name="statusi"
                     value={formData.statusi}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, statusi: e.target.value }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        statusi: e.target.value,
+                      }));
                       if (formErrors.statusi) {
                         setFormErrors((prev) => ({ ...prev, statusi: "" }));
                       }
@@ -614,32 +878,50 @@ export default function OrganizerTeams() {
                   )}
                 </label>
 
+                {/* Fee Paid */}
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Fee Paid</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    Fee Paid
+                  </span>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={formData.tarifa_paguar}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, tarifa_paguar: e.target.value }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        tarifa_paguar: e.target.value,
+                      }));
                       if (formErrors.tarifa_paguar) {
-                        setFormErrors((prev) => ({ ...prev, tarifa_paguar: "" }));
+                        setFormErrors((prev) => ({
+                          ...prev,
+                          tarifa_paguar: "",
+                        }));
                       }
                     }}
                     className={`rounded-lg border px-3 py-2 bg-white text-gray-900 dark:bg-slate-900 dark:text-slate-100 ${formErrors.tarifa_paguar ? "border-red-500" : "border-gray-300 dark:border-slate-700"}`}
                   />
                   {formErrors.tarifa_paguar && (
-                    <p className="text-red-500 text-xs">{formErrors.tarifa_paguar}</p>
+                    <p className="text-red-500 text-xs">
+                      {formErrors.tarifa_paguar}
+                    </p>
                   )}
                 </label>
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button type="submit" className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white"
+                >
                   Update Team
                 </button>
-                <button type="button" onClick={handleCloseEditModal} className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white">
+                <button
+                  type="button"
+                  onClick={handleCloseEditModal}
+                  className="flex-1 rounded-lg bg-gray-400 px-4 py-2 font-semibold text-white"
+                >
                   Cancel
                 </button>
               </div>
@@ -647,12 +929,23 @@ export default function OrganizerTeams() {
           </div>
         </div>
       )}
+
+      {/* Delete Team Modal */}
       {showDeleteModal && selectedRegistration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}>
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
-            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-slate-100">Delete Team</h2>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-slate-100">
+              Delete Team
+            </h2>
             <p className="mb-6 text-gray-600 dark:text-slate-300">
-              Are you sure you want to delete {getTeamName(selectedRegistration.ekipi_id)} from this tournament?
+              Are you sure you want to delete{" "}
+              {getTeamName(selectedRegistration.ekipi_id)} from this tournament?
             </p>
             <div className="flex gap-3">
               <button

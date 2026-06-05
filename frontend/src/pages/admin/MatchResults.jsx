@@ -3,9 +3,18 @@ import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import * as yup from "yup";
 import api from "../../config/axiosInstance";
 import AuthContext from "../../context/AuthContext";
-import { Award, Plus, Search, Edit, Trash2, Spotlight, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Award,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Spotlight,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Alert } from "../../components/Alert";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 // Format data from ISO String to readable format
 const formatDate = (isoDate) => {
@@ -22,21 +31,29 @@ const formatDate = (isoDate) => {
 };
 
 const sportTerms = {
-    "Futboll": { home: "Home Goals", away: "Away Goals"},
-    "Basketboll": { home: "Home Points", away: "Away Points"},
-    "Volejboll": { home: "Home Sets", away: "Away Sets"},
-    "Futsal": { home: "Home Goals", away: "Away Goals"},
-    "Hendboll": { home: "Home Goals", away: "Away Goals"},
-  };
+  Futboll: { home: "Home Goals", away: "Away Goals" },
+  Basketboll: { home: "Home Points", away: "Away Points" },
+  Volejboll: { home: "Home Sets", away: "Away Sets" },
+  Futsal: { home: "Home Goals", away: "Away Goals" },
+  Hendboll: { home: "Home Goals", away: "Away Goals" },
+};
 
-  const getTerms = (match) => {
-    return sportTerms[match?.sport_emri] || { home: "Home Score", away: "Away Score" }
-  };
+const getTerms = (match) => {
+  return (
+    sportTerms[match?.sport_emri] || { home: "Home Score", away: "Away Score" }
+  );
+};
 
 const matchResultCreateSchema = yup.object().shape({
   ndeshja_id: yup.string().required("Match is required"),
-  golat_shtepiak: yup.number().min(0, "Home score must be 0 or higher").required("Home score is required"),
-  golat_mysafir: yup.number().min(0, "Away score must be 0 or higher").required("Away score is required"),
+  golat_shtepiak: yup
+    .number()
+    .min(0, "Home score must be 0 or higher")
+    .required("Home score is required"),
+  golat_mysafir: yup
+    .number()
+    .min(0, "Away score must be 0 or higher")
+    .required("Away score is required"),
   fitues_id: yup.string().nullable(),
   shenime: yup.string(),
   mvp_id: yup.string().nullable(),
@@ -100,7 +117,11 @@ export default function MatchResults() {
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [filters, setFilters] = useState({ fromDate: "", toDate: "", search: "" });
+  const [filters, setFilters] = useState({
+    fromDate: "",
+    toDate: "",
+    search: "",
+  });
   const [formData, setFormData] = useState({
     ndeshja_id: "",
     golat_shtepiak: "",
@@ -167,7 +188,7 @@ export default function MatchResults() {
           api.get(`/teams`),
           api.get(`/players`),
           api.get(`/match-referees`),
-          api.get(`/referees`)
+          api.get(`/referees`),
         ]);
 
         const matchesData = matchesResponse.data;
@@ -217,12 +238,15 @@ export default function MatchResults() {
     loadMatchResultsPage(1, resetFilters);
   };
 
-  const hasActiveFilters = filters.fromDate !== "" || filters.toDate !== "" || filters.search !== "";
+  const hasActiveFilters =
+    filters.fromDate !== "" || filters.toDate !== "" || filters.search !== "";
 
   // Implements debounced search like in users.jsx
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFilters((prev) => (prev.search === searchQuery ? prev : { ...prev, search: searchQuery }));
+      setFilters((prev) =>
+        prev.search === searchQuery ? prev : { ...prev, search: searchQuery },
+      );
       if (searchQuery !== filters.search) {
         setPage(1);
       }
@@ -296,7 +320,10 @@ export default function MatchResults() {
       setFormErrors({});
 
       setShowModal(false);
-      setAlert({ type: "success", message: "Match result created successfully!" });
+      setAlert({
+        type: "success",
+        message: "Match result created successfully!",
+      });
       await loadMatchResultsPage(page, filters);
     } catch (err) {
       if (err.inner) {
@@ -306,7 +333,10 @@ export default function MatchResults() {
         });
         setFormErrors(validationErrors);
       } else {
-        setAlert({ type: "error", message: "Error creating match result: " + err.message });
+        setAlert({
+          type: "error",
+          message: "Error creating match result: " + err.message,
+        });
       }
     }
   };
@@ -373,7 +403,10 @@ export default function MatchResults() {
 
     try {
       await matchResultUpdateSchema.validate(formData, { abortEarly: false });
-      await api.put(`/match-results/${selectedMatchResult.id}`, buildMatchResultPayload())
+      await api.put(
+        `/match-results/${selectedMatchResult.id}`,
+        buildMatchResultPayload(),
+      );
 
       setFormData({
         ndeshja_id: "",
@@ -387,7 +420,10 @@ export default function MatchResults() {
       setFormErrors({});
       setShowEditModal(false);
       setSelectedMatchResult(null);
-      setAlert({ type: "success", message: "Match result updated successfully!" });
+      setAlert({
+        type: "success",
+        message: "Match result updated successfully!",
+      });
       await loadMatchResultsPage(page, filters);
     } catch (err) {
       if (err.inner) {
@@ -397,7 +433,10 @@ export default function MatchResults() {
         });
         setFormErrors(validationErrors);
       } else {
-        setAlert({ type: "error", message: "Error updating match result: " + err.message });
+        setAlert({
+          type: "error",
+          message: "Error updating match result: " + err.message,
+        });
       }
     }
   };
@@ -410,10 +449,16 @@ export default function MatchResults() {
 
       setSelectedMatchResult(null);
       setShowDeleteModal(false);
-      setAlert({ type: "success", message: "Match result deleted successfully!" });
+      setAlert({
+        type: "success",
+        message: "Match result deleted successfully!",
+      });
       await loadMatchResultsPage(page, filters);
     } catch (err) {
-      setAlert({ type: "error", message: "Error deleting match result: " + err.message });
+      setAlert({
+        type: "error",
+        message: "Error deleting match result: " + err.message,
+      });
     }
   };
 
@@ -540,14 +585,19 @@ export default function MatchResults() {
         />
       )}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">Match Results</h2>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-6">
+          Match Results
+        </h2>
 
         <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
           <div className="flex flex-col lg:flex-row lg:items-end gap-4">
             {/* Search Input */}
             <div className="relative flex-1 min-w-[220px]">
               <div className="hidden lg:block text-xs mb-1" aria-hidden="true">
-                <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                <Search
+                  size={18}
+                  className="text-gray-400 dark:text-gray-500"
+                />
               </div>
               <input
                 type="text"
@@ -559,7 +609,9 @@ export default function MatchResults() {
             </div>
 
             <div className="relative flex-1 min-w-[160px] sm:flex-none">
-              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">From Date</label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
+                From Date
+              </label>
               <input
                 type="date"
                 name="fromDate"
@@ -570,7 +622,9 @@ export default function MatchResults() {
             </div>
 
             <div className="relative flex-1 min-w-[160px] sm:flex-none">
-              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">To Date</label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-slate-400 mb-1">
+                To Date
+              </label>
               <input
                 type="date"
                 name="toDate"
@@ -589,20 +643,22 @@ export default function MatchResults() {
             </button>
           </div>
           {hasActiveFilters && (
-              <button
-                onClick={handleClearFilters}
-                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
-              >
-                Clear Filters
-              </button>
-            )}
+            <button
+              onClick={handleClearFilters}
+              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
       </div>
 
       {/* Match Cards Grid */}
       {filteredMatches.length === 0 ? (
         <div className="text-center py-12 bg-white dark:bg-slate-950 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
-          <p className="text-gray-500 dark:text-slate-400">No match results found.</p>
+          <p className="text-gray-500 dark:text-slate-400">
+            No match results found.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
@@ -690,19 +746,21 @@ export default function MatchResults() {
           </button>
 
           <div className="flex items-center gap-1">
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
-              <button
-                key={pageNum}
-                onClick={() => setPage(pageNum)}
-                className={`px-3 py-2 rounded-lg font-medium transition-all ${
-                  page === pageNum
-                    ? "bg-blue-600 text-white"
-                    : "bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
-                }`}
-              >
-                {pageNum}
-              </button>
-            ))}
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-2 rounded-lg font-medium transition-all ${
+                    page === pageNum
+                      ? "bg-blue-600 text-white"
+                      : "bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ),
+            )}
           </div>
 
           <button
@@ -715,7 +773,8 @@ export default function MatchResults() {
           </button>
 
           <div className="w-full text-center text-sm text-gray-600 dark:text-slate-400 mt-4">
-            Page {pagination.page} of {pagination.totalPages} • Total: {pagination.total} results
+            Page {pagination.page} of {pagination.totalPages} • Total:{" "}
+            {pagination.total} results
           </div>
         </div>
       )}
@@ -773,7 +832,7 @@ export default function MatchResults() {
                     name="ndeshja_id"
                     value={formData.ndeshja_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   >
                     <option value="">Pick finished match</option>
@@ -785,7 +844,11 @@ export default function MatchResults() {
                       </option>
                     ))}
                   </select>
-                  {formErrors.ndeshja_id && <p className="text-sm text-red-500 mt-1">{formErrors.ndeshja_id}</p>}
+                  {formErrors.ndeshja_id && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.ndeshja_id}
+                    </p>
+                  )}
                   {eligibleMatches.length === 0 && (
                     <p className="text-xs text-amber-600 mt-2">
                       No finished matches available.
@@ -803,11 +866,15 @@ export default function MatchResults() {
                     name="golat_shtepiak"
                     value={formData.golat_shtepiak}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder={terms.home}
                     required
                   />
-                  {formErrors.golat_shtepiak && <p className="text-sm text-red-500 mt-1">{formErrors.golat_shtepiak}</p>}
+                  {formErrors.golat_shtepiak && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.golat_shtepiak}
+                    </p>
+                  )}
                 </div>
 
                 {/* Golat vizitor */}
@@ -821,14 +888,16 @@ export default function MatchResults() {
                     name="golat_mysafir"
                     value={formData.golat_mysafir}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder={terms.away}
                     required
                   />
-                  {formErrors.golat_mysafir && <p className="text-sm text-red-500 mt-1">{formErrors.golat_mysafir}</p>}
+                  {formErrors.golat_mysafir && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.golat_mysafir}
+                    </p>
+                  )}
                 </div>
-
-                
 
                 {/* Fituesi id */}
                 <div>
@@ -860,10 +929,14 @@ export default function MatchResults() {
                     name="shenime"
                     value={formData.shenime}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.shenime ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.shenime ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder="Notes"
                   />
-                  {formErrors.shenime && <p className="text-sm text-red-500 mt-1">{formErrors.shenime}</p>}
+                  {formErrors.shenime && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.shenime}
+                    </p>
+                  )}
                 </div>
                 {/* MVP */}
                 <div>
@@ -875,7 +948,7 @@ export default function MatchResults() {
                     name="mvp_id"
                     value={formData.mvp_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                     placeholder="MVP Player"
                   >
                     <option value="">Select MVP</option>
@@ -885,7 +958,11 @@ export default function MatchResults() {
                       </option>
                     ))}
                   </select>
-                  {formErrors.mvp_id && <p className="text-sm text-red-500 mt-1">{formErrors.mvp_id}</p>}
+                  {formErrors.mvp_id && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.mvp_id}
+                    </p>
+                  )}
                 </div>
               </div>
               {/* Form buttons */}
@@ -963,7 +1040,7 @@ export default function MatchResults() {
                     name="ndeshja_id"
                     value={formData.ndeshja_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.ndeshja_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   >
                     <option value="">Select match</option>
@@ -981,7 +1058,11 @@ export default function MatchResults() {
                         </option>
                       ))}
                   </select>
-                  {formErrors.ndeshja_id && <p className="text-sm text-red-500 mt-1">{formErrors.ndeshja_id}</p>}
+                  {formErrors.ndeshja_id && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.ndeshja_id}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -994,10 +1075,14 @@ export default function MatchResults() {
                     name="golat_shtepiak"
                     value={formData.golat_shtepiak}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.golat_shtepiak ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   />
-                  {formErrors.golat_shtepiak && <p className="text-sm text-red-500 mt-1">{formErrors.golat_shtepiak}</p>}
+                  {formErrors.golat_shtepiak && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.golat_shtepiak}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1010,10 +1095,14 @@ export default function MatchResults() {
                     name="golat_mysafir"
                     value={formData.golat_mysafir}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.golat_mysafir ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                     required
                   />
-                  {formErrors.golat_mysafir && <p className="text-sm text-red-500 mt-1">{formErrors.golat_mysafir}</p>}
+                  {formErrors.golat_mysafir && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.golat_mysafir}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1045,9 +1134,13 @@ export default function MatchResults() {
                     name="shenime"
                     value={formData.shenime}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.shenime ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.shenime ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                   />
-                  {formErrors.shenime && <p className="text-sm text-red-500 mt-1">{formErrors.shenime}</p>}
+                  {formErrors.shenime && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {formErrors.shenime}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1058,7 +1151,7 @@ export default function MatchResults() {
                     name="mvp_id"
                     value={formData.mvp_id}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? 'border-red-500' : 'border-gray-300 dark:border-slate-700'} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
+                    className={`w-full px-4 py-2 border ${formErrors.mvp_id ? "border-red-500" : "border-gray-300 dark:border-slate-700"} rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500`}
                   >
                     <option value="">Select MVP</option>
                     {players.map((player) => (

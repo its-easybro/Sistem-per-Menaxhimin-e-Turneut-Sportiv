@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const MESSAGE_MAX_LENGTH = 500;
 const SUBJECT_MAX_LENGTH = 120;
 
+// Predefined category options for the contact form, each with a label and an associated icon for better visual identification of the type of inquiry.
 const CATEGORY_OPTIONS = [
   { value: "dispute", label: "Dispute", icon: ShieldAlert },
   { value: "upgrade", label: "Role Request", icon: UserPlus },
@@ -14,6 +15,7 @@ const CATEGORY_OPTIONS = [
   { value: "other", label: "General", icon: HelpCircle },
 ];
 
+// Utility function to get the label for a given category value, used to display the selected category in the form and ensure consistency between the value and its human-readable label.
 const getCategoryLabel = (value) => {
   const option = CATEGORY_OPTIONS.find((item) => item.value === value);
   return option ? option.label : "General";
@@ -31,6 +33,7 @@ export default function ContactUs() {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
 
+  // Validation schema using Yup
   const validationSchema = yup.object().shape({
     emri: yup
       .string()
@@ -46,7 +49,10 @@ export default function ContactUs() {
       .required("Category is required"),
     subjekti: yup
       .string()
-      .max(SUBJECT_MAX_LENGTH, `Subject must not exceed ${SUBJECT_MAX_LENGTH} characters`)
+      .max(
+        SUBJECT_MAX_LENGTH,
+        `Subject must not exceed ${SUBJECT_MAX_LENGTH} characters`,
+      )
       .nullable(),
     mesazhi: yup
       .string()
@@ -58,6 +64,7 @@ export default function ContactUs() {
       .required("Message is required"),
   });
 
+  // Handles changes to form inputs, updating the form data state and clearing any existing validation errors for the changed field.
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -66,6 +73,7 @@ export default function ContactUs() {
     }
   };
 
+  // Handles form submission by validating the input data against the defined schema, sending a POST request to the server if validation passes, and managing loading state and error/success messages accordingly.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -76,7 +84,13 @@ export default function ContactUs() {
       await validationSchema.validate(formData, { abortEarly: false });
 
       await api.post("/contactUs", formData);
-      setFormData({ emri: "", email: "", kategoria: "other", subjekti: "", mesazhi: "" });
+      setFormData({
+        emri: "",
+        email: "",
+        kategoria: "other",
+        subjekti: "",
+        mesazhi: "",
+      });
       setAlert({
         type: "success",
         message: "Message sent successfully! We'll get back to you soon.",
@@ -107,10 +121,9 @@ export default function ContactUs() {
       `}</style>
 
       <section className="relative flex flex-col justify-center gap-20 bg-gray-50 px-4 py-20 overflow-hidden md:flex-row dark:bg-slate-950">
-        
         <div className="size-140 pointer-events-none fixed left-1/2 top-1/2 mb-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/20 blur-[200px] dark:bg-emerald-500/25"></div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -121,17 +134,17 @@ export default function ContactUs() {
             Ready to Transform Your Digital Experience?
           </h1>
           <p className="mx-auto mt-4 max-w-[345px] text-sm/6 text-slate-600 md:mx-0 dark:text-slate-300">
-            Let our design team craft a website that elevates your brand. Book a free session today.
+            Let our design team craft a website that elevates your brand. Book a
+            free session today.
           </p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
           className="z-10 w-full max-w-lg rounded-xl border border-slate-200 bg-white/90 p-8 shadow-2xl shadow-slate-200/50 backdrop-blur-sm max-md:mx-auto dark:border-white/10 dark:bg-slate-900/75 dark:shadow-black/20"
         >
-          
           <AnimatePresence>
             {alert && (
               <motion.div
@@ -161,7 +174,9 @@ export default function ContactUs() {
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Name */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Name</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                Name
+              </label>
               <input
                 type="text"
                 name="emri"
@@ -169,19 +184,30 @@ export default function ContactUs() {
                 onChange={handleInputChange}
                 placeholder="Eden Johnson"
                 className={`w-full rounded-lg border bg-slate-50 px-4 py-3 text-slate-900 transition placeholder:text-sm placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-                  errors.emri ? "border-red-500 dark:border-red-500" : "border-slate-300 dark:border-white/10"
+                  errors.emri
+                    ? "border-red-500 dark:border-red-500"
+                    : "border-slate-300 dark:border-white/10"
                 }`}
               />
               <AnimatePresence>
                 {errors.emri && (
-                   <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.emri}</motion.p>
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-1 text-xs text-red-500 dark:text-red-400"
+                  >
+                    {errors.emri}
+                  </motion.p>
                 )}
               </AnimatePresence>
             </div>
 
             {/* Category */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Category</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                Category
+              </label>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {CATEGORY_OPTIONS.map((option) => {
                   const Icon = option.icon;
@@ -192,7 +218,12 @@ export default function ContactUs() {
                       whileTap={{ scale: 0.95 }}
                       key={option.value}
                       type="button"
-                      onClick={() => setFormData((prev) => ({ ...prev, kategoria: option.value }))}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          kategoria: option.value,
+                        }))
+                      }
                       className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
                         isActive
                           ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200"
@@ -207,14 +238,23 @@ export default function ContactUs() {
               </div>
               <AnimatePresence>
                 {errors.kategoria && (
-                   <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.kategoria}</motion.p>
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-1 text-xs text-red-500 dark:text-red-400"
+                  >
+                    {errors.kategoria}
+                  </motion.p>
                 )}
               </AnimatePresence>
             </div>
 
             {/* Subject */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Subject</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                Subject
+              </label>
               <input
                 type="text"
                 name="subjekti"
@@ -223,15 +263,29 @@ export default function ContactUs() {
                 placeholder="Short summary of your request"
                 maxLength={SUBJECT_MAX_LENGTH}
                 className={`w-full rounded-lg border bg-slate-50 px-4 py-3 text-slate-900 transition placeholder:text-sm placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-                  errors.subjekti ? "border-red-500 dark:border-red-500" : "border-slate-300 dark:border-white/10"
+                  errors.subjekti
+                    ? "border-red-500 dark:border-red-500"
+                    : "border-slate-300 dark:border-white/10"
                 }`}
               />
               <div className="mt-2 flex items-start justify-between gap-4">
                 <AnimatePresence>
                   {errors.subjekti ? (
-                    <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.subjekti}</motion.p>
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-1 text-xs text-red-500 dark:text-red-400"
+                    >
+                      {errors.subjekti}
+                    </motion.p>
                   ) : (
-                    <motion.p initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="mt-1 text-xs text-slate-500">
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="mt-1 text-xs text-slate-500"
+                    >
                       Optional, used by the admin inbox.
                     </motion.p>
                   )}
@@ -244,7 +298,9 @@ export default function ContactUs() {
 
             {/* Email */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Email</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                Email
+              </label>
               <input
                 type="email"
                 name="email"
@@ -252,19 +308,30 @@ export default function ContactUs() {
                 onChange={handleInputChange}
                 placeholder="Eden@example.com"
                 className={`w-full rounded-lg border bg-slate-50 px-4 py-3 text-slate-900 transition placeholder:text-sm placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-                  errors.email ? "border-red-500 dark:border-red-500" : "border-slate-300 dark:border-white/10"
+                  errors.email
+                    ? "border-red-500 dark:border-red-500"
+                    : "border-slate-300 dark:border-white/10"
                 }`}
               />
-               <AnimatePresence>
+              <AnimatePresence>
                 {errors.email && (
-                   <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.email}</motion.p>
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-1 text-xs text-red-500 dark:text-red-400"
+                  >
+                    {errors.email}
+                  </motion.p>
                 )}
               </AnimatePresence>
             </div>
 
             {/* Message */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Message</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                Message
+              </label>
               <textarea
                 placeholder="Write your message here..."
                 name="mesazhi"
@@ -273,14 +340,23 @@ export default function ContactUs() {
                 maxLength={MESSAGE_MAX_LENGTH}
                 rows="4"
                 className={`w-full resize-none rounded-lg border bg-slate-50 px-4 py-3 text-slate-900 transition placeholder:text-sm placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-                  errors.mesazhi ? "border-red-500 dark:border-red-500" : "border-slate-300 dark:border-white/10"
+                  errors.mesazhi
+                    ? "border-red-500 dark:border-red-500"
+                    : "border-slate-300 dark:border-white/10"
                 }`}
               ></textarea>
 
               <div className="mt-2 flex items-start justify-between">
                 <AnimatePresence>
                   {errors.mesazhi && (
-                     <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:"auto"}} exit={{opacity:0, height:0}} className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.mesazhi}</motion.p>
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-1 text-xs text-red-500 dark:text-red-400"
+                    >
+                      {errors.mesazhi}
+                    </motion.p>
                   )}
                 </AnimatePresence>
                 <div className="ml-auto mt-1 text-xs text-slate-500">
@@ -293,8 +369,14 @@ export default function ContactUs() {
             <div className="flex items-center justify-between">
               <p className="max-w-3xs text-xs text-slate-500 md:text-sm dark:text-slate-400">
                 By submitting, you agree to our{" "}
-                <span className="font-medium text-slate-800 dark:text-slate-100">Terms</span> and{" "}
-                <span className="font-medium text-slate-800 dark:text-slate-100">Privacy Policy</span>.
+                <span className="font-medium text-slate-800 dark:text-slate-100">
+                  Terms
+                </span>{" "}
+                and{" "}
+                <span className="font-medium text-slate-800 dark:text-slate-100">
+                  Privacy Policy
+                </span>
+                .
               </p>
               <motion.button
                 whileHover={{ scale: 1.05 }}

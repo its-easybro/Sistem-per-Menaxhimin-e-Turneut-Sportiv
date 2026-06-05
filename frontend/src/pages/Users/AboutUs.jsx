@@ -17,11 +17,13 @@ const containerVariants = {
   },
 };
 
+// Variants for individual items to animate from the left with a fade-in effect
 const itemLeftVariants = {
   hidden: { opacity: 0, x: -30 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.5 } },
 };
 
+// Variants for team cards to animate from the bottom with a fade-in effect
 const cardVariants = {
   hidden: { opacity: 0, y: 40 },
   visible: {
@@ -39,6 +41,7 @@ const AboutUs = () => {
         * { font-family: 'Poppins', sans-serif; }
       `}</style>
 
+      {/* About Us Section */}
       <div className="bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -66,6 +69,7 @@ const AboutUs = () => {
             alt="Sports"
           />
 
+          {/* Core Features Section */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -123,6 +127,7 @@ const AboutUs = () => {
           </motion.div>
         </div>
 
+        {/* Meet the Team Section */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -179,6 +184,7 @@ const AboutUs = () => {
                 variants={cardVariants}
                 whileHover={{ y: -10, transition: { duration: 0.2 } }}
               >
+                {/* Team Member Card */}
                 <TeamCard
                   image={member.img}
                   name={member.name}

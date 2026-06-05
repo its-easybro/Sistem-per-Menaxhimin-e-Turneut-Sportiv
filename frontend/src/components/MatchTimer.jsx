@@ -18,7 +18,7 @@ export default function MatchTimer({ match }) {
     >
       <Clock size={14} />
       {/* Show a finished message after the configured match duration is reached. */}
-      {isFinished ? "Koha mbaroi" : display}
+      {isFinished ? "Time Finished" : display}
     </span>
   );
 }

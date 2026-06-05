@@ -17,7 +17,7 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 // Format date from ISO string to readable format (DD/MM/YYYY)
 const formatDate = (isoDate) => {
@@ -33,6 +33,7 @@ const formatDate = (isoDate) => {
   }
 };
 
+// Extracts a subject line from the message content, using the first non-empty line or a default if none found.
 const getMessageSubject = (message) => {
   if (!message) return "No subject";
   const firstLine = message
@@ -44,18 +45,23 @@ const getMessageSubject = (message) => {
 };
 
 const getCategoryValue = (message) => {
-  return String(message?.kategoria || message?.category || "other").toLowerCase();
+  return String(
+    message?.kategoria || message?.category || "other",
+  ).toLowerCase();
 };
 
+// Returns a styled badge component based on the message category, with appropriate colors and icons for each category type.
 const getCategoryBadge = (category) => {
   const styles = {
     dispute: {
-      color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400",
+      color:
+        "text-orange-600 bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400",
       icon: ShieldAlert,
       label: "Dispute",
     },
     upgrade: {
-      color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400",
+      color:
+        "text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400",
       icon: UserPlus,
       label: "Role Request",
     },
@@ -103,43 +109,54 @@ export default function AdminContactUs() {
   const [page, setPage] = useState(1);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchMessages = useCallback(async (pageNum, tab, search) => {
-    if (!user?.is_admin) {
-      setLoading(false);
-      return;
-    }
+  // Fetch message data from the server with pagination, filtering by read/unread status, and search functionality.
+  const fetchMessages = useCallback(
+    async (pageNum, tab, search) => {
+      if (!user?.is_admin) {
+        setLoading(false);
+        return;
+      }
 
-    try {
-      setLoading(true);
-      setError("");
+      try {
+        setLoading(true);
+        setError("");
 
-      const params = {
-        page: pageNum,
-        limit: 10,
-        status: tab,
-      };
-      const trimmedSearch = search.trim();
+        const params = {
+          page: pageNum,
+          limit: 10,
+          status: tab,
+        };
+        const trimmedSearch = search.trim();
 
-      if (trimmedSearch) params.search = trimmedSearch;
+        if (trimmedSearch) params.search = trimmedSearch;
+        const response = await api.get("/contactUs", { params });
+        const messagePayload = response.data;
+        const messageData = Array.isArray(messagePayload)
+          ? messagePayload
+          : (messagePayload?.data ?? []);
+        const paginationData = Array.isArray(messagePayload)
+          ? null
+          : (messagePayload?.pagination ?? null);
 
-      const response = await api.get("/contactUs", { params });
-      const messagePayload = response.data;
-      const messageData = Array.isArray(messagePayload)
-        ? messagePayload
-        : messagePayload?.data ?? [];
-      const paginationData = Array.isArray(messagePayload)
-        ? null
-        : messagePayload?.pagination ?? null;
-
-      setMessages(Array.isArray(messageData) ? messageData : []);
-      setPagination(paginationData);
-      setUnreadCount(Array.isArray(messagePayload) ? 0 : messagePayload?.unreadCount ?? 0);
-    } catch (err) {
-      setError(err?.response?.data?.error || err.message || "Failed to fetch messages");
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+        setMessages(Array.isArray(messageData) ? messageData : []);
+        setPagination(paginationData);
+        setUnreadCount(
+          Array.isArray(messagePayload)
+            ? 0
+            : (messagePayload?.unreadCount ?? 0),
+        );
+      } catch (err) {
+        setError(
+          err?.response?.data?.error ||
+            err.message ||
+            "Failed to fetch messages",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user],
+  );
 
   useEffect(() => {
     fetchMessages(page, activeTab, debouncedSearch);
@@ -169,9 +186,12 @@ export default function AdminContactUs() {
       } else {
         await fetchMessages(page, activeTab, debouncedSearch);
       }
-      setAlert({ type: 'success', message: 'Message marked as read!' });
+      setAlert({ type: "success", message: "Message marked as read!" });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error marking as read: ' + err.message });
+      setAlert({
+        type: "error",
+        message: "Error marking as read: " + err.message,
+      });
     }
   };
 
@@ -201,9 +221,12 @@ export default function AdminContactUs() {
       }
       setShowDeleteModal(false);
       setSelectedMessage(null);
-      setAlert({ type: 'success', message: 'Message deleted successfully!' });
+      setAlert({ type: "success", message: "Message deleted successfully!" });
     } catch (err) {
-      setAlert({ type: 'error', message: 'Error deleting message: ' + err.message });
+      setAlert({
+        type: "error",
+        message: "Error deleting message: " + err.message,
+      });
     }
   };
 
@@ -242,6 +265,7 @@ export default function AdminContactUs() {
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        {/* Search */}
         <div>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-slate-100 flex items-center gap-3">
             Support Inbox
@@ -272,6 +296,7 @@ export default function AdminContactUs() {
 
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
         <div className="flex border-b border-gray-200 dark:border-slate-800">
+          {/* Unread Tab */}
           <button
             onClick={() => {
               setActiveTab("unread");
@@ -291,6 +316,7 @@ export default function AdminContactUs() {
             )}
           </button>
 
+          {/* Read Tab */}
           <button
             onClick={() => {
               setActiveTab("read");
@@ -311,6 +337,7 @@ export default function AdminContactUs() {
           </button>
         </div>
 
+        {/* Message List */}
         <div className="divide-y divide-gray-100 dark:divide-slate-800/60">
           {messages.length === 0 ? (
             <div className="p-12 text-center text-gray-500 dark:text-slate-400">
@@ -330,6 +357,7 @@ export default function AdminContactUs() {
               const category = getCategoryValue(msg);
 
               return (
+                // Message Item
                 <div
                   key={msg.id}
                   onClick={() => setExpandedId(isExpanded ? null : msg.id)}
@@ -363,6 +391,7 @@ export default function AdminContactUs() {
                       </h4>
                     </div>
 
+                    {/* Message Details */}
                     <div className="flex items-center gap-4 shrink-0">
                       <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 dark:text-slate-500">
                         <Clock size={14} />
@@ -414,6 +443,7 @@ export default function AdminContactUs() {
         </div>
       </div>
 
+      {/* Pagination */}
       {pagination && (
         <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
           <div className="flex flex-1 justify-between sm:hidden">
@@ -436,18 +466,32 @@ export default function AdminContactUs() {
           <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-slate-400">
-                Page <span className="font-semibold text-gray-900 dark:text-white">{page}</span> from{" "}
-                <span className="font-semibold text-gray-900 dark:text-white">{pagination.totalPages}</span>
+                Page{" "}
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {page}
+                </span>{" "}
+                from{" "}
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {pagination.totalPages}
+                </span>
                 {pagination.total ? (
                   <>
-                    {" "}(Total <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> messages)
+                    {" "}
+                    (Total{" "}
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {pagination.total}
+                    </span>{" "}
+                    messages)
                   </>
                 ) : null}
               </p>
             </div>
 
             <div>
-              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+              <nav
+                className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1"
+                aria-label="Pagination"
+              >
                 <button
                   disabled={page === 1}
                   onClick={() => setPage(page - 1)}
@@ -476,6 +520,7 @@ export default function AdminContactUs() {
                   );
                 })}
 
+                {/* Next Page Button */}
                 <button
                   disabled={page === pagination.totalPages}
                   onClick={() => setPage(page + 1)}
@@ -490,6 +535,7 @@ export default function AdminContactUs() {
         </div>
       )}
 
+      {/* Delete Modal */}
       {showDeleteModal && selectedMessage && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -499,7 +545,9 @@ export default function AdminContactUs() {
             className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-8 shadow-2xl dark:border dark:border-slate-800 dark:bg-slate-900"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 dark:text-slate-100">Delete Message</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 dark:text-slate-100">
+              Delete Message
+            </h3>
             <div className="space-y-4">
               <p className="text-gray-700 dark:text-slate-300">
                 Are you sure you want to delete this message from{" "}

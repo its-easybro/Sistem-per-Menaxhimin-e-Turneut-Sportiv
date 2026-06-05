@@ -7,7 +7,7 @@ import { Alert } from "../../components/Alert";
 import MatchTimer from "../../components/MatchTimer";
 import socket from "../../socket";
 import { Edit, Trash2, X } from "lucide-react";
-import TableSkeleton from "../../components/Skeletons/TableSkeleton"
+import TableSkeleton from "../../components/Skeletons/TableSkeleton";
 
 const initialFormData = {
   turneu_id: "",
@@ -20,13 +20,27 @@ const initialFormData = {
   faza: "",
 };
 
+// Yup validation schemas for match creation and update forms.
 const matchCreateionSchema = yup.object().shape({
-  turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
-  ekipi_shtepiak_id: yup.number().typeError("Home team must be a number").required("Home team is required"),
-  ekipi_mysafir_id: yup.number().typeError("Away team must be a number").required("Away team is required"),
+  turneu_id: yup
+    .number()
+    .typeError("Tournament must be a number")
+    .required("Tournament is required"),
+  ekipi_shtepiak_id: yup
+    .number()
+    .typeError("Home team must be a number")
+    .required("Home team is required"),
+  ekipi_mysafir_id: yup
+    .number()
+    .typeError("Away team must be a number")
+    .required("Away team is required"),
   data_ndeshjes: yup.string().required("Match date is required"),
   ora_fillimit: yup.string().required("Start time is required"),
-  fusha_id: yup.number().typeError("Field must be a number").nullable().optional(),
+  fusha_id: yup
+    .number()
+    .typeError("Field must be a number")
+    .nullable()
+    .optional(),
   statusi: yup
     .string()
     .oneOf(["Planifikuar", "Live", "Përfunduar", "Shtyrë", "Anuluar"])
@@ -35,12 +49,25 @@ const matchCreateionSchema = yup.object().shape({
 });
 
 const _matchUpdateSchema = yup.object().shape({
-  turneu_id: yup.number().typeError("Tournament must be a number").required("Tournament is required"),
-  ekipi_shtepiak_id: yup.number().typeError("Home team must be a number").required("Home team is required"),
-  ekipi_mysafir_id: yup.number().typeError("Away team must be a number").required("Away team is required"),
+  turneu_id: yup
+    .number()
+    .typeError("Tournament must be a number")
+    .required("Tournament is required"),
+  ekipi_shtepiak_id: yup
+    .number()
+    .typeError("Home team must be a number")
+    .required("Home team is required"),
+  ekipi_mysafir_id: yup
+    .number()
+    .typeError("Away team must be a number")
+    .required("Away team is required"),
   data_ndeshjes: yup.string().required("Match date is required"),
   ora_fillimit: yup.string().required("Start time is required"),
-  fusha_id: yup.number().typeError("Field must be a number").nullable().optional(),
+  fusha_id: yup
+    .number()
+    .typeError("Field must be a number")
+    .nullable()
+    .optional(),
   statusi: yup
     .string()
     .oneOf(["Planifikuar", "Live", "Përfunduar", "Shtyrë", "Anuluar"])
@@ -49,6 +76,13 @@ const _matchUpdateSchema = yup.object().shape({
 });
 
 // Organizer match page keeps its own form state separate from the admin matches page.
+/**
+ * Formats a date value into a human-readable "en-GB" locale string (dd/mm/yyyy).
+ * Returns "N/A" for falsy inputs and "Invalid date" when parsing fails.
+ *
+ * @param {string|Date|null} value - The raw date value to format
+ * @returns {string} The formatted date string or a fallback label
+ */
 function formatDate(value) {
   if (!value) return "N/A";
 
@@ -59,11 +93,26 @@ function formatDate(value) {
   }
 }
 
+/**
+ * Extracts the first 10 characters from a date string to produce a
+ * "YYYY-MM-DD" value suitable for HTML date inputs.
+ *
+ * @param {string|null} value - The raw date string (e.g. ISO 8601)
+ * @returns {string} A date string trimmed to 10 characters, or an empty string
+ */
 function formatDateInput(value) {
   if (!value) return "";
   return String(value).slice(0, 10);
 }
 
+/**
+ * Converts a time string or ISO datetime into an "HH:MM" format
+ * suitable for HTML time inputs. Handles both "T"-delimited ISO strings
+ * and plain "HH:MM:SS" time strings.
+ *
+ * @param {string|null} value - The raw time or datetime string
+ * @returns {string} A 5-character "HH:MM" string, or an empty string
+ */
 function formatTime(value) {
   if (!value) return "";
   const text = String(value);
@@ -75,18 +124,33 @@ function formatTime(value) {
   return text.slice(0, 5);
 }
 
+/**
+ * OrganizerMatches – main page component for organizers to manage tournament matches.
+ * Provides full CRUD functionality for matches scoped to the organizer's own tournaments.
+ * Includes search, date-range filtering, real-time socket updates, and modal-based forms.
+ *
+ * @returns {JSX.Element} The organizer matches management page
+ */
 export default function OrganizerMatches() {
   const { user } = useContext(AuthContext);
+
+  // --- Domain data fetched from the API ---
   const [matches, setMatches] = useState([]);
   const [tournaments, setTournaments] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [teams, setTeams] = useState([]);
   const [venues, setVenues] = useState([]);
+
+  // --- UI / loading state ---
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // --- Search and date-range filter state ---
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
+
+  // --- Form and modal state ---
   const [formData, setFormData] = useState(initialFormData);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [alert, setAlert] = useState(null);
@@ -95,6 +159,7 @@ export default function OrganizerMatches() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
+  // Fetches all domain data (matches, tournaments, registrations, teams, venues) when the user object changes
   useEffect(() => {
     const loadData = async () => {
       if (!user?.is_organizer) {
@@ -140,7 +205,9 @@ export default function OrganizerMatches() {
     loadData();
   }, [user]);
 
+  // Subscribes to WebSocket events to update match status in real-time ("Live" / "Përfunduar")
   useEffect(() => {
+    /** @param {{ matchId: number }} param0 - Socket payload with match ID */
     const handleMatchLive = ({ matchId }) => {
       setMatches((prev) =>
         prev.map((match) =>
@@ -149,6 +216,7 @@ export default function OrganizerMatches() {
       );
     };
 
+    /** @param {{ matchId: number }} param0 - Socket payload with match ID */
     const handleMatchFinished = ({ matchId }) => {
       setMatches((prev) =>
         prev.map((match) =>
@@ -166,6 +234,7 @@ export default function OrganizerMatches() {
     };
   }, []);
 
+  // Derives the list of teams eligible for match selection based on the chosen tournament's approved registrations
   const availableTeams = useMemo(() => {
     if (!formData.turneu_id) return [];
 
@@ -181,22 +250,42 @@ export default function OrganizerMatches() {
     return teams.filter((team) => teamIds.includes(team.id));
   }, [formData.turneu_id, registrations, teams]);
 
+  /**
+   * Looks up a tournament's display name by its ID.
+   * @param {number} id - The tournament ID
+   * @returns {string} The tournament name or "N/A" if not found
+   */
   const getTournamentName = (id) =>
     tournaments.find((item) => item.id === id)?.emertimi || "N/A";
 
+  /**
+   * Looks up a team's display name by its ID.
+   * @param {number} id - The team ID
+   * @returns {string} The team name or "N/A" if not found
+   */
   const getTeamName = (id) =>
     teams.find((item) => item.id === id)?.emertimi || "N/A";
 
+  /**
+   * Looks up a venue's display name by its ID.
+   * @param {number} id - The venue ID
+   * @returns {string} The venue name or "N/A" if not found
+   */
   const getVenueName = (id) =>
     venues.find((item) => item.id === id)?.emertimi || "N/A";
 
   const hasActiveFilters = dateFromFilter !== "" || dateToFilter !== "";
 
+  /**
+   * Resets both "from" and "to" date filter inputs back to empty strings,
+   * effectively removing the date-range filter from the match list.
+   */
   const handleClearDateFilters = () => {
     setDateFromFilter("");
     setDateToFilter("");
   };
 
+  // Filters the matches array by search query (tournament/team names) and optional date range
   const filteredMatches = matches.filter((item) => {
     const query = searchQuery.toLowerCase();
     const matchDate = new Date(item.data_ndeshjes);
@@ -209,14 +298,22 @@ export default function OrganizerMatches() {
       getTeamName(item.ekipi_mysafir_id).toLowerCase().includes(query);
 
     const matchesDateRange =
-      (!fromDate || matchDate >= fromDate) &&
-      (!toDate || matchDate <= toDate);
+      (!fromDate || matchDate >= fromDate) && (!toDate || matchDate <= toDate);
 
     return matchesSearch && matchesDateRange;
   });
 
+  /** Resets the match form back to its default (empty) state. */
   const resetForm = () => setFormData(initialFormData);
 
+  /**
+   * Generic input change handler for the match form.
+   * Updates the corresponding field in formData and clears any validation
+   * error tied to that field. When the tournament field changes, the
+   * home and away team selections are reset because the available teams depend on the tournament.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLSelectElement>} e - The DOM change event
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -237,6 +334,13 @@ export default function OrganizerMatches() {
     }
   };
 
+  /**
+   * Builds the API request payload from the current formData.
+   * Converts string IDs from the select elements back to numeric types
+   * expected by the backend.
+   *
+   * @returns {Object} A match payload ready for POST / PUT requests
+   */
   const buildPayload = () => ({
     // Converts select values back to numeric ids before hitting the API.
     ...formData,
@@ -246,6 +350,13 @@ export default function OrganizerMatches() {
     fusha_id: formData.fusha_id ? Number(formData.fusha_id) : null,
   });
 
+  /**
+   * Validates the current formData against the Yup schema.
+   * If validation fails, maps each field-level error into the formErrors state
+   * so the UI can display inline messages.
+   *
+   * @returns {Promise<boolean>} true when the form is valid, false otherwise
+   */
   const validateForm = async () => {
     try {
       setFormErrors({});
@@ -263,6 +374,13 @@ export default function OrganizerMatches() {
     }
   };
 
+  /**
+   * Validates match form data and creates a new match via the API.
+   * Ensures home and away teams are different before submission.
+   * On success, updates the local match list and resets the form.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
+   */
   const handleCreate = async (e) => {
     e.preventDefault();
 
@@ -292,6 +410,13 @@ export default function OrganizerMatches() {
     }
   };
 
+  /**
+   * Submits updated match details to the API.
+   * Validates the form data and ensures home and away teams are distinct.
+   * Updates the match record in the local state array upon a successful API response.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event
+   */
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!selectedMatch) return;
@@ -330,6 +455,10 @@ export default function OrganizerMatches() {
     }
   };
 
+  /**
+   * Deletes the selected match from the database via the API.
+   * Removes the deleted match from the local state array and closes the confirmation modal.
+   */
   const handleDelete = async () => {
     if (!selectedMatch) return;
 
@@ -347,6 +476,13 @@ export default function OrganizerMatches() {
     }
   };
 
+  /**
+   * Prepares the edit modal by populating formData with the selected match's
+   * current values (converting IDs to strings for the select elements) and
+   * opening the edit modal.
+   *
+   * @param {Object} match - The match record to edit
+   */
   const openEdit = (match) => {
     setSelectedMatch(match);
     setFormData({
@@ -362,6 +498,11 @@ export default function OrganizerMatches() {
     setShowEditModal(true);
   };
 
+  /**
+   * Sets the match to be deleted and opens the delete confirmation modal.
+   *
+   * @param {Object} match - The match record the user wants to delete
+   */
   const openDelete = (match) => {
     setSelectedMatch(match);
     setShowDeleteModal(true);
@@ -387,6 +528,13 @@ export default function OrganizerMatches() {
     );
   }
 
+  /**
+   * Reusable match form component rendered inside both the Create and Edit modals.
+   * Contains tournament, venue, team, date, time, status, and phase fields.
+   *
+   * @param {{ onSubmit: Function, submitLabel: string }} props
+   * @returns {JSX.Element} The match form JSX
+   */
   const MatchForm = ({ onSubmit, submitLabel }) => (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
@@ -440,6 +588,7 @@ export default function OrganizerMatches() {
           )}
         </label>
 
+        {/* Home Team */}
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
             Home Team
@@ -466,6 +615,7 @@ export default function OrganizerMatches() {
           )}
         </label>
 
+        {/* Away Team */}
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
             Away Team
@@ -492,6 +642,7 @@ export default function OrganizerMatches() {
           )}
         </label>
 
+        {/* Match Date */}
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
             Match Date
@@ -511,6 +662,7 @@ export default function OrganizerMatches() {
           )}
         </label>
 
+        {/* Start Time */}
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
             Start Time
@@ -529,6 +681,7 @@ export default function OrganizerMatches() {
           )}
         </label>
 
+        {/* Status */}
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
             Status
@@ -552,6 +705,7 @@ export default function OrganizerMatches() {
           )}
         </label>
 
+        {/* Phase */}
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-slate-200 dark:text-slate-200">
             Phase
@@ -616,6 +770,7 @@ export default function OrganizerMatches() {
               Create and manage matches only for your tournaments.
             </p>
           </div>
+          {/* Add Match Button */}
           <button
             onClick={() => {
               resetForm();
@@ -637,7 +792,9 @@ export default function OrganizerMatches() {
 
         <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-800 p-3">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">From:</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
+              From:
+            </label>
             <input
               type="date"
               value={dateFromFilter}
@@ -647,7 +804,9 @@ export default function OrganizerMatches() {
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">To:</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
+              To:
+            </label>
             <input
               type="date"
               value={dateToFilter}
@@ -656,6 +815,7 @@ export default function OrganizerMatches() {
             />
           </div>
 
+          {/* Clear Date Filters */}
           {hasActiveFilters && (
             <button
               onClick={handleClearDateFilters}
@@ -667,6 +827,7 @@ export default function OrganizerMatches() {
           )}
         </div>
 
+        {/* Matches Table */}
         <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-slate-800">
           <table className="w-full border-collapse text-left">
             <thead className="bg-gray-800 text-white dark:bg-slate-800 dark:bg-slate-800">
@@ -693,7 +854,10 @@ export default function OrganizerMatches() {
                 </tr>
               ) : (
                 filteredMatches.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-slate-800">
+                  <tr
+                    key={item.id}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-800"
+                  >
                     <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">
                       {getTournamentName(item.turneu_id)}
                     </td>
@@ -741,6 +905,7 @@ export default function OrganizerMatches() {
         </div>
       </div>
 
+      {/* Create Match Modal */}
       {showCreateModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm dark:bg-slate-950/80"
@@ -758,6 +923,7 @@ export default function OrganizerMatches() {
         </div>
       )}
 
+      {/* Edit Match Modal */}
       {showEditModal && selectedMatch && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm dark:bg-slate-950/80"
@@ -775,6 +941,7 @@ export default function OrganizerMatches() {
         </div>
       )}
 
+      {/* Delete Match Modal */}
       {showDeleteModal && selectedMatch && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm dark:bg-slate-950/80"

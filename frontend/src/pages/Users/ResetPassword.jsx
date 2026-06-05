@@ -4,11 +4,13 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../../config/axiosInstance";
 import { Eye, EyeOff } from "lucide-react";
 
+// Renders a reset password form that allows users to set a new password using a token from the password reset email, with client-side validation and error handling to ensure a smooth user experience during the password reset process.
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const navigate = useNavigate();
 
+  // State variables for form data, validation errors, password visibility toggles, loading state, and alert messages to provide feedback to the user during the password reset process.
   const [formData, setFormData] = useState({ password: "", confirm: "" });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +18,7 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
 
+  // Validation schema for the reset password form.
   const validationSchema = yup.object().shape({
     password: yup
       .string()
@@ -38,6 +41,7 @@ export default function ResetPassword() {
     }
   };
 
+  // Handles form submission by validating the input data against the defined schema.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -76,6 +80,7 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-4 py-10 flex items-center justify-center dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8 dark:border-slate-800 dark:bg-slate-900/95">
+        {/* Password Reset Form */}
         <div className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-300">
             Secure access
@@ -93,13 +98,14 @@ export default function ResetPassword() {
             className={`mb-6 rounded-2xl border px-4 py-4 text-sm text-center shadow-sm ${
               alert.type === "success"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200"
-                  : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
+                : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
             }`}
           >
             <p className="leading-6">{alert.message}</p>
           </div>
         )}
 
+        {/* Reset Password Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -118,6 +124,7 @@ export default function ResetPassword() {
                     : "border-slate-300 focus:border-emerald-500 focus:ring-emerald-500/20 dark:border-slate-700"
                 }`}
               />
+              {/* Password Visibility Toggle */}
               <button
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
@@ -134,6 +141,7 @@ export default function ResetPassword() {
             )}
           </div>
           <div>
+            {/* Confirm Password Input */}
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
               Confirm Password
             </label>
@@ -150,6 +158,7 @@ export default function ResetPassword() {
                     : "border-slate-300 focus:border-emerald-500 focus:ring-emerald-500/20 dark:border-slate-700"
                 }`}
               />
+              {/* Confirm Password Visibility Toggle */}
               <button
                 type="button"
                 onClick={() => setShowConfirm((value) => !value)}
@@ -167,6 +176,7 @@ export default function ResetPassword() {
               <p className="text-rose-500 text-sm mt-1">{errors.confirm}</p>
             )}
           </div>
+          {/* Reset Password Button */}
           <button
             type="submit"
             disabled={loading}

@@ -1,6 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-export const Alert = ({ type = 'success', message, onClose, autoClose = true, duration = 3000 }) => {
+export const Alert = ({
+  type = "success",
+  message,
+  onClose,
+  autoClose = true,
+  duration = 3000,
+}) => {
   // Controls whether the alert is rendered on screen.
   const [isVisible, setIsVisible] = useState(true);
 
@@ -22,11 +28,19 @@ export const Alert = ({ type = 'success', message, onClose, autoClose = true, du
   if (!isVisible) return null;
 
   // Switches visual theme between success and error variants.
-  const isSuccess = type === 'success';
-  const bgColor = isSuccess ? 'bg-green-100 dark:bg-emerald-500/15' : 'bg-red-100 dark:bg-rose-500/15';
-  const borderColor = isSuccess ? 'border-green-400 dark:border-emerald-400/40' : 'border-red-400 dark:border-rose-400/40';
-  const textColor = isSuccess ? 'text-green-700 dark:text-emerald-200' : 'text-red-700 dark:text-rose-200';
-  const buttonHoverBg = isSuccess ? 'hover:bg-green-200 dark:hover:bg-emerald-500/20' : 'hover:bg-red-200 dark:hover:bg-rose-500/20';
+  const isSuccess = type === "success";
+  const bgColor = isSuccess
+    ? "bg-green-100 dark:bg-emerald-500/15"
+    : "bg-red-100 dark:bg-rose-500/15";
+  const borderColor = isSuccess
+    ? "border-green-400 dark:border-emerald-400/40"
+    : "border-red-400 dark:border-rose-400/40";
+  const textColor = isSuccess
+    ? "text-green-700 dark:text-emerald-200"
+    : "text-red-700 dark:text-rose-200";
+  const buttonHoverBg = isSuccess
+    ? "hover:bg-green-200 dark:hover:bg-emerald-500/20"
+    : "hover:bg-red-200 dark:hover:bg-rose-500/20";
 
   // Handles manual close from the dismiss button.
   const handleClose = () => {
@@ -68,6 +82,7 @@ export const Alert = ({ type = 'success', message, onClose, autoClose = true, du
         <span className="font-medium">{message}</span>
       </div>
 
+      {/* Button to close the alert */}
       <button
         onClick={handleClose}
         className={`ml-4 ${buttonHoverBg} rounded-md p-1 transition-colors inline-flex text-current focus:outline-none`}

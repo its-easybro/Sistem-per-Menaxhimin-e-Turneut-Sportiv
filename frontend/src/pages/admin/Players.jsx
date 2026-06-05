@@ -643,16 +643,15 @@ export default function Players() {
                   ))}
                 </select>
               </div>
-
             </div>
-            
+
             {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
-            >
-              Clear Filters
-            </button>
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+              >
+                Clear Filters
+              </button>
             )}
           </div>
         </div>

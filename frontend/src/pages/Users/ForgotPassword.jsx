@@ -3,12 +3,14 @@ import * as yup from "yup";
 import api from "../../config/axiosInstance";
 import { Link } from "react-router-dom";
 
+// Renders a forgot password form that allows users to request a password reset link by entering their email address.
 export default function ForgotPassword() {
   const [formData, setFormData] = useState({ email: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
 
+  // Validation schema for the forgot password form, ensuring that the email field is a valid email address and is required before allowing form submission.
   const validationSchema = yup.object().shape({
     email: yup
       .string()
@@ -16,6 +18,7 @@ export default function ForgotPassword() {
       .required("Email is required"),
   });
 
+  // Handles changes to the email input field, updating the form data state and clearing any existing validation errors for the email field when the user modifies it.
   const handleChange = (e) => {
     const { value } = e.target;
     setFormData({ email: value });
@@ -24,6 +27,7 @@ export default function ForgotPassword() {
     }
   };
 
+  // Handles form submission by validating the input data against the defined schema, sending a POST request to the server if validation passes, and managing loading state and error/success messages accordingly.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -76,13 +80,13 @@ export default function ForgotPassword() {
             className={`mb-6 rounded-2xl border px-4 py-4 text-sm text-center shadow-sm ${
               alert.type === "success"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200"
-                  : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
+                : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200"
             }`}
           >
             <p className="leading-6">{alert.message}</p>
           </div>
         )}
-
+        {/* Forgot Password Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -114,7 +118,7 @@ export default function ForgotPassword() {
         </form>
 
         <p className="mt-4 text-center text-sm text-slate-500">
-          Remembered it?{" "}
+          Remembered it? {/* Back to Login */}
           <Link
             to="/login"
             className="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200"

@@ -32,6 +32,7 @@ const formatDate = (isoDate) => {
   }
 };
 
+// Format date for HTML date input (YYYY-MM-DD)
 const formatDateInput = (value) => {
   if (!value) return "";
   return String(value).slice(0, 10);
@@ -48,6 +49,7 @@ const formatTime = (value) => {
   return text.slice(0, 5);
 };
 
+// Initial form state for creating/editing matches
 const initialEventForm = {
   lloji: "Goal",
   ekipi_id: "",
@@ -55,6 +57,7 @@ const initialEventForm = {
 
 const teamRequiredEventTypes = ["Goal", "YellowCard", "RedCard"];
 
+// Helper functions for match event handling and display
 function getEventMinute(event) {
   const minute = event.minute ?? event.minuta;
   return minute === null || minute === undefined || minute === ""
@@ -72,6 +75,7 @@ function getEventTypeLabel(type) {
   return labels[type] || type || "Event";
 }
 
+// Sorts match events first by minute (ascending) and then by ID (ascending) to ensure consistent display order.
 function sortMatchEvents(events) {
   return [...events].sort((a, b) => {
     const minuteA = Number.isFinite(Number(a.minute ?? a.minuta))
@@ -98,6 +102,7 @@ function isFinishedMatch(match) {
   return match?.statusi === "Përfunduar" || match?.statusi === "PÃ«rfunduar";
 }
 
+// Validation schemas for match creation and update forms using Yup.
 const matchCreateSchema = yup.object().shape({
   turneu_id: yup.string().required("Tournament is required"),
   ekipi_shtepiak_id: yup.string().required("Home team is required"),
@@ -235,6 +240,7 @@ export default function Matches() {
       setLoading(true);
       setError("");
 
+      // Constructs query parameters for the API request based on pagination and active filters, ensuring that only non-empty filter values are included in the request.
       const params = new URLSearchParams({
         page: pageNum,
         limit: 10,
@@ -276,7 +282,12 @@ export default function Matches() {
   }, [user, loadMatches, page, filters]);
 
   const handleClearFilters = () => {
-    const resetFilters = { search: "", statusi: "", turneu_id: "", team_id: "" };
+    const resetFilters = {
+      search: "",
+      statusi: "",
+      turneu_id: "",
+      team_id: "",
+    };
     setFilters(resetFilters);
     setSearchQuery("");
     setDebouncedSearch("");
@@ -357,6 +368,7 @@ export default function Matches() {
       );
     };
 
+    // Listen for real-time match updates via WebSocket and update the relevant match data in the UI accordingly.
     socket.on("match_live", handleMatchLive);
     socket.on("match_finished", handleMatchFinished);
     socket.on("score_update", handleScoreUpdate);
@@ -365,6 +377,7 @@ export default function Matches() {
     socket.on("match-status-updated", handleMatchStatusUpdated);
     socket.on("match-finished", handleMatchFinished);
 
+    // Clean up WebSocket listeners when the component unmounts or when selectedMatch changes to prevent memory leaks and unintended updates.
     return () => {
       socket.off("match_live", handleMatchLive);
       socket.off("match_finished", handleMatchFinished);
@@ -518,6 +531,7 @@ export default function Matches() {
     setShowModal(false);
   };
 
+  // Modal close handlers for edit/view/delete modals, resetting relevant state to ensure clean form and no residual data when modals are reopened.
   const handleCloseEditModal = () => {
     setFormData({
       turneu_id: "",
@@ -624,6 +638,7 @@ export default function Matches() {
     }
   };
 
+  // Edit button handler that pre-fills the edit form with the selected match's current data, including handling the primary referee assignment for the match.
   const handleEdit = async (id) => {
     const match = matches.find((m) => m.id === id);
     if (!match) return;
@@ -755,6 +770,7 @@ export default function Matches() {
     }
   };
 
+  // Score update handler that validates the match is live before allowing score updates, then sends the updated score to the server and syncs the local state with the response.
   const handleScoreInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -764,6 +780,7 @@ export default function Matches() {
     }));
   };
 
+  // Match event creation handler that validates the match is live and that required fields are filled before sending the new event to the server, then updates the local match events list and score if applicable based on the response.
   const handleEventInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -781,6 +798,7 @@ export default function Matches() {
     });
   };
 
+  // API handler for submitting score updates, which includes validation to ensure the match is currently live before allowing score changes, and then updates the local state with the new score returned from the server.
   const handleScoreSubmit = async (e) => {
     e.preventDefault();
 
@@ -854,6 +872,7 @@ export default function Matches() {
         return;
       }
 
+      // API expects ekipi_id to be null for events that don't require a team, so we send null if it's not required or not selected.
       const response = await api.post(`/matches/${selectedMatch.id}/events`, {
         lloji: eventForm.lloji,
         ekipi_id: eventForm.ekipi_id ? Number(eventForm.ekipi_id) : null,
@@ -1056,11 +1075,15 @@ export default function Matches() {
             Match Management
           </h2>
 
+          {/* Filter and Search */}
           <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl p-4 shadow-sm flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="relative flex-1 max-w-2xl">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                  <Search
+                    size={18}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
                 </div>
                 <input
                   type="text"
@@ -1072,6 +1095,7 @@ export default function Matches() {
                 />
               </div>
 
+              {/* Add Match */}
               <button
                 onClick={handleCreate}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 hover:shadow active:scale-[0.98] shrink-0"
@@ -1139,14 +1163,15 @@ export default function Matches() {
                 </select>
               </div>
             </div>
-            
+
+            {/* Clear Filters Button */}
             {hasActiveFilters && (
-            <button
-              onClick={handleClearFilters}
-              className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
-            >
-              Clear Filters
-            </button>
+              <button
+                onClick={handleClearFilters}
+                className="text-xs font-semibold text-gray-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-all flex items-center justify-center gap-1 shrink-0 animate-in fade-in slide-in-from-left-2 duration-200 cursor-pointer ml-auto sm:ml-0"
+              >
+                Clear Filters
+              </button>
             )}
           </div>
         </div>
@@ -1272,7 +1297,7 @@ export default function Matches() {
                   className="px-6 py-4 text-center text-gray-600 dark:text-slate-400"
                 >
                   {hasActiveFilters
-                    ? 'No matches match your filters. Try adjusting the filters.'
+                    ? "No matches match your filters. Try adjusting the filters."
                     : 'No matches found. Click "Add New Match" to add a new one.'}
                 </td>
               </tr>
@@ -1281,6 +1306,7 @@ export default function Matches() {
         </table>
       </div>
 
+      {/* Pagination */}
       {pagination && (
         <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl px-4 py-4 sm:px-6 flex items-center justify-between shadow-sm mt-4">
           <div className="flex flex-1 justify-between sm:hidden">
@@ -1337,6 +1363,7 @@ export default function Matches() {
                   <ChevronLeft size={18} />
                 </button>
 
+                {/* Page Numbers */}
                 {Array.from({ length: pagination.totalPages }, (_, index) => {
                   const pageNum = index + 1;
                   const isActive = pageNum === page;
