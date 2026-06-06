@@ -1,3 +1,4 @@
+// Defines bracket routes for generating, viewing, scheduling, updating, and clearing tournament brackets.
 import express from "express";
 import Joi from "joi";
 import prisma from "../lib/prisma.js";

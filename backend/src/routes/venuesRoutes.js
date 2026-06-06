@@ -1,3 +1,4 @@
+// Defines venue routes for managing tournament locations and their availability details.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

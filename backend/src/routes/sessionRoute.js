@@ -1,3 +1,4 @@
+// Defines session routes for administrators to view and delete user login sessions.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

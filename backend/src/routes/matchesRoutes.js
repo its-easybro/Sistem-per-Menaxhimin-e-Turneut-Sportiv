@@ -1,3 +1,4 @@
+// Defines match routes for listing, creating, updating, deleting, scheduling, and completing matches.
 import express from "express";
 import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";

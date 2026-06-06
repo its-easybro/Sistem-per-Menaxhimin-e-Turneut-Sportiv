@@ -1,3 +1,4 @@
+// Defines routes for assigning referees to matches and viewing referee match assignments.
 import express from "express";
 import prisma from "../lib/prisma.js";
 import { protect, requireRole } from "../middleware/auth.js";

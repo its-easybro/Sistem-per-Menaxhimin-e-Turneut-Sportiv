@@ -1,3 +1,4 @@
+// Defines standings routes for public and protected tournament standings queries.
 import express from "express";
 import Joi from "joi";
 import prisma from "../lib/prisma.js";

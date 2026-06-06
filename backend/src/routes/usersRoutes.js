@@ -1,3 +1,4 @@
+// Defines user management routes for admins to create, list, update, delete, and assign roles.
 import express from "express";
 import bcrypt from "bcrypt";
 import prisma from "../lib/prisma.js";

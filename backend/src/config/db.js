@@ -1,3 +1,4 @@
+// Creates a PostgreSQL connection pool using environment variables for legacy direct database access.
 import pg from 'pg';
 import dotenv from 'dotenv';
 

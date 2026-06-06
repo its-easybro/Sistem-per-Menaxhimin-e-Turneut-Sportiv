@@ -1,3 +1,4 @@
+// Verifies JWT cookies, loads the authenticated user, and enforces role-based route access.
 import jwt from 'jsonwebtoken';
 import pool from "../config/db.js";
 import prisma from "../lib/prisma.js";

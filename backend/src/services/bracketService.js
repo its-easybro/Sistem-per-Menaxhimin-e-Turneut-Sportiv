@@ -1,3 +1,4 @@
+// Provides helper logic for building bracket rounds, scheduling bracket matches, and advancing winners.
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 
 export function createBracketError(status, message) {

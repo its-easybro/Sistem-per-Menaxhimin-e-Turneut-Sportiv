@@ -1,3 +1,4 @@
+// Starts the Express API server, configures middleware, routes, sockets, cron jobs, and checks the database connection.
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";

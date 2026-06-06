@@ -1,3 +1,4 @@
+// Defines referee routes for creating, listing, updating, deleting, and linking referee user records.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

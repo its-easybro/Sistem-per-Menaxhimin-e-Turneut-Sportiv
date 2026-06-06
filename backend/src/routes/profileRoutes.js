@@ -1,3 +1,4 @@
+// Defines authenticated profile routes for account details, sessions, support tickets, and dashboard views.
 import express from "express";
 import { protect, requireRole } from "../middleware/auth.js";
 import {

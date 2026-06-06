@@ -1,3 +1,4 @@
+// Handles profile details, account updates, session management, support tickets, and user dashboard data.
 import bcrypt from "bcrypt";
 import Joi from "joi";
 import prisma from "../lib/prisma.js";

@@ -1,3 +1,4 @@
+// Defines request rate limiting middleware to protect API endpoints from excessive traffic.
 import rateLimit from "express-rate-limit"
 
 // API limiter

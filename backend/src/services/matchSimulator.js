@@ -1,3 +1,4 @@
+// Simulates live match events and score changes for matches that are currently in progress.
 import prisma from "../lib/prisma.js";
 
 // Picks a random player from the match players list.

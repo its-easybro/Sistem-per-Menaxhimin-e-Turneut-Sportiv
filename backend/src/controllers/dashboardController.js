@@ -1,3 +1,4 @@
+// Builds dashboard summaries, statistics, standings, and recent activity data from Prisma models.
 import prisma from "../lib/prisma.js";
 
 const ACTIVE_TOURNAMENT_STATUS = "Aktiv";

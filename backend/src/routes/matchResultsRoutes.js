@@ -1,3 +1,4 @@
+// Defines match result routes for creating, updating, deleting, and recalculating completed results.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

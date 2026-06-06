@@ -1,3 +1,4 @@
+// Defines contact message routes for public submissions and admin ticket management.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

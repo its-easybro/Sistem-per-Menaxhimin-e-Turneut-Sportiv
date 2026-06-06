@@ -1,3 +1,4 @@
+// Defines protected dashboard routes that return role-specific dashboard data.
 import express from "express";
 import { getDashboardData, searchDashboard } from "../controllers/dashboardController.js";
 

@@ -1,3 +1,4 @@
+// Defines player routes for managing player records, filters, profile images, and team relations.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

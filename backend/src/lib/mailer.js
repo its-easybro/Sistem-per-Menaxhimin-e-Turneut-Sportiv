@@ -1,3 +1,4 @@
+// Configures email delivery helpers used for authentication and user notifications.
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({

@@ -1,3 +1,4 @@
+// Defines sport routes for creating, listing, updating, and deleting sports and timing rules.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

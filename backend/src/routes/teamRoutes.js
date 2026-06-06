@@ -1,3 +1,4 @@
+// Defines team routes for managing teams, logos, sport links, and match safety checks.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

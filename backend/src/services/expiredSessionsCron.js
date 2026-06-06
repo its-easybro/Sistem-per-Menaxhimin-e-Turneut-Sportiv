@@ -1,3 +1,4 @@
+// Runs a scheduled cleanup job that removes expired login sessions from the database.
 import cron from "node-cron"
 import prisma from "../lib/prisma.js"
 

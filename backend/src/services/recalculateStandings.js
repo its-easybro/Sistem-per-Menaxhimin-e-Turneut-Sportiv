@@ -1,3 +1,4 @@
+// Recalculates tournament standings from registrations and completed match results.
 import prisma from "../lib/prisma.js";
 
 function createEmptyStats() {

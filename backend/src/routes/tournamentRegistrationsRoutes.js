@@ -1,3 +1,4 @@
+// Defines tournament registration routes for registering teams and managing registration records.
 import { protect, requireRole } from "../middleware/auth.js";
 import express from "express";
 import prisma from "../lib/prisma.js";

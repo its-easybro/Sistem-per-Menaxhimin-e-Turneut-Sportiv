@@ -1,3 +1,4 @@
+// Defines authentication routes for registration, login, logout, sessions, and password reset flows.
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";

@@ -1,3 +1,4 @@
+// Runs scheduled match status updates, result creation, socket notifications, and live match simulation.
 import cron from "node-cron";
 import prisma from "../lib/prisma.js";
 

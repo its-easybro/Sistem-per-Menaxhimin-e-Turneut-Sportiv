@@ -1,3 +1,4 @@
+// Defines match event routes for recording, updating, deleting, and listing live match events.
 import express from "express";
 import Joi from "joi";
 import prisma from "../lib/prisma.js";
