@@ -1,6 +1,7 @@
 // Configures email delivery helpers used for authentication and user notifications.
 import nodemailer from "nodemailer";
 
+// Transporter stores the SMTP settings used by outgoing backend emails.
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -9,6 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Sends a reset-password email with the provided one-time link.
 export const sendResetEmail = async (toEmail, resetLink) => {
   await transporter.sendMail({
     from: `"Sports Tournament" <${process.env.EMAIL_USER}>`,

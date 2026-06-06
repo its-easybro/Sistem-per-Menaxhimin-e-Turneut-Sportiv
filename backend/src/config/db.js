@@ -6,6 +6,7 @@ dotenv.config();
 
 const { Pool } = pg;
 
+// Pool reuses database connections instead of creating one for every request.
 const pool = new Pool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,

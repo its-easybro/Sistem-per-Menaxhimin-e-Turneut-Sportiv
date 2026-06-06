@@ -2,7 +2,7 @@
 import cron from "node-cron"
 import prisma from "../lib/prisma.js"
 
-// Schedule a cron job to run daily at midnight to delete expired sessions
+// Runs once per day at midnight to delete expired sessions.
 cron.schedule("0 0 * * *", async () => {
     console.log("Running session cleanup task")
     try {

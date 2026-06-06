@@ -6,7 +6,7 @@ import Joi from "joi";
 
 const router = express.Router();
 
-// Validation Schemas
+// Validates an existing user being promoted into a referee.
 const promoteSchema = Joi.object({
   user_id: Joi.number().integer().positive().required().messages({
     "number.base": "User ID must be a valid number.",
@@ -28,7 +28,7 @@ const promoteSchema = Joi.object({
   }),
 });
 
-// Validation schema for creating a new referee. All fields are required except for phone, license number, category, and years of experience.
+// Validates fields when creating a referee directly.
 const refereeCreateSchema = Joi.object({
   emri: Joi.string().trim().required().messages({
     "string.empty": "First name is required.",
@@ -57,7 +57,7 @@ const refereeCreateSchema = Joi.object({
   }),
 });
 
-// Validation schema for updating a referee. All fields are optional, but if provided they must be valid.
+// Allows partial referee updates while keeping provided fields valid.
 const refereeUpdateSchema = Joi.object({
   emri: Joi.string().trim().optional().messages({
     "string.empty": "First name cannot be empty.",
@@ -83,6 +83,7 @@ const refereeUpdateSchema = Joi.object({
   }),
 });
 
+// Ensures the linked user exists and has the referee role.
 async function ensureRefereeUser(userId) {
   if (!userId) return null;
 
@@ -115,6 +116,7 @@ async function ensureRefereeUser(userId) {
   }
 }
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInt(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -122,6 +124,8 @@ function parsePositiveInt(value) {
   }
   return parsed;
 }
+
+// Normalizes optional string query values.
 function parseStringQuery(value) {
   if (!value || typeof value !== "string") {
     return null;
@@ -131,6 +135,7 @@ function parseStringQuery(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+// Builds search and category filters for referee lists.
 function buildRefereeFilters(query) {
   const search = parseStringQuery(query.search);
   const kategoria = parseStringQuery(query.kategoria);
@@ -156,7 +161,7 @@ function buildRefereeFilters(query) {
   return where;
 }
 
-// Route for getting all referees. This route is protected.
+// Lists referees with optional filters and pagination.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
   const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -194,6 +199,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // Route for getting users that can be promoted to referees.
+// Lists users who can be promoted to referee accounts.
 router.get("/promotable-users", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const existingReferees = await prisma.referees.findMany({
@@ -241,6 +247,7 @@ router.get("/promotable-users", protect, requireRole("is_admin"), async (req, re
 });
 
 // Route for promoting a user to referee. Must be BEFORE /:id
+// Promotes an existing user into a referee.
 router.post("/promote", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const { error, value } = promoteSchema.validate(req.body);
@@ -298,6 +305,7 @@ router.post("/promote", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for getting a specific referee by their ID.
+// Fetches one referee by id.
 router.get("/:id", protect, async (req, res) => {
   const refereeId = parsePositiveInt(req.params.id);
   if (!refereeId) {
@@ -317,6 +325,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new referee. This route is protected and only admins can use it.
+// Creates a referee record directly.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const { error, value } = refereeCreateSchema.validate(req.body);
@@ -344,6 +353,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for updating an existing referee by their ID.
+// Updates one referee and syncs linked user data when needed.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const refereeId = parsePositiveInt(req.params.id);
   if (!refereeId) {
@@ -390,6 +400,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for deleting an existing referee by their ID.
+// Deletes one referee by id.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const refereeId = parsePositiveInt(req.params.id);
   if (!refereeId) {

@@ -13,6 +13,7 @@ import {
 
 const router = express.Router();
 
+// Validates tournament ids used by bracket routes.
 const bracketParamSchema = Joi.object({
   turneuId: Joi.number().integer().positive().required().messages({
     "number.base": "Tournament ID must be a valid number.",
@@ -21,6 +22,7 @@ const bracketParamSchema = Joi.object({
   }),
 });
 
+// Validates seed teams and optional scheduling defaults for bracket creation.
 const bracketGenerateSchema = Joi.object({
   team_ids: Joi.array()
     .items(Joi.number().integer().positive())
@@ -52,6 +54,7 @@ const bracketGenerateSchema = Joi.object({
   }),
 });
 
+// Validates bracket match ids from route parameters.
 const bracketMatchParamSchema = Joi.object({
   id: Joi.number().integer().positive().required().messages({
     "number.base": "Bracket match ID must be a valid number.",
@@ -60,6 +63,7 @@ const bracketMatchParamSchema = Joi.object({
   }),
 });
 
+// Validates scheduling changes for one bracket match.
 const bracketMatchScheduleSchema = Joi.object({
   data_ndeshjes: Joi.alternatives()
     .try(Joi.date(), Joi.string().allow(""))
@@ -78,6 +82,7 @@ const bracketMatchScheduleSchema = Joi.object({
   }),
 });
 
+// Includes teams, linked matches, results, and venues for bracket responses.
 const bracketInclude = {
   teams_bracketmatches_ekipi_shtepiak_idToteams: {
     select: { id: true, emertimi: true, logoja: true },
@@ -110,6 +115,7 @@ const bracketInclude = {
   },
 };
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInteger(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -134,10 +140,12 @@ function buildSeedOrder(size) {
   return previous.flatMap((seed) => [seed, size + 1 - seed]);
 }
 
+// Maps a bracket slot name to the matching database column.
 function getSlotField(slot) {
   return slot === "home" ? "ekipi_shtepiak_id" : "ekipi_mysafir_id";
 }
 
+// Rejects duplicate seed ids and converts them to numbers.
 function normalizeTeamIds(teamIds) {
   const normalized = teamIds.map((id) => Number(id));
   const unique = new Set(normalized);
@@ -149,6 +157,7 @@ function normalizeTeamIds(teamIds) {
   return { value: normalized };
 }
 
+// Formats team data for bracket slots.
 function getBracketTeam(team) {
   return team
     ? {
@@ -159,6 +168,7 @@ function getBracketTeam(team) {
     : null;
 }
 
+// Formats one bracket node for the API response.
 function formatBracketMatch(match, totalRounds) {
   const result = match.matches?.matchresults ?? null;
 
@@ -210,6 +220,7 @@ function formatBracketMatch(match, totalRounds) {
   };
 }
 
+// Groups bracket nodes into rounds and identifies the champion.
 function buildBracketResponse(tournament, matches) {
   const totalRounds = Math.max(
     1,
@@ -240,6 +251,7 @@ function buildBracketResponse(tournament, matches) {
   };
 }
 
+// Checks whether the current user can manage a tournament bracket.
 async function ensureCanAccessTournament(turneuId, user) {
   const tournament = await prisma.tournaments.findUnique({
     where: { id: turneuId },
@@ -265,6 +277,7 @@ async function ensureCanAccessTournament(turneuId, user) {
   return { ok: false, status: 403, error: "Forbidden" };
 }
 
+// Checks whether the current user can manage one bracket match.
 async function ensureCanAccessBracketMatch(bracketMatchId, user) {
   const bracketMatch = await prisma.bracketmatches.findUnique({
     where: { id: bracketMatchId },
@@ -304,6 +317,7 @@ async function ensureCanAccessBracketMatch(bracketMatchId, user) {
   return { ok: false, status: 403, error: "Forbidden" };
 }
 
+// Loads a bracket response with public or protected access rules.
 async function fetchBracketPayload(turneuId, { user = null, isPublic = false } = {}) {
   const tournament = await prisma.tournaments.findUnique({
     where: { id: turneuId },
@@ -337,6 +351,7 @@ async function fetchBracketPayload(turneuId, { user = null, isPublic = false } =
   };
 }
 
+// Loads approved team registrations for bracket seeding.
 async function fetchApprovedRegistrations(turneuId) {
   return prisma.tournamentregistrations.findMany({
     where: {
@@ -352,6 +367,7 @@ async function fetchApprovedRegistrations(turneuId) {
   });
 }
 
+// Detects whether a bracket already has results or non-planned matches.
 async function hasBracketProgress(tx, turneuId) {
   const nodes = await tx.bracketmatches.findMany({
     where: { turneu_id: turneuId },
@@ -373,6 +389,7 @@ async function hasBracketProgress(tx, turneuId) {
   );
 }
 
+// Lists public tournaments that have elimination brackets.
 router.get("/public/tournaments", async (req, res) => {
   try {
     const tournaments = await prisma.tournaments.findMany({
@@ -400,6 +417,7 @@ router.get("/public/tournaments", async (req, res) => {
   }
 });
 
+// Returns the public bracket for one tournament.
 router.get("/public/tournament/:turneuId", async (req, res) => {
   const { error, value } = bracketParamSchema.validate({
     turneuId: req.params.turneuId,
@@ -419,6 +437,7 @@ router.get("/public/tournament/:turneuId", async (req, res) => {
   }
 });
 
+// Returns the protected bracket for one tournament.
 router.get("/tournament/:turneuId", protect, async (req, res) => {
   const { error, value } = bracketParamSchema.validate({
     turneuId: req.params.turneuId,
@@ -440,6 +459,7 @@ router.get("/tournament/:turneuId", protect, async (req, res) => {
   }
 });
 
+// Updates the schedule or winner for one bracket match.
 router.patch(
   "/match/:id/schedule",
   protect,
@@ -532,6 +552,7 @@ router.patch(
   },
 );
 
+// Generates a fresh knockout bracket from selected seed teams.
 router.post(
   "/tournament/:turneuId/generate",
   protect,
@@ -709,6 +730,7 @@ router.post(
   },
 );
 
+// Clears a tournament bracket when no progress blocks deletion.
 router.delete(
   "/tournament/:turneuId",
   protect,

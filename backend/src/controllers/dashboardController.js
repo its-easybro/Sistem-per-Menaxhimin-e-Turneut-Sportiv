@@ -5,6 +5,7 @@ const ACTIVE_TOURNAMENT_STATUS = "Aktiv";
 const LIVE_MATCH_STATUS = "Live";
 const UPCOMING_MATCH_STATUS = "Planifikuar";
 
+// Normalize status text before comparing values from different languages.
 function normalizeStatus(value) {
   return String(value || "")
     .trim()
@@ -63,6 +64,7 @@ function getElapsedMinutes(match) {
   return diffMinutes >= 0 ? diffMinutes : null;
 }
 
+// Standings are ordered by points, goal difference, goals scored, then team name.
 function sortStandingsRows(rows) {
   return [...rows].sort((left, right) => {
     const pointsDiff = Number(right.piket || 0) - Number(left.piket || 0);
@@ -80,6 +82,7 @@ function sortStandingsRows(rows) {
   });
 }
 
+// Converts a tournament row into the smaller shape needed by the dashboard UI.
 function formatTournament(tournament) {
   return {
     id: tournament.id,
@@ -98,6 +101,7 @@ function formatTournament(tournament) {
   };
 }
 
+// Converts a match row and related teams/result into a reusable response shape.
 function formatMatch(match) {
   return {
     id: match.id,
@@ -128,6 +132,7 @@ function formatLiveMatch(match) {
   };
 }
 
+// Builds the top-five standings preview for each active tournament.
 async function buildStandingsPreview(tournaments) {
   if (tournaments.length === 0) return [];
 
@@ -179,6 +184,7 @@ async function buildStandingsPreview(tournaments) {
   });
 }
 
+// Turns recent result rows into compact MVP cards for the dashboard.
 function formatRecentMvpResults(results) {
   return results.map((result) => ({
     id: result.id,
@@ -199,6 +205,7 @@ function formatRecentMvpResults(results) {
   }));
 }
 
+// Groups goal events by player to create the top scorers list.
 function formatTopScorers(eventRows) {
   const scorerMap = new Map();
 
@@ -221,6 +228,7 @@ function formatTopScorers(eventRows) {
     .slice(0, 5);
 }
 
+// Loads all dashboard widgets in parallel for the home dashboard endpoint.
 export async function getDashboardData(req, res) {
   try {
     const [
@@ -382,6 +390,7 @@ export async function getDashboardData(req, res) {
   }
 }
 
+// Searches tournaments, teams, players, and matches from one dashboard query.
 export async function searchDashboard(req, res) {
   try {
     const query = String(req.query.q || req.query.search || "").trim();

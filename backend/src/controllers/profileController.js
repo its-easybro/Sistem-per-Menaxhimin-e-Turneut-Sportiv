@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import Joi from "joi";
 import prisma from "../lib/prisma.js";
 
+// Validates profile name updates submitted from the account page.
 const accountUpdateSchema = Joi.object({
   emri: Joi.string().trim().min(1).required().messages({
     "string.empty": "First name is required.",
@@ -13,6 +14,7 @@ const accountUpdateSchema = Joi.object({
   }),
 });
 
+// Validates the current and new password fields before changing a password.
 const changePasswordSchema = Joi.object({
   currentPassword: Joi.string().required().messages({
     "any.required": "Current password is required.",
@@ -23,6 +25,7 @@ const changePasswordSchema = Joi.object({
   }),
 });
 
+// Reads the current session id from cookies so it can be highlighted in lists.
 function parseCurrentSessionId(req) {
   return req.cookies?.sessionId || null;
 }
@@ -52,6 +55,7 @@ function getDeviceLabel(userAgent) {
   return "Desktop";
 }
 
+// Turns a session row into labels the frontend can show directly.
 function formatSession(session, currentSessionId) {
   const userAgent = session.userAgent || null;
 
@@ -81,6 +85,7 @@ function formatTournament(tournament) {
   };
 }
 
+// Formats referee assignments for the referee profile dashboard.
 function formatMatchAssignment(matchReferee) {
   const match = matchReferee.matches;
   return {
@@ -103,6 +108,7 @@ function formatMatchAssignment(matchReferee) {
   };
 }
 
+// Returns the logged-in user's profile summary and current session id.
 export async function getProfileSummary(req, res) {
   try {
     const user = await prisma.user.findUnique({
@@ -152,6 +158,7 @@ export async function getProfileSummary(req, res) {
   }
 }
 
+// Updates editable account fields and keeps linked referee data in sync.
 export async function updateAccount(req, res) {
   try {
     const { error, value } = accountUpdateSchema.validate(req.body);
@@ -190,6 +197,7 @@ export async function updateAccount(req, res) {
   }
 }
 
+// Confirms the old password, hashes the new one, and stores it.
 export async function changePassword(req, res) {
   try {
     const { error, value } = changePasswordSchema.validate(req.body);
@@ -224,6 +232,7 @@ export async function changePassword(req, res) {
   }
 }
 
+// Lists active sessions for the current account.
 export async function listSessions(req, res) {
   try {
     const currentSessionId = parseCurrentSessionId(req);
@@ -252,6 +261,7 @@ export async function listSessions(req, res) {
   }
 }
 
+// Deletes one of the user's sessions, except the current session.
 export async function revokeSession(req, res) {
   try {
     const sessionId = req.params.id;
@@ -284,6 +294,7 @@ export async function revokeSession(req, res) {
   }
 }
 
+// Shows support/contact tickets submitted by the logged-in user's email.
 export async function listSupportTickets(req, res) {
   try {
     const tickets = await prisma.contactMessages.findMany({
@@ -305,6 +316,7 @@ export async function listSupportTickets(req, res) {
   }
 }
 
+// Builds organizer-specific counts and tournament summaries.
 export async function getOrganizerDashboard(req, res) {
   try {
     const [totalTournaments, activeTournaments, completedTournaments, tournaments] =
@@ -347,6 +359,7 @@ export async function getOrganizerDashboard(req, res) {
   }
 }
 
+// Builds referee-specific profile data and assigned matches.
 export async function getRefereeDashboard(req, res) {
   try {
     const referee = await prisma.referees.findUnique({

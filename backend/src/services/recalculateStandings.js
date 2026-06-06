@@ -1,6 +1,7 @@
 // Recalculates tournament standings from registrations and completed match results.
 import prisma from "../lib/prisma.js";
 
+// Creates the default standings counters for one team.
 function createEmptyStats() {
   return {
     ndeshjet_luajtura: 0,
@@ -13,6 +14,7 @@ function createEmptyStats() {
   };
 }
 
+// Rebuilds all standings rows for one tournament from approved teams and results.
 async function recalculateStandings(turneuId) {
   const [registrations, matches] = await Promise.all([
     prisma.tournamentregistrations.findMany({
@@ -34,6 +36,7 @@ async function recalculateStandings(turneuId) {
   const statsMap = new Map();
 
   const getOrCreate = (ekipiId) => {
+    // Lazily add teams that appear in results even if they were missing above.
     if (!statsMap.has(ekipiId)) {
       statsMap.set(ekipiId, createEmptyStats());
     }
@@ -41,11 +44,13 @@ async function recalculateStandings(turneuId) {
   };
 
   registrations.forEach((registration) => {
+    // Add approved teams before reading results so zero-match teams are included.
     getOrCreate(registration.ekipi_id);
   });
 
   for (const match of matches) {
     const result = match.matchresults;
+    // The query filters for results, but this keeps the loop safe.
     if (!result) continue;
 
     const homeId = match.ekipi_shtepiak_id;
@@ -81,6 +86,7 @@ async function recalculateStandings(turneuId) {
   }
 
   await prisma.$transaction([
+    // Replace standings atomically so the table is never half-updated.
     prisma.standings.deleteMany({
       where: { turneu_id: turneuId },
     }),

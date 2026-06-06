@@ -8,7 +8,7 @@ import { applyBracketResultProgression } from "../services/bracketService.js";
 const router = express.Router();
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 
-// Validation Schemas
+// Validates required fields when creating a match.
 const matchCreateSchema = Joi.object({
   turneu_id: Joi.number().integer().positive().required().messages({
     "number.base": "Tournament ID must be a valid number.",
@@ -44,6 +44,7 @@ const matchCreateSchema = Joi.object({
   }),
 });
 
+// Allows partial match updates while validating provided fields.
 const matchUpdateSchema = Joi.object({
   turneu_id: Joi.number().integer().positive().optional().messages({
     "number.base": "Tournament ID must be a valid number.",
@@ -75,6 +76,7 @@ const matchUpdateSchema = Joi.object({
   }),
 });
 
+// Validates score updates for live or finishing matches.
 const matchScoreSchema = Joi.object({
   golat_shtepiak: Joi.number().integer().min(0).required().messages({
     "number.base": "Home score must be a valid number.",
@@ -88,6 +90,7 @@ const matchScoreSchema = Joi.object({
   }),
 });
 
+// Validates allowed manual status changes.
 const matchStatusSchema = Joi.object({
   statusi: Joi.string()
     .valid("Planifikuar", "Live", "HalfTime", "Shtyrë", "Anuluar")
@@ -98,6 +101,7 @@ const matchStatusSchema = Joi.object({
     }),
 });
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInt(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -106,14 +110,17 @@ function parsePositiveInt(value) {
   return parsed;
 }
 
+// Checks whether a match is currently live.
 function isLiveStatus(statusi) {
   return statusi === "Live";
 }
 
+// Checks whether score and events can still be changed.
 function isPlayableStatus(statusi) {
   return statusi === "Live" || statusi === "HalfTime";
 }
 
+// Creates a stored time value from the current clock time.
 function getCurrentTimeValue() {
   const now = new Date();
   const time = now.toTimeString().slice(0, 8);
@@ -121,6 +128,7 @@ function getCurrentTimeValue() {
   return new Date(`1970-01-01T${time}Z`);
 }
 
+// Calculates a winner id from goals, or null for a draw.
 function calculateWinner(match, result) {
   if (!result) return null;
 
@@ -135,6 +143,7 @@ function calculateWinner(match, result) {
   return null;
 }
 
+// Converts incoming HH:mm values into a Date stored as a time.
 function toMatchTimeValue(value) {
   if (value === undefined) return undefined;
   if (value === null || value === "") return null;
@@ -145,6 +154,7 @@ function toMatchTimeValue(value) {
   return new Date(`1970-01-01T${normalizedValue}Z`);
 }
 
+// Extracts the calendar date from stored match dates.
 function getDatePart(value) {
   if (!value) return null;
   return value instanceof Date
@@ -152,6 +162,7 @@ function getDatePart(value) {
     : String(value).slice(0, 10);
 }
 
+// Extracts the kickoff time from stored match times.
 function getTimePart(value) {
   if (!value) return "00:00:00";
 
@@ -161,6 +172,7 @@ function getTimePart(value) {
   return text.length === 5 ? `${text}:00` : text.slice(0, 8);
 }
 
+// Ensures both teams are approved in the tournament and match its sport.
 async function validateMatchTeamsForTournament({
   turneu_id,
   ekipi_shtepiak_id,
@@ -240,6 +252,7 @@ async function validateMatchTeamsForTournament({
   return { ok: true, sport: tournament.sports };
 }
 
+// Checks whether an organizer owns a tournament.
 async function organizerOwnsTournament(tournamentId, organizerId) {
   const parsedTournamentId = parsePositiveInt(tournamentId);
   const parsedOrganizerId = parsePositiveInt(organizerId);
@@ -259,6 +272,7 @@ async function organizerOwnsTournament(tournamentId, organizerId) {
   return Boolean(tournament);
 }
 
+// Checks whether an organizer owns the tournament for a match.
 async function organizerOwnsMatch(matchId, organizerId) {
   const parsedMatchId = parsePositiveInt(matchId);
   const parsedOrganizerId = parsePositiveInt(organizerId);
@@ -280,6 +294,7 @@ async function organizerOwnsMatch(matchId, organizerId) {
   return Boolean(match);
 }
 
+// Allows admins, owning organizers, and assigned referees to manage live matches.
 async function userCanManageLiveMatch(matchId, user) {
   if (user?.is_admin) {
     return true;
@@ -310,6 +325,7 @@ async function userCanManageLiveMatch(matchId, user) {
   return false;
 }
 
+// Converts database event labels into frontend event types.
 function normalizeMatchEventType(eventType) {
   const types = {
     Goal: "Goal",
@@ -323,6 +339,7 @@ function normalizeMatchEventType(eventType) {
   return types[eventType] || eventType;
 }
 
+// Reads timing defaults from the match sport.
 function getSportTiming(match) {
   const sport = match.tournaments?.sports;
 
@@ -334,6 +351,7 @@ function getSportTiming(match) {
   };
 }
 
+// Formats a match for public live-match pages.
 function formatPublicMatch(match){
   const result = match.matchresults;
   const sport = match.tournaments?.sports;
@@ -390,6 +408,7 @@ function formatPublicMatch(match){
   };
 }
 
+// Lists currently live matches for public pages.
 router.get("/public/live", async (req, res) => {
   try {
     const yesterday = new Date();
@@ -465,6 +484,7 @@ router.get("/public/live", async (req, res) => {
   }
 });
 
+// Fetches one public live match with teams, score, and events.
 router.get("/public/live/:id", async (req, res) => {
   const matchId = parsePositiveInt(req.params.id);
 
@@ -540,6 +560,7 @@ router.get("/public/live/:id", async (req, res) => {
 });
 
 
+// Lists matches with role-based tournament visibility.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? parsePositiveInt(req.query.page) : null;
   const limit = req.query.limit ? Math.max(1, parsePositiveInt(req.query.limit)) : null;
@@ -660,6 +681,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
+// Fetches one protected match by id.
 router.get("/:id", protect, async (req, res) => {
   const matchId = parsePositiveInt(req.params.id);
   if (!matchId) {
@@ -709,6 +731,7 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
+// Creates a match after validating teams and tournament membership.
 router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   try {
     const { error, value } = matchCreateSchema.validate(req.body);
@@ -770,6 +793,7 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
   }
 });
 
+// Updates one match and revalidates team choices when needed.
 router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const matchId = parsePositiveInt(req.params.id);
   if (!matchId) {
@@ -855,6 +879,7 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
   }
 });
 
+// Deletes one match when the user can manage its tournament.
 router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const matchId = parsePositiveInt(req.params.id);
   if (!matchId) {
@@ -888,6 +913,7 @@ router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (r
   }
 });
 
+// Changes match status and creates a result record when going live.
 router.patch("/:id/status", protect, requireRole("is_admin", "is_organizer", "is_referee"), async (req, res) => {
   const matchId = parsePositiveInt(req.params.id);
   if (!matchId) {
@@ -971,6 +997,7 @@ router.patch("/:id/status", protect, requireRole("is_admin", "is_organizer", "is
   }
 });
 
+// Finishes a live match, stores the final score, and advances brackets.
 router.post("/:id/finish", protect, requireRole("is_admin", "is_organizer", "is_referee"), async (req, res) => {
   const matchId = parsePositiveInt(req.params.id);
   if (!matchId) {
@@ -1078,6 +1105,7 @@ router.post("/:id/finish", protect, requireRole("is_admin", "is_organizer", "is_
   }
 });
 
+// Updates the live score for a playable match.
 router.patch("/:id/score", protect, requireRole("is_admin", "is_organizer", "is_referee"), async (req, res) => {
   const matchId = parsePositiveInt(req.params.id);
   if(!matchId){

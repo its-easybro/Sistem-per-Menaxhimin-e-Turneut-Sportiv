@@ -13,7 +13,7 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Validation Schemas
+// Validates required fields when creating a team.
 const teamCreateSchema = Joi.object({
   emertimi: Joi.string().trim().required().messages({
     "string.empty": "The team name is required.",
@@ -45,7 +45,7 @@ const teamCreateSchema = Joi.object({
   }),
 });
 
-// Validation schema for updating a team. All fields are optional, but if provided they must be valid.
+// Allows partial team updates while keeping provided fields valid.
 const teamUpdateSchema = Joi.object({
   emertimi: Joi.string().trim().optional().messages({
     "string.empty": "The team name cannot be empty.",
@@ -75,14 +75,14 @@ const teamUpdateSchema = Joi.object({
   }),
 });
 
-// Normalizes optional text fields by trimming whitespace and converting empty strings to null
+// Trims optional text fields and stores empty values as null.
 const normalizeOptionalText = (value) => {
     if (typeof value !== "string") return value ?? null;
     const trimmed = value.trim();
     return trimmed === "" ? null : trimmed;
 };
 
-// Normalizes optional date fields by trimming whitespace and converting empty strings to null
+// Converts optional date fields into Date objects or null.
 const normalizeOptionalDate = (value) => {
     if (typeof value !== "string") return value ?? null;
     const trimmed = value.trim();
@@ -104,6 +104,7 @@ const parsePositiveInt = (value) => {
   return parsed;
 };
 
+// Includes sport data so responses can show the sport name.
 const teamInclude = {
   sports: {
     select: {
@@ -113,10 +114,13 @@ const teamInclude = {
   },
 };
 
+// Adds a flat sport name beside the nested sport relation.
 const formatTeam = (team) => ({
   ...team,
   sporti_emri: team.sports?.emertimi ?? null,
 });
+
+// Normalizes optional string query values.
 function parseStringQuery(value) {
   if (typeof value !== "string") {
     return null;
@@ -126,6 +130,7 @@ function parseStringQuery(value) {
   return trimmed === "" ? null : trimmed;
 }
 
+// Builds search, city, and sport filters for team list queries.
 function buildTeamFilters(query) {
   const search = parseStringQuery(query.search);
   const qyteti = parseStringQuery(query.qyteti);
@@ -148,12 +153,15 @@ function buildTeamFilters(query) {
 
   return where;
 }
+
+// Serves uploaded team logos as static files.
 router.use("/uploads-teams", express.static(path.join(__dirname + "/../uploads/teams")));
 const uploadDir = path.join(__dirname, "../uploads/teams")
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true })
 }
 
+// Stores uploaded logo files with unique filenames.
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, __dirname + "/../uploads/teams");
@@ -164,6 +172,8 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + "-" + uniqueSuffix + extension);
   },
 });
+
+// Restricts team logo uploads to image files under 5MB.
 const upload = multer({ 
   storage,
   fileFilter: (req, file, cb) => {
@@ -178,6 +188,7 @@ const upload = multer({
   limits: {fileSize: 5 * 1024 * 1024} // 5MB max
 });
 
+// Uploads a team logo and returns the public URL.
 router.post("/upload-team-logo", protect, requireRole("is_admin", "is_organizer"), upload.single("logo"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
@@ -186,7 +197,8 @@ router.post("/upload-team-logo", protect, requireRole("is_admin", "is_organizer"
   const logoUrl = `${req.protocol}://${req.get("host")}/teams/uploads-teams/${req.file.filename}`;
   res.json({ message: "File uploaded successfully", file: req.file, url: logoUrl });
 });
-// Route for getting all teams
+
+// Lists teams with optional filters and pagination.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
   const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -236,6 +248,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // Route for getting a specific team by its ID
+// Fetches one team by id.
 router.get("/:id", protect, async (req, res) => {
   const teamId = parsePositiveInt(req.params.id);
   if (!teamId) {
@@ -257,6 +270,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new team. This route is protected and only admins can use it.
+// Creates a new team and connects it to a sport.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const { error, value } = teamCreateSchema.validate(req.body);
@@ -310,6 +324,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for updating an existing team by its ID. This route is protected and only admins can use it.
+// Updates one team after validating optional fields.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const teamId = parsePositiveInt(req.params.id);
   if (!teamId) {
@@ -379,6 +394,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for deleting an existing team by its ID. This route is protected and only admins can use it.
+// Deletes a team only when it is not used by existing matches.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const teamId = parsePositiveInt(req.params.id);
   if (!teamId) {

@@ -13,7 +13,7 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Validation Schemas
+// Validates required fields when creating a player.
 const playerCreateSchema = Joi.object({
   emri: Joi.string().trim().required().messages({
     "string.empty": "First name is required.",
@@ -55,6 +55,7 @@ const playerCreateSchema = Joi.object({
   }),
 });
 
+// Allows partial player updates while validating provided fields.
 const playerUpdateSchema = Joi.object({
   emri: Joi.string().trim().optional().messages({
     "string.empty": "First name cannot be empty.",
@@ -91,6 +92,7 @@ const playerUpdateSchema = Joi.object({
   }),
 });
 
+// Converts id-like inputs into positive integers.
 const parsePositiveInt = (value) => {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -99,6 +101,7 @@ const parsePositiveInt = (value) => {
   return parsed;
 };
 
+// Trims optional text fields and stores empty values as null.
 const normalizeOptionalText = (value) => {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string") return value;
@@ -106,6 +109,7 @@ const normalizeOptionalText = (value) => {
   return trimmed === "" ? null : trimmed;
 };
 
+// Parses optional integer fields used by player forms.
 const parseOptionalInt = (value) => {
   if (value === undefined || value === null || value === "") {
     return { ok: true, value: null };
@@ -119,6 +123,7 @@ const parseOptionalInt = (value) => {
   return { ok: true, value: parsed };
 };
 
+// Parses optional decimal fields like height and weight.
 const parseOptionalDecimal = (value) => {
   if (value === undefined || value === null || value === "") {
     return { ok: true, value: null };
@@ -132,6 +137,7 @@ const parseOptionalDecimal = (value) => {
   return { ok: true, value: parsed };
 };
 
+// Parses optional date fields and reports invalid dates.
 const parseOptionalDate = (value) => {
   if (value === undefined || value === null || value === "") {
     return { ok: true, value: null };
@@ -145,6 +151,7 @@ const parseOptionalDate = (value) => {
   return { ok: true, value: parsed };
 };
 
+// Converts form payload values into safe Prisma data.
 const normalizePlayerPayload = (payload) => {
   const ekipiId = parseOptionalInt(payload.ekipi_id);
   if (!ekipiId.ok) {
@@ -192,12 +199,14 @@ const normalizePlayerPayload = (payload) => {
   };
 };
 
+// Serves uploaded player photos as static files.
 router.use("/uploads-players", express.static(path.join(__dirname + "/../uploads/players")));
 const uploadDirr = path.join(__dirname, "../uploads/players")
 if (!fs.existsSync(uploadDirr)) {
   fs.mkdirSync(uploadDirr, { recursive: true})
 }
 
+// Stores uploaded player photos with unique filenames.
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, __dirname + "/../uploads/players")
@@ -208,6 +217,8 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + "-" + uniqueSuffix + extension)
   }
 })
+
+// Restricts player photo uploads to image files under 5MB.
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
@@ -220,6 +231,8 @@ const upload = multer({
   },
   limits: {fileSize: 5 * 1024 * 1024}
 })
+
+// Uploads a player photo and returns the public URL.
 router.post("/upload-player-foto", protect, requireRole("is_admin", "is_organizer"), (req, res) => {
   upload.single("foto")(req, res, (err) => {
     if (err instanceof multer.MulterError) {
@@ -241,7 +254,8 @@ router.post("/upload-player-foto", protect, requireRole("is_admin", "is_organize
     return res.json({ message: "File uploaded successfully", file: req.file, url: logoURL });
   });
 });
-// Route for getting all players publicly, with team and sport information attached.
+
+// Lists public player profiles with team and sport details.
 router.get("/public", async (req, res) => {
   try {
     const players = await prisma.players.findMany({
@@ -297,6 +311,7 @@ router.get("/public", async (req, res) => {
 });
 
 // Route for getting all players with their team information attached. This route is protected.
+// Lists players for authenticated screens with filters and pagination.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
   const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -390,6 +405,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // Route for creating a new player. This route is protected and only admins can use it.
+// Creates a player and optionally connects them to a team.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const { error, value } = playerCreateSchema.validate(req.body);
@@ -483,6 +499,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for updating a single player by their ID with team information attached. This route is protected.
+// Updates one player after normalizing form values.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const playerId = parsePositiveInt(req.params.id);
   if (!playerId) {
@@ -585,6 +602,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for deleting a single player by their ID with team information attached. This route is protected.
+// Deletes one player by id.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const playerId = parsePositiveInt(req.params.id);
   if (!playerId) {

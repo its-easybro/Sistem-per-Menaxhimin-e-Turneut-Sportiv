@@ -4,7 +4,10 @@ import { getDashboardData, searchDashboard } from "../controllers/dashboardContr
 
 const router = express.Router();
 
+// Returns dashboard cards, live matches, standings, and recent activity.
 router.get("/home", getDashboardData);
+
+// Searches dashboard entities from a shared search box.
 router.get("/search", searchDashboard);
 
 export default router;

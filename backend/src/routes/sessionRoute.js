@@ -6,6 +6,7 @@ import Joi from "joi";
 
 const router = express.Router();
 
+// User-agent checks used to classify mobile sessions.
 const mobileUserAgentFilters = [
     { userAgent: { contains: "Mobile", mode: "insensitive" } },
     { userAgent: { contains: "Android", mode: "insensitive" } },
@@ -14,6 +15,7 @@ const mobileUserAgentFilters = [
     { userAgent: { contains: "iPod", mode: "insensitive" } },
 ];
 
+// Builds a Prisma filter for a selected browser label.
 function getBrowserFilter(browser) {
     if (browser === "Microsoft Edge") {
         return { userAgent: { contains: "Edg/", mode: "insensitive" } };
@@ -59,6 +61,7 @@ function getBrowserFilter(browser) {
     return null;
 }
 
+// Builds a Prisma filter for mobile, desktop, or unknown devices.
 function getDeviceFilter(device) {
     if (device === "Mobile") {
         return { OR: mobileUserAgentFilters };
@@ -80,6 +83,7 @@ function getDeviceFilter(device) {
     return null;
 }
 
+// Builds search, browser, and device filters for session lists.
 function buildSessionFilters(query) {
     const filters = [];
     const search = String(query.search || "").trim();
@@ -110,7 +114,7 @@ function buildSessionFilters(query) {
     return filters.length ? { AND: filters } : {};
 }
 
-// Route for getting all active sessions/users
+// Lists active sessions for admin monitoring.
 router.get("/", protect, requireRole("is_admin"), async(req, res) => {
     const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
     const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -161,6 +165,7 @@ router.get("/", protect, requireRole("is_admin"), async(req, res) => {
 })
 
 // Route for deleting an existing session by id
+// Deletes one session by id.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
     const sessionId = req.params.id;
     if (!sessionId) {

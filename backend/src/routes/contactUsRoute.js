@@ -11,6 +11,7 @@ const SUBJECT_MAX_LENGTH = 120;
 
 const CATEGORY_VALUES = ["dispute", "upgrade", "bug", "other"];
 
+// Builds admin filters for unread status and search text.
 function buildContactMessageFilters(query) {
     const where = {};
     const search = String(query.search || "").trim();
@@ -34,7 +35,7 @@ function buildContactMessageFilters(query) {
     return where;
 }
 
-// Validation Schemas
+// Validates public contact form submissions.
 const contactMessageSchema = Joi.object({
   emri: Joi.string().trim().required().messages({
     "string.empty": "Name is required.",
@@ -57,6 +58,7 @@ const contactMessageSchema = Joi.object({
   }),
 });
 
+// Lists contact messages for admins, with filters and unread counts.
 router.get("/", protect, requireRole("is_admin"), async (req, res) => {
     const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
     const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -97,6 +99,7 @@ router.get("/", protect, requireRole("is_admin"), async (req, res) => {
     }
 })
 
+// Stores a new contact/support message from the public form.
 router.post("/", async (req, res) => {
     try {
         const { error, value } = contactMessageSchema.validate(req.body);
@@ -121,7 +124,7 @@ router.post("/", async (req, res) => {
     }
 });
 
-// Mark as read
+// Marks one message as read for admin workflows.
 router.patch("/:id/read", protect, requireRole("is_admin"), async (req, res) => {
     const { id } = req.params;
     try{
@@ -135,6 +138,7 @@ router.patch("/:id/read", protect, requireRole("is_admin"), async (req, res) => 
     }
 })
 
+// Deletes one contact message by id.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
     const { id } = req.params;
     try{

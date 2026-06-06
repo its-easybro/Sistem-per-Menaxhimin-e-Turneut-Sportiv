@@ -28,6 +28,7 @@ const API_EVENT_TYPES = {
   "E kuqe": "RedCard",
 };
 
+// Validates common fields for creating and updating match events.
 const eventPayloadSchema = Joi.object({
   ekipi_id: Joi.number().integer().positive().optional().allow(null).messages({
     "number.base": "Team ID must be a valid number.",
@@ -60,6 +61,7 @@ const eventCreateSchema = eventPayloadSchema.fork(["lloji"], (schema) =>
 );
 const eventUpdateSchema = eventPayloadSchema.min(1);
 
+// Selects only the match fields needed for permission checks.
 const matchSelectForAccess = {
   id: true,
   turneu_id: true,
@@ -85,6 +87,7 @@ const matchSelectForAccess = {
   },
 };
 
+// Includes related team, player, and creator data for event responses.
 const eventInclude = {
   teams: {
     select: {
@@ -116,6 +119,7 @@ const eventIncludeWithMatch = {
   },
 };
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInt(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -124,6 +128,7 @@ function parsePositiveInt(value) {
   return parsed;
 }
 
+// Trims optional text fields and stores empty values as null.
 function normalizeOptionalText(value) {
   if (value === undefined) return undefined;
   if (value === null) return null;
@@ -132,10 +137,12 @@ function normalizeOptionalText(value) {
   return trimmed === "" ? null : trimmed;
 }
 
+// Checks whether a match has already finished.
 function isFinishedStatus(statusi) {
   return String(statusi || "").toLowerCase().includes("rfunduar");
 }
 
+// Checks whether events can currently be added.
 function isLiveStatus(statusi) {
   return statusi === "Live";
 }
@@ -156,6 +163,7 @@ function getTimePart(value) {
   return text.length === 5 ? `${text}:00` : text.slice(0, 8);
 }
 
+// Calculates the current match minute from kickoff time.
 function calculateCurrentMinute(match) {
   const datePart = getDatePart(match.data_ndeshjes);
   if (!datePart) return null;
@@ -171,14 +179,17 @@ function calculateCurrentMinute(match) {
     : safeMinute;
 }
 
+// Converts frontend event labels into database labels.
 function toStoredEventType(eventType) {
   return STORED_EVENT_TYPES[eventType] || eventType;
 }
 
+// Converts database event labels into frontend labels.
 function toApiEventType(eventType) {
   return API_EVENT_TYPES[eventType] || eventType;
 }
 
+// Builds the display name for a player event.
 function getPlayerName(event) {
   if (event.players) {
     return `${event.players.emri} ${event.players.mbiemri}`.trim();
@@ -187,12 +198,14 @@ function getPlayerName(event) {
   return event.player_name ?? null;
 }
 
+// Builds the display name for the user who created an event.
 function formatUserName(user) {
   if (!user) return null;
 
   return `${user.emri || ""} ${user.mbiemri || ""}`.trim() || user.email || null;
 }
 
+// Formats one match event for the API response.
 function formatMatchEvent(event) {
   const eventType = toApiEventType(event.lloji);
 
@@ -216,6 +229,7 @@ function formatMatchEvent(event) {
   };
 }
 
+// Loads one match with fields needed for access control.
 async function getMatchForAccess(matchId) {
   return prisma.matches.findUnique({
     where: { id: matchId },
@@ -223,6 +237,7 @@ async function getMatchForAccess(matchId) {
   });
 }
 
+// Allows admins, owning organizers, and assigned referees to access a match.
 function canAccessMatch(user, match) {
   if (user?.is_admin) return true;
 
@@ -239,6 +254,7 @@ function canAccessMatch(user, match) {
   return false;
 }
 
+// Ensures team-based events reference one of the two match teams.
 function validateTeamForEvent(match, eventType, teamId) {
   if (TEAM_REQUIRED_EVENT_TYPES.has(eventType) && !teamId) {
     return `${eventType} events require a valid team.`;
@@ -255,6 +271,7 @@ function validateTeamForEvent(match, eventType, teamId) {
   return null;
 }
 
+// Ensures selected players belong to one of the match teams.
 async function validatePlayerForEvent(match, teamId, playerId) {
   if (!playerId) {
     return "Goal and card events require a selected player.";
@@ -286,6 +303,7 @@ async function validatePlayerForEvent(match, teamId, playerId) {
   return null;
 }
 
+// Maps a goal event to the home or away score side.
 function getGoalSide(eventType, teamId, match) {
   if (toApiEventType(eventType) !== "Goal") return null;
 
@@ -295,6 +313,7 @@ function getGoalSide(eventType, teamId, match) {
   return null;
 }
 
+// Adjusts the result score when a goal event is created, edited, or deleted.
 async function updateScoreForGoalChange(tx, match, previousSide, nextSide) {
   if (previousSide === nextSide) return null;
 
@@ -328,6 +347,7 @@ async function updateScoreForGoalChange(tx, match, previousSide, nextSide) {
   });
 }
 
+// Sends score updates to connected live-match clients.
 function emitScoreUpdated(io, matchId, result) {
   if (!result) return;
 
@@ -341,6 +361,7 @@ function emitScoreUpdated(io, matchId, result) {
   io.emit("score_update", payload);
 }
 
+// Builds the Prisma update object from optional event fields.
 function buildEventUpdateData(value) {
   return {
     ...(value.lloji !== undefined && { lloji: toStoredEventType(value.lloji) }),
@@ -356,6 +377,7 @@ function buildEventUpdateData(value) {
   };
 }
 
+// Lists all events for one match.
 router.get(
   "/:id/events",
   protect,
@@ -389,6 +411,7 @@ router.get(
   },
 );
 
+// Creates a new live match event and updates score for goals.
 router.post(
   "/:id/events",
   protect,
@@ -497,6 +520,7 @@ router.post(
   },
 );
 
+// Updates an existing event and adjusts score if the goal side changes.
 matchEventLifecycleRoutes.put(
   "/:eventId",
   protect,
@@ -603,6 +627,7 @@ matchEventLifecycleRoutes.put(
   },
 );
 
+// Deletes an event and subtracts its goal from the score when needed.
 matchEventLifecycleRoutes.delete(
   "/:eventId",
   protect,

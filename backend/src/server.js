@@ -63,6 +63,8 @@ app.use(
 app.use(apiLimiter);
 app.use(express.json());
 app.use(cookieParser());
+
+// Mount each feature router on its API path.
 app.use("/sports", sportRoutes);
 app.use("/players", playersRoutes);
 app.use("/users", usersRoutes);
@@ -93,6 +95,7 @@ httpServer.listen(port, () => {
 // Test database connection
 async function testConnection() {
   try {
+    // Opening and releasing one client confirms the database credentials work.
     const client = await pool.connect();
     console.log("U lidh me databazen me sukses!");
     client.release();

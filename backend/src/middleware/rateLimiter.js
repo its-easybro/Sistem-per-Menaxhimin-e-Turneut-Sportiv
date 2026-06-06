@@ -2,6 +2,7 @@
 import rateLimit from "express-rate-limit"
 
 // API limiter
+// Applies a general request cap to the whole backend API.
 export const apiLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 min
     max: 2000000, // 200 requests per 10 min
@@ -10,6 +11,7 @@ export const apiLimiter = rateLimit({
     legacyHeaders: false
 })
 
+// Uses a stricter limit for login/register attempts.
 export const authLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 min
     max: 10, // 10 requests per 10 min
@@ -18,6 +20,7 @@ export const authLimiter = rateLimit({
     legacyHeaders: false
 })
 
+// Limits password reset requests to reduce email abuse.
 export const forgotPwLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 5, // 5 requests per hour

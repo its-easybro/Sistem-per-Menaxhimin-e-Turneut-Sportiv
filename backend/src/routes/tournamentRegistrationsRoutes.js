@@ -14,6 +14,7 @@ const registrationStatusOptions = [
   "Anuluar",
 ];
 
+// Validates registration ids from route parameters.
 const registrationParamSchema = Joi.object({
   id: Joi.number().integer().positive().required().messages({
     "number.base": "Registration ID must be a valid number.",
@@ -22,6 +23,7 @@ const registrationParamSchema = Joi.object({
   }),
 });
 
+// Validates a new team registration for a tournament.
 const registrationCreateSchema = Joi.object({
   turneu_id: Joi.number().integer().positive().required().messages({
     "number.base": "Tournament ID must be a valid number.",
@@ -46,6 +48,7 @@ const registrationCreateSchema = Joi.object({
   }),
 });
 
+// Allows partial registration updates such as status or paid fee.
 const registrationUpdateSchema = Joi.object({
   turneu_id: Joi.number().integer().positive().optional().messages({
     "number.base": "Tournament ID must be a valid number.",
@@ -67,6 +70,7 @@ const registrationUpdateSchema = Joi.object({
   }),
 });
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInteger(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -76,7 +80,7 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
-// Validates the registration ID from route parameters
+// Validates the registration id from route parameters.
 function validateRouteId(id) {
   const parsedId = parsePositiveInteger(id);
   if (!parsedId) {
@@ -86,7 +90,7 @@ function validateRouteId(id) {
   return { value: parsedId };
 }
 
-// Validates the registration data from the request body and converts it to the appropriate format for the database
+// Converts request body values into safe registration data.
 function validateRegistrationPayload(body) {
   const turneuId = parsePositiveInteger(body.turneu_id);
   if (!turneuId) {
@@ -127,6 +131,7 @@ function validateRegistrationPayload(body) {
   };
 }
 
+// Adds tournament and team names to the registration response shape.
 function formatRegistration(registration) {
   return {
     id: registration.id,
@@ -141,6 +146,7 @@ function formatRegistration(registration) {
   };
 }
 
+// Ensures a team can only register for tournaments in the same sport.
 async function ensureTeamMatchesTournamentSport(turneu_id, ekipi_id) {
   const [tournament, team] = await Promise.all([
     prisma.tournaments.findUnique({
@@ -172,7 +178,7 @@ async function ensureTeamMatchesTournamentSport(turneu_id, ekipi_id) {
   return { ok: true };
 }
 
-// Function to handle registration errors and return appropriate responses based on the database error code
+// Converts known Prisma errors into clear registration responses.
 function handleRegistrationError(err, res) {
   if (err?.code === "P2002") {
     return res.status(409).json({
@@ -195,6 +201,7 @@ function handleRegistrationError(err, res) {
   return res.status(500).json({ error: err.message });
 }
 
+// Loads one registration with names needed by the frontend.
 async function fetchRegistrationById(id) {
   return prisma.tournamentregistrations.findUnique({
     where: { id },
@@ -237,7 +244,7 @@ async function organizerOwnsRegistration(registrationId, organizerId) {
   return Boolean(result);
 }
 
-// Route for getting all tournament registrations with attached tournament and team names
+// Lists registrations, scoped to organizer ownership when needed.
 router.get("/", protect, async (req, res) => {
   try {
     let result;
@@ -283,6 +290,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // Route for getting a specific registration by its ID
+// Fetches one registration by id.
 router.get("/:id", protect, async (req, res) => {
   const { error, value } = registrationParamSchema.validate({
     id: req.params.id,
@@ -320,6 +328,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new tournament registration. This route is protected and available to admins or the assigned organizer.
+// Creates a team registration for a tournament.
 router.post(
   "/",
   protect,
@@ -379,6 +388,7 @@ router.post(
 );
 
 // Route for updating an existing registration by its ID. This route is protected and available to admins or the assigned organizer.
+// Updates one registration after ownership and sport checks.
 router.put(
   "/:id",
   protect,
@@ -462,6 +472,7 @@ router.put(
 );
 
 // Route for deleting an existing registration by its ID. This route is protected and available to admins or the assigned organizer.
+// Deletes one registration after permission checks.
 router.delete(
   "/:id",
   protect,

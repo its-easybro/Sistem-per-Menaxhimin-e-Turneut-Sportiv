@@ -11,7 +11,7 @@ import { authLimiter, forgotPwLimiter} from "../middleware/rateLimiter.js"
 
 const router = express.Router();
 
-// Validation Schemas
+// Validation schemas keep bad auth payloads from reaching database logic.
 const registerSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "Email must be valid",
@@ -69,6 +69,7 @@ const sessionCookieOptions = {
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 };
 
+// Collects browser and IP metadata for saved login sessions.
 function getSessionMetadata(req) {
   const forwardedFor = req.headers["x-forwarded-for"];
   const ipAddress = Array.isArray(forwardedFor)
@@ -83,7 +84,8 @@ function getSessionMetadata(req) {
     lastSeenAt: new Date(),
   };
 }
-// Helper function to generate JWT access token with user information and role-based claims
+
+// Builds a short-lived JWT with the user's identity and role.
 const generateAccessToken = (user) => {
   return jwt.sign(
     {
@@ -98,7 +100,8 @@ const generateAccessToken = (user) => {
     { expiresIn: "1m" },
   );
 };
-// Helper function to build user response object
+
+// Removes sensitive fields before sending user data to the frontend.
 const buildUserResponse = (user) => ({
   id: user.id,
   email: user.email,
@@ -114,7 +117,7 @@ const buildUserResponse = (user) => ({
   is_referee: user.roli === "gjyqtar",
 });
 
-//Register new user
+// Creates a new account, saves a session, and sets auth cookies.
 router.post("/register", authLimiter, async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
@@ -188,7 +191,7 @@ router.post("/register", authLimiter, async (req, res) => {
   }
 });
 
-//Login
+// Verifies credentials, creates a new session, and sets auth cookies.
 router.post("/login", authLimiter, async (req, res) => {
   try {
     const { error, value } = loginSchema.validate(req.body);
@@ -233,7 +236,7 @@ router.post("/login", authLimiter, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-// Route for refreshing the access token using the stored session identifier.
+// Refreshes the JWT when the saved session is still valid.
 router.post("/refresh", async (req, res) => {
   const sessionId = req.cookies.sessionId;
 
@@ -271,7 +274,7 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
-//Me
+// Returns the authenticated user's current profile data.
 router.get("/me", protect, async (req, res) => {
   try {
     res.json(req.user);
@@ -282,7 +285,7 @@ router.get("/me", protect, async (req, res) => {
   }
 });
 
-//Logout
+// Clears cookies and removes the current session when possible.
 router.post("/logout", async (req, res) => {
   const sessionId = req.cookies.sessionId;
 
@@ -293,13 +296,13 @@ router.post("/logout", async (req, res) => {
       })
       .catch(() => null);
   }
-  // Clear the token and sessionId cookies by setting them to an empty value and expiring them immediately.
+  // Expire auth cookies immediately in the browser.
   res.cookie("token", "", { ...sessionCookieOptions, maxAge: 1 });
   res.cookie("sessionId", "", { ...sessionCookieOptions, maxAge: 1 });
   res.json({ message: "Logged out successfully" });
 });
 
-// Forgot Password
+// Sends a password reset email when the account exists.
 router.post("/forgot-password", forgotPwLimiter, async (req, res) => {
   try {
     const { error, value } = forgotPasswordSchema.validate(req.body);
@@ -343,7 +346,7 @@ router.post("/forgot-password", forgotPwLimiter, async (req, res) => {
   }
 });
 
-// Reset Password (for email)
+// Uses a valid reset token to store a new hashed password.
 router.post("/reset-password", async (req, res) => {
   try {
     const { error, value } = resetPasswordSchema.validate(req.body);

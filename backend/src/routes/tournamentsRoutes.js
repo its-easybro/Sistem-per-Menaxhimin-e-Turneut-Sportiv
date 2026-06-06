@@ -26,14 +26,17 @@ const normalizedTournamentTypeMap = {};
 
 const normalizedTournamentStatusMap = {};
 
+// Keeps tournament type values in the allowed display format.
 function normalizeTournamentType(value) {
   return value;
 }
 
+// Keeps tournament status values in the allowed display format.
 function normalizeTournamentStatus(value) {
   return value;
 }
 
+// Validates tournament ids from route parameters.
 const tournamentParamSchema = Joi.object({
   id: Joi.number().integer().positive().required().messages({
     "number.base": "Tournament ID must be a valid number.",
@@ -42,6 +45,7 @@ const tournamentParamSchema = Joi.object({
   }),
 });
 
+// Validates required fields when creating a tournament.
 const tournamentCreateSchema = Joi.object({
   emertimi: Joi.string().trim().min(1).required().messages({
     "string.empty": "The tournament name is required.",
@@ -101,6 +105,7 @@ const tournamentCreateSchema = Joi.object({
   }
 });
 
+// Allows partial tournament updates while validating provided fields.
 const tournamentUpdateSchema = Joi.object({
   emertimi: Joi.string().trim().min(1).optional().messages({
     "string.empty": "The tournament name cannot be empty.",
@@ -158,6 +163,7 @@ const tournamentUpdateSchema = Joi.object({
   }
 });
 
+// Converts known Prisma and business errors into HTTP responses.
 function handleTournamentError(err, res) {
   if (
     err.message === "Organizer not found" ||
@@ -187,6 +193,7 @@ function handleTournamentError(err, res) {
   return res.status(500).json({ error: err.message });
 }
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInteger(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -196,6 +203,7 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
+// Parses tournament dates from form strings or existing values.
 function parseTournamentDate(value) {
   if (!value) {
     return null;
@@ -218,6 +226,7 @@ function parseTournamentDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+// Normalizes optional string query values.
 function parseStringQuery(value) {
   if (typeof value !== "string") {
     return null;
@@ -227,6 +236,7 @@ function parseStringQuery(value) {
   return trimmed === "" ? null : trimmed;
 }
 
+// Builds search, status, type, sport, and organizer filters.
 function buildTournamentFilters(query) {
   const search = parseStringQuery(query.search);
   const statusi = parseStringQuery(query.statusi);
@@ -267,7 +277,7 @@ function buildTournamentFilters(query) {
   return where;
 }
 
-// Validates the tournament data and converts it to the appropriate format for the database
+// Converts request body values into safe tournament data.
 function validateTournamentPayload(body) {
   const {
     emertimi,
@@ -310,7 +320,7 @@ function validateTournamentPayload(body) {
     return { error: "The start date and end date are required." };
   }
 
-  // Validates the dates and ensures that the end date is after the start date
+  // Ensures both dates are valid and the end date is after the start.
   const startDate = parseTournamentDate(data_fillimit);
   const endDate = parseTournamentDate(data_perfundimit);
   if (!startDate || !endDate) {
@@ -321,7 +331,7 @@ function validateTournamentPayload(body) {
     return { error: "The end date must be after the start date." };
   }
 
-  // Validates the registration price, it can be empty (default to 0) but if given it must be a non-negative number
+  // Empty prices default to zero; provided prices must be non-negative.
   const registrationPrice =
     cmimi_regjistrimit === "" ||
     cmimi_regjistrimit === null ||
@@ -333,7 +343,7 @@ function validateTournamentPayload(body) {
     return { error: "The registration price must be a non-negative number." };
   }
 
-  // Allows admins to optionally assign a specific user as the organizer of the tournament.
+  // Allows admins to optionally assign a user as the organizer.
   let organizerId = null;
   if (
     organizatori_id !== "" &&
@@ -363,7 +373,7 @@ function validateTournamentPayload(body) {
   };
 }
 
-// Promotes the selected user to organizer when a tournament is assigned to them.
+// Promotes the selected user to organizer when assigned to a tournament.
 async function ensureOrganizerUser(userId) {
   if (!userId) {
     return null;
@@ -392,7 +402,7 @@ async function ensureOrganizerUser(userId) {
   return userResult;
 }
 
-// Route for getting all tournaments
+// Lists tournaments, scoped to organizer ownership when needed.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
   const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -444,6 +454,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // Route for getting a specific tournament by its ID
+// Fetches one tournament by id.
 router.get("/:id", protect, async (req, res) => {
   const { error, value } = tournamentParamSchema.validate({
     id: req.params.id,
@@ -484,6 +495,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new tournament. This route is protected and only admins can use it.
+// Creates a tournament and promotes the organizer when assigned.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   let value;
 
@@ -536,6 +548,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for updating an existing tournament by its ID. This route is protected and only admins can use it.
+// Updates one tournament and organizer assignment.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { error: paramError, value: paramValue } = tournamentParamSchema.validate({
     id: req.params.id,
@@ -605,6 +618,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for deleting an existing tournament by its ID. This route is protected and only admins can use it.
+// Deletes one tournament by id.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { error, value } = tournamentParamSchema.validate({ id: req.params.id });
   if (error) {

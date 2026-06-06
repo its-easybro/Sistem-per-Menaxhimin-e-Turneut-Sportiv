@@ -1,12 +1,14 @@
 // Provides helper logic for building bracket rounds, scheduling bracket matches, and advancing winners.
 const DEFAULT_MATCH_DURATION_MINUTES = 60;
 
+// Creates an Error object that route handlers can convert into HTTP responses.
 export function createBracketError(status, message) {
   const error = new Error(message);
   error.status = status;
   return error;
 }
 
+// Converts a bracket round number into the label shown in the UI.
 export function getRoundLabel(roundNumber, totalRounds) {
   if (roundNumber === totalRounds) return "Final";
   if (roundNumber === totalRounds - 1) return "Semi-final";
@@ -14,6 +16,7 @@ export function getRoundLabel(roundNumber, totalRounds) {
   return `Round ${roundNumber}`;
 }
 
+// Parses optional match dates from forms, existing rows, or default values.
 export function parseMatchDate(value) {
   if (!value) return null;
 
@@ -34,6 +37,7 @@ export function parseMatchDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+// Parses optional kickoff times while allowing empty values to clear the field.
 export function parseMatchTime(value) {
   if (value === undefined) return undefined;
   if (value === null || value === "") return null;
@@ -49,6 +53,7 @@ export function parseMatchTime(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+// Reads the highest stored round number for this tournament bracket.
 async function getTotalRounds(tx, tournamentId) {
   const result = await tx.bracketmatches.aggregate({
     where: { turneu_id: tournamentId },
@@ -58,6 +63,7 @@ async function getTotalRounds(tx, tournamentId) {
   return result._max.round_number || 1;
 }
 
+// Chooses the bracket date, then tournament start date, then today.
 function getDefaultMatchDate(bracketNode, tournament) {
   return (
     parseMatchDate(bracketNode.data_ndeshjes) ||
@@ -66,6 +72,7 @@ function getDefaultMatchDate(bracketNode, tournament) {
   );
 }
 
+// Uses the sport default duration when the tournament has one.
 function getDefaultDuration(tournament) {
   return (
     tournament?.sports?.kohezgjatja_default ??
@@ -73,6 +80,7 @@ function getDefaultDuration(tournament) {
   );
 }
 
+// Creates or updates the real match connected to a bracket node.
 export async function ensureLinkedMatchForBracketNode(
   tx,
   bracketNode,
@@ -135,12 +143,14 @@ export async function ensureLinkedMatchForBracketNode(
   return created;
 }
 
+// Maps a bracket slot name to the matching database column.
 function getSlotField(nextSlot) {
   if (nextSlot === "home") return "ekipi_shtepiak_id";
   if (nextSlot === "away") return "ekipi_mysafir_id";
   return null;
 }
 
+// Determines the bracket winner from explicit winner data or goals.
 function determineBracketWinner(match, result) {
   // Bracket winners must be unambiguous because the next round needs one team.
   if (!match) {
@@ -174,6 +184,7 @@ function determineBracketWinner(match, result) {
   throw createBracketError(400, "Bracket matches cannot end in a draw.");
 }
 
+// Loads tournament timing data needed to create linked matches.
 async function getTournamentForBracketNode(tx, tournamentId) {
   return tx.tournaments.findUnique({
     where: { id: tournamentId },
@@ -185,6 +196,7 @@ async function getTournamentForBracketNode(tx, tournamentId) {
   });
 }
 
+// Loads the next bracket node that should receive this winner.
 async function getNextBracketNode(tx, bracketNode) {
   if (!bracketNode?.next_bracket_match_id) return null;
 
@@ -201,10 +213,12 @@ async function getNextBracketNode(tx, bracketNode) {
   });
 }
 
+// Checks whether a bracket node already has winner or result progress.
 function hasNodeProgress(node) {
   return Boolean(node?.fitues_id || node?.matches?.matchresults);
 }
 
+// Deletes a generated match only when it has no result yet.
 async function clearLinkedMatchIfIdle(tx, node) {
   if (!node?.ndeshja_id) return;
 
@@ -222,6 +236,7 @@ async function clearLinkedMatchIfIdle(tx, node) {
   await tx.matches.delete({ where: { id: node.ndeshja_id } });
 }
 
+// Saves a bracket winner and copies the team into the next round.
 export async function advanceBracketWinner(tx, bracketNode, winnerTeamId) {
   // Save the winner on this node, then copy that team into the configured next slot.
   await tx.bracketmatches.update({
@@ -268,6 +283,7 @@ export async function advanceBracketWinner(tx, bracketNode, winnerTeamId) {
   );
 }
 
+// Removes the winner from the next round when a previous result is reverted.
 async function clearDownstreamSlot(tx, bracketNode) {
   const slotField = getSlotField(bracketNode.next_slot);
   if (!slotField || !bracketNode.next_bracket_match_id) {
@@ -291,6 +307,7 @@ async function clearDownstreamSlot(tx, bracketNode) {
   });
 }
 
+// Applies a finished match result to the connected bracket node.
 export async function applyBracketResultProgression(tx, matchId, result) {
   // Match results drive bracket movement, so finishing live matches advances the tree.
   const bracketNode = await tx.bracketmatches.findUnique({
@@ -325,6 +342,7 @@ export async function applyBracketResultProgression(tx, matchId, result) {
   return { isBracketMatch: true, winnerTeamId };
 }
 
+// Reverts bracket movement for a match whose result was deleted.
 export async function revertBracketResultProgression(tx, matchId) {
   const bracketNode = await tx.bracketmatches.findUnique({
     where: { ndeshja_id: matchId },

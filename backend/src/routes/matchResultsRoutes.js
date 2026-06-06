@@ -11,6 +11,7 @@ import Joi from "joi";
 
 const router = express.Router();
 
+// Validates data for creating a completed match result.
 const matchResultCreateSchema = Joi.object({
   ndeshja_id: Joi.number().integer().positive().required().messages({
     "number.base": "Match ID must be a valid number.",
@@ -38,6 +39,7 @@ const matchResultCreateSchema = Joi.object({
   }),
 });
 
+// Allows partial updates to an existing match result.
 const matchResultUpdateSchema = Joi.object({
   ndeshja_id: Joi.number().integer().positive().optional().messages({
     "number.base": "Match ID must be a valid number.",
@@ -64,6 +66,7 @@ const matchResultUpdateSchema = Joi.object({
   }),
 });
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInteger(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -72,6 +75,7 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
+// Includes related match, winner, player, tournament, and sport data.
 const matchResultInclude = {
   matches: {
     select: {
@@ -96,7 +100,7 @@ const matchResultInclude = {
   players: { select: { emri: true, mbiemri: true } },
 };
 
-// Helper to format a matchresult record (with includes) into the API shape.
+// Formats a match result row into the API response shape.
 function formatMatchResult(result) {
   return {
     id: result.id,
@@ -126,6 +130,7 @@ function formatMatchResult(result) {
   };
 }
 
+// Loads a match and verifies the current user can manage its result.
 async function fetchManageableMatch(matchId, user) {
   const parsedMatchId = parsePositiveInteger(matchId);
   if (!parsedMatchId) {
@@ -165,10 +170,12 @@ async function fetchManageableMatch(matchId, user) {
   return { ok: false, status: 403, error: "Forbidden" };
 }
 
+// Pulls a readable error message from nested errors when available.
 function getErrorMessage(err) {
   return err.response?.data?.error || err.message;
 }
 
+// Blocks manual result edits for bracket matches that must advance by live flow.
 function getBracketResultRouteError(match) {
   // Bracket-linked results should come from finishing live matches, not manual edits.
   if (!match?.bracketmatches) {
@@ -182,7 +189,7 @@ function getBracketResultRouteError(match) {
   return null;
 }
 
-// Route for getting all match results with detailed data. This route is protected.
+// Lists match results with related match and tournament details.
 router.get("/", protect, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -255,6 +262,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // Route for creating a new match result. Admins and owning organizers can use it.
+// Creates a result, recalculates standings, and advances brackets if needed.
 router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const {
     ndeshja_id,
@@ -327,6 +335,7 @@ router.post("/", protect, requireRole("is_admin", "is_organizer"), async (req, r
 });
 
 // Route for updating an existing match result by its ID. Admins and owning organizers can use it.
+// Updates a result, recalculates standings, and re-applies bracket progression.
 router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const { id } = req.params;
   const matchResultId = parsePositiveInteger(id);
@@ -433,6 +442,7 @@ router.put("/:id", protect, requireRole("is_admin", "is_organizer"), async (req,
 });
 
 // Route for deleting an existing match result by its ID. Admins and owning organizers can use it.
+// Deletes a result and rolls back standings and bracket progression.
 router.delete("/:id", protect, requireRole("is_admin", "is_organizer"), async (req, res) => {
   const { id } = req.params;
   const matchResultId = parsePositiveInteger(id);

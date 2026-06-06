@@ -3,17 +3,20 @@ import jwt from 'jsonwebtoken';
 import pool from "../config/db.js";
 import prisma from "../lib/prisma.js";
 
-// Middleware to protect routes and ensure that only authenticated users can access them. It checks for the presence of a JWT token in the cookies, verifies it, and then fetches the user's details from the database to attach to the request object for use in subsequent middleware or route handlers.
+// Protects routes by verifying the JWT cookie and loading the logged-in user.
 export const protect = async (req, res, next) => {
   try{
     const token = req.cookies.token;
 
+    // Stop the request early when no login token is present.
     if(!token){
       return res.status(401).json({ message: "Not authorized, token failed" });
     }
-    // Verify the token and extract the user ID from it. Then, fetch the user's details from the database and attach them to the request object for use in subsequent middleware or route handlers.
+
+    // Decode the token to get the user id stored during login.
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Load fresh user data so role checks use the current database state.
     const user = await prisma.user.findUnique({ 
       where: { id: decoded.id } 
     })
@@ -21,7 +24,7 @@ export const protect = async (req, res, next) => {
     if(!user){
       return res.status(401).json({ message: "Not authorized, user not found" });
     }
-    // Attaching the user's details to the request object, including computed properties for each role for easy role checking in subsequent middleware or route handlers.
+    // Attach user fields and role booleans for later middleware and routes.
     req.user = {
       id: user.id,
       email: user.email,
@@ -49,8 +52,9 @@ export const protect = async (req, res, next) => {
   }
 }
 
-// Middleware to restrict access to certain routes based on user roles. It checks if the authenticated user has at least one of the specified roles and allows access if they do, otherwise it returns a 403 Forbidden response.
+// Restricts routes to users that have at least one allowed role.
 export const requireRole = (...roles) => (req, res, next) => {
+  // Roles are stored as booleans on req.user by the protect middleware.
   const hasRole = roles.some(role => req.user?.[role] === true);
   if (!hasRole){
     return res.status(403).json({ error: "Forbidden" });

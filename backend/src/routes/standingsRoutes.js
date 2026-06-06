@@ -7,6 +7,7 @@ import recalculateStandings from "../services/recalculateStandings.js";
 
 const router = express.Router();
 
+// Validates tournament ids used by standings routes.
 const standingsParamSchema = Joi.object({
   turneuId: Joi.number().integer().positive().required().messages({
     "number.base": "Tournament ID must be a valid number.",
@@ -15,14 +16,17 @@ const standingsParamSchema = Joi.object({
   }),
 });
 
+// Calculates the goal difference used for ranking.
 function getGoalDifference(standing) {
   return Number(standing.golat_shenuar || 0) - Number(standing.golat_pranuar || 0);
 }
 
+// Reads the team name for stable alphabetical tiebreakers.
 function getTeamName(standing) {
   return standing.teams?.emertimi || "";
 }
 
+// Sorts standings by points, goal difference, goals, then team name.
 function sortStandings(rows) {
   return [...rows].sort((a, b) => {
     const pointsDiff = Number(b.piket || 0) - Number(a.piket || 0);
@@ -38,6 +42,7 @@ function sortStandings(rows) {
   });
 }
 
+// Returns W, D, or L for one team in one completed match.
 function getMatchOutcome(match, teamId) {
   const result = match.matchresults;
   if (!result) return null;
@@ -54,6 +59,7 @@ function getMatchOutcome(match, teamId) {
   return "D";
 }
 
+// Builds recent form arrays for teams from their last completed matches.
 async function buildFormMap(tournamentIds) {
   if (tournamentIds.length === 0) return new Map();
 
@@ -83,6 +89,7 @@ async function buildFormMap(tournamentIds) {
   return formMap;
 }
 
+// Fetches standings with public access or role-based ownership filtering.
 async function fetchStandings({ tournamentId = null, user = null, isPublic = false } = {}) {
   const where = {};
 
@@ -152,6 +159,7 @@ async function fetchStandings({ tournamentId = null, user = null, isPublic = fal
   };
 }
 
+// Checks whether the user can recalculate standings for a tournament.
 async function ensureCanRecalculateTournament(turneuId, user) {
   const tournament = await prisma.tournaments.findUnique({
     where: { id: turneuId },
@@ -173,6 +181,7 @@ async function ensureCanRecalculateTournament(turneuId, user) {
   return { ok: false, status: 403, error: "Forbidden" };
 }
 
+// Lists public standings for all tournaments.
 router.get("/public", async (req, res) => {
   try {
     const { rows } = await fetchStandings({ isPublic: true });
@@ -182,6 +191,7 @@ router.get("/public", async (req, res) => {
   }
 });
 
+// Lists public standings for one tournament.
 router.get("/public/tournament/:turneuId", async (req, res) => {
   const { error, value } = standingsParamSchema.validate({
     turneuId: req.params.turneuId,
@@ -201,6 +211,7 @@ router.get("/public/tournament/:turneuId", async (req, res) => {
   }
 });
 
+// Lists protected standings according to the user's role.
 router.get("/", protect, async (req, res) => {
   try {
     const { forbidden, rows } = await fetchStandings({ user: req.user });
@@ -213,6 +224,7 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
+// Lists protected standings for one tournament.
 router.get("/tournament/:turneuId", protect, async (req, res) => {
   const { error, value } = standingsParamSchema.validate({
     turneuId: req.params.turneuId,
@@ -235,6 +247,7 @@ router.get("/tournament/:turneuId", protect, async (req, res) => {
   }
 });
 
+// Recalculates standings for one tournament from match results.
 router.post(
   "/recalculate/:turneuId",
   protect,

@@ -13,7 +13,7 @@ const DEFAULT_SPORT_PERIOD_LABEL = "Half";
 
 const sportTypeOptions = ["Ekipor", "Individual", "I dyfishtë"];
 
-// Validation Schemas
+// Validates fields needed to create a sport.
 const sportCreateSchema = Joi.object({
   emertimi: Joi.string().trim().required().messages({
     "string.empty": "The sport name is required.",
@@ -48,6 +48,7 @@ const sportCreateSchema = Joi.object({
     }),
 });
 
+// Allows partial sport updates while preserving valid timing values.
 const sportUpdateSchema = Joi.object({
   emertimi: Joi.string().trim().optional().messages({
     "string.empty": "The sport name cannot be empty.",
@@ -79,6 +80,7 @@ const sportUpdateSchema = Joi.object({
     }),
 });
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInt(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -88,6 +90,7 @@ function parsePositiveInt(value) {
   return parsed;
 }
 
+// Normalizes optional string query values.
 function parseStringQuery(value) {
   if (typeof value !== "string") {
     return null;
@@ -97,6 +100,7 @@ function parseStringQuery(value) {
   return trimmed === "" ? null : trimmed;
 }
 
+// Builds search and type filters for sport list queries.
 function buildSportsFilters(query) {
   const search = parseStringQuery(query.search);
   const lloji = parseStringQuery(query.lloji);
@@ -118,7 +122,7 @@ function buildSportsFilters(query) {
   return where;
 }
 
-// Route for getting all sports publicly.
+// Public list used by unauthenticated pages.
 router.get("/public", async (req, res) => {
   try {
     const sports = await prisma.sports.findMany({
@@ -135,6 +139,7 @@ router.get("/public", async (req, res) => {
 });
 
 // Route for getting all sports.
+// Lists sports for authenticated admin screens.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
   const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -172,6 +177,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // Route for getting a specific sport by its ID.
+// Fetches one sport by id.
 router.get("/:id", protect, async (req, res) => {
   const sportId = parsePositiveInt(req.params.id);
   if (!sportId) {
@@ -192,6 +198,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new sport. This route is protected and only admins can use it.
+// Creates a new sport.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const { error, value } = sportCreateSchema.validate(req.body);
@@ -228,6 +235,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for updating an existing sport by its ID. This route is protected and only admins can use it.
+// Updates one sport and its timing defaults.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const sportId = parsePositiveInt(req.params.id);
   if (!sportId) {
@@ -278,6 +286,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for deleting an existing sport by its ID. This route is protected and only admins can use it.
+// Deletes a sport when no dependent data blocks it.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const sportId = parsePositiveInt(req.params.id);
   if (!sportId) {

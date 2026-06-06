@@ -7,7 +7,7 @@ import Joi from "joi";
 
 const router = express.Router();
 
-// Validation Schemas
+// Validates data for admin-created user accounts.
 const userCreateSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "Email must be valid",
@@ -31,6 +31,7 @@ const userCreateSchema = Joi.object({
     }),
 });
 
+// Allows admins to update account fields, roles, and password.
 const userUpdateSchema = Joi.object({
   email: Joi.string().email().optional().messages({
     "string.email": "Email must be valid",
@@ -51,6 +52,7 @@ const userUpdateSchema = Joi.object({
   }),
 });
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInt(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -60,6 +62,7 @@ function parsePositiveInt(value) {
   return parsed;
 }
 
+// Removes sensitive data and adds role helper booleans.
 function formatUserResponse(user) {
   return {
     id: user.id,
@@ -74,7 +77,7 @@ function formatUserResponse(user) {
   };
 }
 
-// Helper function to split a full name into first name and last name, or use the username as a fallback for the first name if the full name is not provided
+// Splits full names while falling back to the username when needed.
 function splitName(fullName = "", fallbackUsername = "") {
   const normalizedFullName =
     typeof fullName === "string" ? fullName.trim().replace(/\s+/g, " ") : "";
@@ -89,6 +92,7 @@ function splitName(fullName = "", fallbackUsername = "") {
   return { emri: normalizedUsername, mbiemri: "" };
 }
 
+// Creates a linked referee row when a user has the referee role.
 async function ensureRefereeRecord(user) {
   if (!user || user.roli !== "gjyqtar") {
     return;
@@ -113,7 +117,7 @@ async function ensureRefereeRecord(user) {
   });
 }
 
-// Route for getting all users. This route is protected and only admins can use it.
+// Lists users for admins with search and pagination.
 router.get("/", protect, requireRole("is_admin"), async (req, res) => {
   const returnAll = req.query.limit === "all";
   const page = returnAll ? 1 : Math.max(1, parseInt(req.query.page) || 1);
@@ -169,6 +173,7 @@ router.get("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for creating a new user. This route is protected and only admins can use it.
+// Creates a new user and hashes their password.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const { error, value } = userCreateSchema.validate(req.body);
@@ -214,6 +219,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for updating an existing user by their ID. This route is protected and only admins or the user themselves can use it.
+// Updates one user and keeps referee data in sync.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const userId = parsePositiveInt(req.params.id);
   if (!userId) {
@@ -267,6 +273,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for deleting an existing user by their ID. This route is protected and only admins can use it.
+// Deletes one user by id.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const userId = parsePositiveInt(req.params.id);
   if (!userId) {

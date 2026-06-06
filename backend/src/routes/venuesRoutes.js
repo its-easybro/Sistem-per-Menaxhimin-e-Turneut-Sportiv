@@ -6,7 +6,7 @@ import Joi from "joi";
 
 const router = express.Router();
 
-// Validation Schemas
+// Validates required venue fields when creating a new venue.
 const venueCreateSchema = Joi.object({
   emertimi: Joi.string().trim().required().messages({
     "string.empty": "Venue name is required.",
@@ -34,6 +34,7 @@ const venueCreateSchema = Joi.object({
   }),
 });
 
+// Allows partial venue updates while keeping field types valid.
 const venueUpdateSchema = Joi.object({
   emertimi: Joi.string().trim().optional().messages({
     "string.empty": "Venue name cannot be empty.",
@@ -58,6 +59,7 @@ const venueUpdateSchema = Joi.object({
   }),
 });
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInt(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -67,6 +69,7 @@ function parsePositiveInt(value) {
   return parsed;
 }
 
+// Normalizes optional string query values.
 function parseStringQuery(value) {
   if (!value || typeof value !== "string") {
     return null;
@@ -76,6 +79,7 @@ function parseStringQuery(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+// Builds search, city, and status filters for venue list queries.
 function buildVenueFilters(query) {
   const search = parseStringQuery(query.search);
   const qyteti = parseStringQuery(query.qyteti);
@@ -105,6 +109,7 @@ function buildVenueFilters(query) {
 }
 
 // Route for getting all venues. This route is public.
+// Lists venues with optional filters and pagination.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
   const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -142,6 +147,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // GET /venues/:id - Route for getting a specific venue by its ID
+// Fetches one venue by id.
 router.get("/:id", protect, async (req, res) => {
   const venueId = parsePositiveInt(req.params.id);
   if (!venueId) {
@@ -162,6 +168,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new venue. This route is protected and only admins can use it.
+// Creates a new venue.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   try {
     const { error, value } = venueCreateSchema.validate(req.body);
@@ -189,6 +196,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for updating an existing venue by its ID. This route is protected and only admins can use it.
+// Updates one venue after validating the payload.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const venueId = parsePositiveInt(req.params.id);
   if (!venueId) {
@@ -232,6 +240,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for deleting an existing venue by its ID. This route is protected and only admins can use it.
+// Deletes one venue by id.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const venueId = parsePositiveInt(req.params.id);
   if (!venueId) {

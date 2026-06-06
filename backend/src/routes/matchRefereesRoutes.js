@@ -6,6 +6,7 @@ import Joi from "joi";
 
 const router = express.Router();
 
+// Validates a new referee assignment for one match.
 const matchRefereeCreateSchema = Joi.object({
   ndeshja_id: Joi.number().integer().positive().required().messages({
     "number.base": "Match ID must be a valid number.",
@@ -23,6 +24,7 @@ const matchRefereeCreateSchema = Joi.object({
   }),
 });
 
+// Allows changing the match, referee, or role on an assignment.
 const matchRefereeUpdateSchema = Joi.object({
   ndeshja_id: Joi.number().integer().positive().optional().messages({
     "number.base": "Match ID must be a valid number.",
@@ -38,6 +40,7 @@ const matchRefereeUpdateSchema = Joi.object({
 });
 
 
+// Converts id-like inputs into positive integers.
 function parsePositiveInteger(value) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) {
@@ -46,6 +49,7 @@ function parsePositiveInteger(value) {
   return parsed;
 }
 
+// Normalizes optional string query values.
 function parseStringQuery(value) {
   if (typeof value !== "string") {
     return null;
@@ -55,6 +59,7 @@ function parseStringQuery(value) {
   return trimmed === "" ? null : trimmed;
 }
 
+// Parses date filters used for assignment searches.
 function parseMatchDate(value) {
   const dateValue = parseStringQuery(value);
   if (!dateValue) {
@@ -69,6 +74,7 @@ function parseMatchDate(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+// Builds filters for match status, dates, referee names, and team names.
 function buildMatchRefereeFilters(query) {
   const statusi = parseStringQuery(query.statusi);
   const search = parseStringQuery(query.search);
@@ -134,7 +140,7 @@ function buildMatchRefereeFilters(query) {
   return filters.length > 0 ? { AND: filters } : {};
 }
 
-// Route for managing match referees. This route is protected and only admins can use it.
+// Lists referee assignments with optional filters and pagination.
 router.get("/", protect, async (req, res) => {
   const page = req.query.page ? Math.max(1, parseInt(req.query.page) || 1) : null;
   const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit) || 10) : null;
@@ -209,6 +215,7 @@ router.get("/", protect, async (req, res) => {
 });
 
 // Route for getting a specific match referee by its ID. This route is protected.
+// Fetches one referee assignment by id.
 router.get("/:id", protect, async (req, res) => {
   const matchesRefereesId = parsePositiveInteger(req.params.id);
   if (!matchesRefereesId) {
@@ -254,6 +261,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Route for creating a new match referee. This route is protected and only admins can use it.
+// Creates a new referee assignment.
 router.post("/", protect, requireRole("is_admin"), async (req, res) => {
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
   const { error } = matchRefereeCreateSchema.validate({ ndeshja_id, gjyqtari_id, roli });
@@ -275,6 +283,7 @@ router.post("/", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for updating an existing match referee by its ID. This route is protected and only admins can use it.
+// Updates one referee assignment.
 router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
   const { ndeshja_id, gjyqtari_id, roli } = req.body;
@@ -301,6 +310,7 @@ router.put("/:id", protect, requireRole("is_admin"), async (req, res) => {
 });
 
 // Route for deleting an existing match referee by its ID. This route is protected and only admins can use it.
+// Deletes one referee assignment.
 router.delete("/:id", protect, requireRole("is_admin"), async (req, res) => {
   const { id } = req.params;
   try {
