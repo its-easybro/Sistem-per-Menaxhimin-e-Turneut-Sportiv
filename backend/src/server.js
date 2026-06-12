@@ -35,6 +35,7 @@ import sessionRoute from "./routes/sessionRoute.js"
 // Load environment variables
 dotenv.config();
 const app = express();
+app.set("trust proxy", 1);
 const httpServer = http.createServer(app);
 const port = process.env.PORT || 3005;
 const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(
