@@ -15,12 +15,12 @@ import PageLoader from "./components/Skeletons/PageLoader";
 
 // Importing Admin Pages
 const Sports = lazy(() => import("./pages/admin/Sports"));
-const Matches = lazy(() => import("./pages/admin/matches"));
+const Matches = lazy(() => import("./pages/admin/Matches"));
 const Teams = lazy(() => import("./pages/admin/Teams"));
-const Users = lazy(() => import("./pages/admin/Users"));
+const Users = lazy(() => import("./pages/admin/users"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
 const Players = lazy(() => import("./pages/admin/Players"));
-const Venues = lazy(() => import("./pages/admin/Venues"));
+const Venues = lazy(() => import("./pages/admin/venues"));
 const MatchResults = lazy(() => import("./pages/admin/MatchResults"));
 const MatchReferees = lazy(() => import("./pages/admin/MatchReferees"));
 const Tournaments = lazy(() => import("./pages/admin/Tournaments"));
